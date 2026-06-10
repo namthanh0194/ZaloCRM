@@ -20,6 +20,7 @@ model Organization {
   users                   User[]
   zaloAccounts            ZaloAccount[]
   contacts                Contact[]
+  contactAccess           ContactAccess[]
   conversations           Conversation[]
   appointments            Appointment[]
   activityLogs            ActivityLog[]
@@ -73,6 +74,7 @@ model Organization {
   // Phase FB — Facebook Lead Ingestion
   facebookPageConnections FacebookPageConnection[]
   facebookFormMappings    FacebookFormMapping[]
+  systemNotifyRecipients    SystemNotifyRecipient[]
 
   @@map("organizations")
 }
@@ -125,6 +127,7 @@ model User {
   zaloAccounts              ZaloAccount[]
   zaloAccess                ZaloAccountAccess[]
   assignedContacts          Contact[]                    @relation("AssignedContacts")
+  contactAccess             ContactAccess[]
   appointments              Appointment[]
   statusChangedAppointments Appointment[]                @relation("AppointmentStatusChanger")
   repliedMessages           Message[]                    @relation("RepliedMessages")
@@ -147,6 +150,7 @@ model User {
   phoneSearchEvents         PhoneSearchEvent[]
   // Phase FB — Facebook Lead Ingestion
   customerListAssignments   CustomerListSaleAssignment[]
+  systemNotifyRecipients    SystemNotifyRecipient[]
 
   @@map("users")
 }
@@ -204,6 +208,8 @@ model ZaloAccount {
   // Phase Privacy v2 2026-05-23 — reverse relations
   internalContactForUsers User[]         @relation("UserInternalContact")
   systemNotifyForOrgs     Organization[] @relation("OrgSystemNotify")
+  systemNotifyRecipientsAsSender   SystemNotifyRecipient[] @relation("SystemNotifySender")
+  systemNotifyRecipientsAsInternal SystemNotifyRecipient[] @relation("SystemNotifyInternalContact")
 
   @@map("zalo_accounts")
 }
@@ -355,6 +361,7 @@ model Contact {
   parent            Contact?            @relation("ContactFather", fields: [parentContactId], references: [id], onDelete: SetNull)
   children          Contact[]           @relation("ContactFather")
   statusRef         Status?             @relation(fields: [statusId], references: [id], onDelete: SetNull)
+  contactAccess     ContactAccess[]
   conversations     Conversation[]
   appointments      Appointment[]
   attempts          FriendshipAttempt[]
@@ -433,6 +440,30 @@ model Contact {
   @@index([orgId, stuckSinceAggregate])
   @@index([orgId, aggregateScoreUpdatedAt(sort: Desc)])
   @@map("contacts")
+}
+
+// Phase Contact Scope Hybrid — quyền sở hữu KH (primary + collaborator).
+// 1 Contact có thể có nhiều User cùng truy cập (1 primary + N collaborator).
+// role: primary | collaborator. source: manual | <khác> (audit nguồn tạo row).
+// Logic enforce scope nằm ở plugin EE; Core chỉ giữ data model + populate.
+model ContactAccess {
+  id        String   @id @default(uuid())
+  orgId     String   @map("org_id")
+  contactId String   @map("contact_id")
+  userId    String   @map("user_id")
+  role      String   @default("collaborator")
+  source    String   @default("manual")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  org     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  contact Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([contactId, userId])
+  @@index([orgId, userId])
+  @@index([orgId, contactId])
+  @@map("contact_access")
 }
 
 // Status (Trạng thái KH) — per-org config replacing Contact.status enum cũ.
@@ -1843,6 +1874,9 @@ model CustomerList {
   endedAt    DateTime? @map("ended_at")
   archivedAt DateTime? @map("archived_at")
 
+  // Cho phép admin chia sẻ tệp KH này vào pool phân phối chung (plugin tiêu thụ).
+  shareableToPool Boolean @default(false) @map("shareable_to_pool")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -2042,6 +2076,42 @@ model UserPrivacySession {
   @@index([sessionToken])
   @@index([userId, expiresAt])
   @@map("user_privacy_sessions")
+}
+
+model SystemNotifyRecipient {
+  id                           String    @id @default(uuid())
+  orgId                        String    @map("org_id")
+  targetUserId                 String    @map("target_user_id")
+  senderZaloAccountId          String?   @map("sender_zalo_account_id")
+  internalContactZaloAccountId String?   @map("internal_contact_zalo_account_id")
+  conversationId               String?   @map("conversation_id")
+  threadIdInSenderView         String?   @map("thread_id_in_sender_view")
+  status                       String    @default("invalid")
+  error                        String?
+  lastVerifiedAt               DateTime  @default(now()) @map("last_verified_at")
+  // Phase Internal Contact 2-method 2026-05-23 — verify code 4 số sau handshake.
+  // Status flow mở rộng: pending_friend_request → pending_user_confirm → ready.
+  // verifyCode = hash 4 số sale phải gõ lại; expire 30 phút; lock sau 5 lần sai.
+  verifyCode                   String?   @map("verify_code")
+  verifyCodeExpiresAt          DateTime? @map("verify_code_expires_at")
+  verifyAttempts               Int       @default(0) @map("verify_attempts")
+  // Lưu request UID (UID của bên kia từ góc nhìn nick gửi friend request) để retry/cancel.
+  friendRequestSentAt          DateTime? @map("friend_request_sent_at")
+  createdAt                    DateTime  @default(now()) @map("created_at")
+  updatedAt                    DateTime  @updatedAt @map("updated_at")
+
+  org                 Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  targetUser          User         @relation(fields: [targetUserId], references: [id], onDelete: Cascade)
+  senderZaloAccount   ZaloAccount? @relation("SystemNotifySender", fields: [senderZaloAccountId], references: [id], onDelete: SetNull)
+  internalContactNick ZaloAccount? @relation("SystemNotifyInternalContact", fields: [internalContactZaloAccountId], references: [id], onDelete: SetNull)
+
+  @@unique([targetUserId, senderZaloAccountId])
+  // FIX codex review HIGH-1 2026-05-27: chống race khi 2 admin map cùng UID cho 2 user khác nhau.
+  // Postgres cho phép multiple NULL trong unique → recipient chưa setup (thread null) không bị block.
+  @@unique([senderZaloAccountId, threadIdInSenderView])
+  @@index([orgId, status])
+  @@index([senderZaloAccountId, status])
+  @@map("system_notify_recipients")
 }
 
 // ─── Phase FB: Facebook Lead Ingestion ───────────────────────────────────────

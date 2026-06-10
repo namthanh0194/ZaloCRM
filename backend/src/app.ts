@@ -75,7 +75,7 @@ import { friendRoutes } from './modules/zalo/friend-routes.js';
 import { profileRoutes } from './modules/zalo/profile-routes.js';
 import { credentialRoutes } from './modules/zalo/credential-routes.js';
 import { eventBuffer } from './shared/event-buffer.js';
-// Plugin architecture (open-core) — xem plans/260602-2229-open-core-plugin-architecture/
+// Plugin architecture — xem core/plugin-host.ts
 import { buildContext } from './core/build-context.js';
 import { loadPlugins } from './core/plugin-host.js';
 
@@ -93,6 +93,20 @@ async function bootstrap() {
 
   await app.register(fastifyJwt, {
     secret: config.jwtSecret,
+  });
+
+  // Global optional authentication: populate `request.user` whenever a valid
+  // Bearer token is present. Routes that REQUIRE auth still gate themselves
+  // (e.g. core modules add their own authMiddleware preHandler; plugin routes
+  // return 401 when `request.user` is absent). Verification failure is swallowed
+  // so public routes (login, health, webhooks) keep working. This gives every
+  // route — including those registered by plugins — a consistent `request.user`.
+  app.addHook('onRequest', async (request) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      /* no / invalid token → leave request.user undefined, let the route decide */
+    }
   });
 
   await app.register(rateLimit, {
@@ -149,11 +163,10 @@ async function bootstrap() {
 
   await app.register(authRoutes);
 
-  // ── Plugin host (open-core) ───────────────────────────────────────────────
+  // ── Plugin host ───────────────────────────────────────────────────────────
   // Nạp plugin core (12 module: branding, dashboard, analytics, search,
   // notifications, scoring, activity, ai, api, engagement, rbac, privacy)
-  // + enterprise (nếu có). Migrate dần phần còn lại ở Phase 4.
-  // Xem core/plugin-host.ts + modules/plugins-index.ts.
+  // + bundle tùy chọn (nếu cài). Xem core/plugin-host.ts + modules/plugins-index.ts.
   const { ctx } = buildContext(app, io);
   await loadPlugins(ctx);
 

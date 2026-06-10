@@ -1,12 +1,11 @@
 /**
  * @zalocrm/plugin-api — Hợp đồng plugin CÔNG KHAI (ổn định, semver).
  *
- * Đây là biên giới DUY NHẤT giữa core (open source) và Enterprise (private).
+ * Đây là biên giới ổn định giữa core và các plugin mở rộng.
  * - Core implement các capability/policy và expose qua PluginContext.
- * - Plugin EE CHỈ được import từ file này (không import backend/src/modules/*).
+ * - Plugin CHỈ được import từ file này (không import backend/src/modules/*).
  *
- * NGUYÊN TẮC VÀNG: core không bao giờ import EE; EE chỉ import plugin-api.
- * Xem plans/260602-2229-open-core-plugin-architecture/.
+ * NGUYÊN TẮC VÀNG: core không bao giờ import plugin; plugin chỉ import plugin-api.
  */
 import type { FastifyInstance } from 'fastify';
 import type { Server as SocketServer } from 'socket.io';
@@ -42,6 +41,48 @@ export interface ZaloMessagingCapability {
   isConnected(accountId: string): boolean;
 }
 
+/** Đích gửi tin nội bộ (nick hệ thống → thread của 1 user). */
+export interface InternalContactTarget {
+  /** ZaloAccount id của nick hệ thống đang gửi. */
+  senderAccountId: string;
+  /** UID/thread của user nhận (từ góc nhìn nick gửi). */
+  targetUid: string;
+}
+
+/**
+ * Capability resolve "liên lạc nội bộ" — key 'internal.contact'.
+ * Core map user → nick hệ thống + thread (qua SystemNotifyRecipient). Trả null nếu
+ * chưa setup / nick chưa connected. Plugin dùng để biết gửi tin nội bộ tới đâu mà
+ * không đụng internal system-notify của core.
+ */
+export interface InternalContactCapability {
+  resolve(userId: string, orgId: string): Promise<InternalContactTarget | null>;
+}
+
+/** Hồ sơ user Zalo tra theo SĐT (đã normalize từ SDK). uid null = không tìm thấy. */
+export interface ZaloUserLookup {
+  uid: string | null;
+  zaloName: string | null;
+  username: string | null;
+  avatar: string | null;
+  globalId: string | null;
+  gender: number | null;
+  dob: string | number | null;
+  bio: string | null;
+  bizPkg: unknown | null;
+  accountStatus: number | null;
+  isFriend: boolean | null;
+}
+
+/**
+ * Capability tra cứu danh bạ Zalo — key 'zalo.directory'.
+ * Core bọc SDK findUser(accountId, phone) + normalize. Plugin dùng để tìm UID Zalo
+ * của 1 SĐT qua 1 nick, KHÔNG đụng internal zaloPool/zaloOps. null nếu không thấy/lỗi.
+ */
+export interface ZaloDirectoryCapability {
+  findUser(accountId: string, phone: string): Promise<ZaloUserLookup | null>;
+}
+
 /* ────────────────────────────────────────────────────────────────────────
  * PRIMITIVE 2 — Policy Registry (guard slot)
  * Core gọi check(name, req) trước khi trả nội dung nhạy cảm.
@@ -57,6 +98,21 @@ export interface PolicyRegistry {
   register(name: string, fn: (r: PolicyRequest) => Promise<boolean>): void;
   /** Trả TRUE nếu chưa có ai register policy này (mặc định cho qua). */
   check(name: string, r: PolicyRequest): Promise<boolean>;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+ * PRIMITIVE 3 — Scope Registry (data-scoping slot)
+ * Khác policy (boolean gate 1 resource): scope trả 1 WHERE-fragment để LỌC list.
+ * Core gọi resolve(name, user, org) rồi merge fragment vào Prisma `where`.
+ * Chưa ai register → null (không lọc → community thấy hết). EE register → giới hạn.
+ * ──────────────────────────────────────────────────────────────────────── */
+/** Mảnh điều kiện Prisma `where` để merge vào query. null = không giới hạn. */
+export type ScopeWhere = Record<string, unknown>;
+
+export interface ScopeRegistry {
+  register(name: string, fn: (userId: string, orgId: string) => Promise<ScopeWhere | null>): void;
+  /** Trả null nếu chưa ai register (mặc định không lọc). */
+  resolve(name: string, userId: string, orgId: string): Promise<ScopeWhere | null>;
 }
 
 /* ────────────────────────────────────────────────────────────────────────
@@ -86,6 +142,7 @@ export interface PluginContext {
   registerCron: (job: CronJob) => void;
   capabilities: CapabilityRegistry; // primitive 1
   policy: PolicyRegistry; // primitive 2
+  scope: ScopeRegistry; // primitive 3
 }
 
 /* ────────────────────────────────────────────────────────────────────────

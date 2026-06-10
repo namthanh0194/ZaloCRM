@@ -14,12 +14,19 @@ export type {
   CapabilityRegistry,
   PolicyRegistry,
   PolicyRequest,
+  ScopeRegistry,
+  ScopeWhere,
   LicenseService,
   ZaloMessagingCapability,
+  InternalContactCapability,
+  InternalContactTarget,
+  ZaloDirectoryCapability,
+  ZaloUserLookup,
   AppConfig,
   AppLogger,
   AppPrisma,
 } from './types.js';
 
 export { createPolicyRegistry } from './policy-registry.js';
+export { createScopeRegistry } from './scope-registry.js';
 export { createCapabilityRegistry } from './capability-registry.js';

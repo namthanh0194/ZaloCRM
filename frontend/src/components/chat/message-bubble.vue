@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <div class="msg-row" :class="{ self: isSelf }">
     <!-- Avatar bên trái cho tin nhắn đến (cả group + 1-1) — click → mở Zalo user info -->
@@ -22,15 +24,73 @@
         :class="{ 'is-self': isSelf, 'is-other': !isSelf }"
         @contextmenu.prevent="emit('contextmenu', $event)"
       >
-        <!-- Tên người gửi: hiện cho group + non-self, click → mở Zalo user info.
-             Phase A UI fix (2026-05-21): chuyển vào TRONG bubble (trên đầu nội dung)
-             theo style Zalo native. Trước fix nằm ngoài bubble. -->
+        <!-- Tên người gửi cho tin INBOUND — Anh chốt 2026-06-03 (4 case):
+             1a. Nick có owner trong org (CASE B): "Tuan HS · Sale: Anh Tuấn"
+             2b. Nick lẻ có crmName (CASE A): "Chị Lan · Lan Nguyen"
+             2a. Nick lẻ không crmName: chỉ tên Zalo thật
+             3.  Bubble INBOUND tím pastel (khác xanh nhạt OUTBOUND)
+             4a. Hiện ở CẢ 1-1 + group (đồng nhất)
+             Click → mở Zalo user info dialog. -->
         <div
-          v-if="isGroup && !isSelf"
+          v-if="!isSelf && (message as any).senderResolved"
+          class="sender-name sender-name-clickable"
+          :class="{ 'is-internal': (message as any).senderResolved?.senderIsInternalNick }"
+          @click="emit('sender-click')"
+        >
+          <span class="sender-name-primary">
+            {{ (message as any).senderResolved?.senderDisplayName || message.senderName || 'Người lạ' }}
+          </span>
+
+          <!-- CASE B: nick nội bộ (sale khác trong org) — chip "Sale: {owner}" -->
+          <span
+            v-if="(message as any).senderResolved?.senderIsInternalNick && (message as any).senderResolved?.senderInternalNickOwner"
+            class="sender-internal-chip"
+            :title="`Nick ${(message as any).senderResolved.senderInternalNickLabel ?? ''} của ${(message as any).senderResolved.senderInternalNickOwner}`"
+          >
+            · Sale: {{ (message as any).senderResolved.senderInternalNickOwner }}
+          </span>
+
+          <!-- CASE A có crmName: kèm tên Zalo nhỏ bên cạnh để đối chiếu -->
+          <span
+            v-else-if="(message as any).senderResolved?.senderCrmName && (message as any).senderResolved?.senderZaloName && (message as any).senderResolved.senderCrmName !== (message as any).senderResolved.senderZaloName"
+            class="sender-zalo-secondary"
+            :title="`Tên Zalo: ${(message as any).senderResolved.senderZaloName}`"
+          >
+            · {{ (message as any).senderResolved.senderZaloName }}
+          </span>
+        </div>
+
+        <!-- Fallback group cũ khi senderResolved null (vd tin cũ trước migration) -->
+        <div
+          v-else-if="isGroup && !isSelf"
           class="sender-name sender-name-clickable"
           @click="emit('sender-click')"
         >
-          {{ message.senderName || 'Unknown' }}
+          {{ message.senderName || 'Người lạ' }}
+        </div>
+
+        <!-- M55 2026-05-30: Sender attribution cho multi-sale cùng chăm.
+             Bubble self (tin sale gửi qua CRM) — nếu repliedByUserId !== viewer
+             → hiện badge "Sale X gửi" để phân biệt với tin mình gửi.
+             ── Luồng Mục Tiêu M11 (2026-06-02): nếu message có sentVia (M11 source
+             identity), MessageSourceBadge sẽ cover case này với 5 variant đầy đủ
+             (Sale CRM / Sale Native / Bot Automation / Bot AI / Bot System).
+             Logic ưu tiên: M11 badge nếu có metadata.sender hoặc sentVia != 'user';
+             fallback M55 .other-sale-tag cho legacy multi-sale case. -->
+        <MessageSourceBadge
+          v-if="message.sentVia || message.metadata?.sender"
+          :message="message"
+          :prev-message="prevMessage ?? null"
+          @open-sequence="(sid) => emit('open-sequence', sid)"
+          @explain-native="emit('explain-native')"
+          @audit-ai="emit('audit-ai')"
+        />
+        <div
+          v-else-if="isSelf && otherSaleSenderName"
+          class="other-sale-tag"
+          :title="`Tin do ${otherSaleSenderName} gửi`"
+        >
+          👤 {{ otherSaleSenderName }}
         </div>
 
         <!-- E04 Tin thu hồi — anh chốt 2026-05-21: icon 🔂 + italic xám + gạch ngang.
@@ -44,7 +104,13 @@
         </div>
 
         <template v-else>
-          <div v-if="reply" class="reply-card">
+          <div
+            v-if="reply"
+            class="reply-card"
+            :class="{ 'reply-clickable': !!reply.msgId }"
+            :title="reply.msgId ? 'Đi tới tin nhắn gốc' : ''"
+            @click.stop="reply.msgId && emit('jump-to-reply', reply.msgId)"
+          >
             <div class="reply-header">
               <v-icon size="11" class="reply-icon">mdi-reply</v-icon>
               <span class="reply-sender">Trả lời{{ replySenderLabel ? ' ' + replySenderLabel : '' }}</span>
@@ -67,11 +133,21 @@
 
           <!-- Image (có thể kèm caption phía dưới) -->
           <div v-else-if="getImageUrl(message)">
+            <!-- 2026-06-11: @error → placeholder khi ảnh Zalo hết hạn link (404) thay vì
+                 ô vỡ + log đỏ Console. loading=lazy: ảnh ngoài màn hình không tải vội. -->
+            <div v-if="imgFailed" class="chat-image-failed">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+              <span>Ảnh không tải được</span>
+            </div>
             <img
+              v-else
               :src="getImageUrl(message)!"
               alt="Hình ảnh"
               class="chat-image"
+              loading="lazy"
+              decoding="async"
               @click="emit('preview-image', getImageUrl(message)!)"
+              @error="imgFailed = true"
             />
             <div v-if="formattedCaption" class="media-caption" v-html="formattedCaption" />
           </div>
@@ -89,7 +165,7 @@
                 icon
                 size="x-small"
                 variant="text"
-                @click="openFile(getFileInfo(message)!.href)"
+                @click="openFile(getFileInfo(message)!.href, getFileInfo(message)!.name)"
               >
                 <v-icon size="16">mdi-download</v-icon>
               </v-btn>
@@ -197,12 +273,21 @@
             :content="parseContent(message.content)"
             @callback="$emit('callback', message)"
             @open-profile="onOpenProfile"
+            @open-phone="(p) => emit('open-phone', p)"
           />
 
           <!-- Default text — parse @mention + bullets + linebreaks -->
-          <div v-else class="text-content" v-html="formattedText" />
+          <!-- Anh chốt 2026-06-03: click vào mention → load info user giống click avatar.
+               Event delegation: bắt click trên container, check target có class .mention + data-uid. -->
+          <div v-else class="text-content" v-html="formattedText" @click="onMentionClick" />
 
         </template>
+
+        <!-- Bug B 2026-06-22: tin GỬI THẤT BẠI → badge cảnh báo + lý do (chặn người lạ / chặn nick…) -->
+        <div v-if="sendFailReason" class="send-failed">
+          <v-icon size="13">mdi-alert-circle-outline</v-icon>
+          Gửi thất bại: {{ sendFailReason }}
+        </div>
 
         <!-- Timestamp -->
         <div class="bubble-time" :class="{ 'text-end': isSelf }">
@@ -268,10 +353,13 @@
 import type { Message } from '@/composables/use-chat';
 import { computed, ref, watch } from 'vue';
 import { formatInOrgTz, weekdayInOrgTz } from '@/composables/use-org-timezone';
+import { linkifyHtml } from '@/composables/use-rich-format';
 import SpecialMessageRenderer from '@/components/chat/special-message-renderer.vue';
 import ReactionDisplay from '@/components/chat/reaction-display.vue';
 import ReactionPicker from '@/components/chat/reaction-picker.vue';
 import Avatar from '@/components/ui/Avatar.vue';
+import MessageSourceBadge from '@/components/chat/MessageSourceBadge.vue';
+import { useToast } from '@/composables/use-toast';
 
 const props = defineProps<{
   message: Message;
@@ -286,18 +374,43 @@ const props = defineProps<{
   /** Tin OUTGOING cuối cùng — chỉ tin này hiện receipt chip (Zalo native UX,
    *  chốt 2026-05-22). Tin cuối seen ⇒ ngầm hiểu mọi tin trên cũng seen. */
   isLastSelf?: boolean;
+  /** Luồng Mục Tiêu M11: message liền trước cho group consecutive logic badge */
+  prevMessage?: Message | null;
+  /** M55 2026-05-30 — viewer userId để phân biệt "tin mình gửi" vs "tin sale khác cùng chăm gửi" */
+  currentUserId?: string | null;
 }>();
 
 const emit = defineEmits<{
   contextmenu: [event: MouseEvent];
   'preview-image': [url: string];
-  'preview-video': [url: string];
+  'preview-video': [url: string, name: string];
   'toggle-reaction': [emoji: string];
   'sender-click': [];
   callback: [message: Message];
   'open-profile': [uid: string];
+  'open-phone': [phone: string];
   'open-reaction-detail': [payload: { reactions: any[]; message: Message }];
+  'jump-to-reply': [msgId: string];
+  // Luồng Mục Tiêu M11 source badge events
+  'open-sequence': [sequenceId: string];
+  'explain-native': [];
+  'audit-ai': [];
 }>();
+
+// 2026-06-11 — ảnh tin nhắn 404 (link Zalo hết hạn) → hiện placeholder thay ô vỡ.
+const imgFailed = ref(false);
+
+// M55 2026-05-30 — Sender attribution: hiện tên sale khác cùng chăm nếu tin
+// self do user khác (collaborator) gửi qua CRM. Skip nếu tin do mình gửi.
+const otherSaleSenderName = computed<string | null>(() => {
+  if (!props.isSelf) return null;
+  const m = props.message as { repliedByUserId?: string | null; repliedBy?: { fullName?: string | null; email?: string | null } | null };
+  const senderUid = m.repliedByUserId;
+  if (!senderUid) return null;
+  if (props.currentUserId && senderUid === props.currentUserId) return null;
+  const name = m.repliedBy?.fullName || m.repliedBy?.email;
+  return name || null;
+});
 
 const SPECIAL_TYPES = new Set([
   'bank_transfer', 'call', 'qr_code', 'reminder', 'poll', 'note', 'forwarded', 'rich', 'location', 'link',
@@ -382,17 +495,21 @@ function getVideoUrl(msg: Message): string | null {
 
 function getFileInfo(msg: Message): { name: string; size: string; href: string } | null {
   if (!msg.content?.startsWith('{')) return null;
+  const fmtSize = (b: number) => b > 1048576 ? `${(b / 1048576).toFixed(1)} MB` : b > 0 ? `${Math.round(b / 1024)} KB` : '';
   try {
     const p = JSON.parse(msg.content);
-    if (p.href && p.name && typeof p.size === 'number' && p.mime && !p.mime.startsWith('image/') && !p.mime.startsWith('video/')) {
-      const size = p.size > 1048576 ? `${(p.size / 1048576).toFixed(1)} MB` : `${Math.round(p.size / 1024)} KB`;
-      return { name: p.name, size, href: p.href };
+    const mime = typeof p.mime === 'string' ? p.mime : '';
+    const isImgVid = mime.startsWith('image/') || mime.startsWith('video/');
+    // 2026-06-13 (anh báo tải file gửi đi không ra): NỚI điều kiện — tin contentType='file' HOẶC
+    // có {href,name} mà KHÔNG phải ảnh/video → render file-card + nút tải. KHÔNG bắt buộc mime
+    // (file cũ persist mime="" trước fix → trước đây rơi về text '🔗 url', không có nút tải).
+    if (p.href && p.name && (msg.contentType === 'file' || (!isImgVid && !p.thumb))) {
+      return { name: p.name, size: fmtSize(typeof p.size === 'number' ? p.size : 0), href: p.href };
     }
     const params = typeof p.params === 'string' ? JSON.parse(p.params) : p.params;
     if (params?.fileExt || params?.fType === 1) {
       const bytes = parseInt(params.fileSize || '0');
-      const size = bytes > 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`;
-      return { name: p.title || `file.${params.fileExt || 'unknown'}`, size, href: p.href || '' };
+      return { name: p.title || `file.${params.fileExt || 'unknown'}`, size: fmtSize(bytes), href: p.href || '' };
     }
   } catch {}
   return null;
@@ -422,23 +539,101 @@ function escapeHtml(s: string): string {
     .replace(/'/g, '&#39;');
 }
 
-function highlightText(raw: string): string {
+/**
+ * Apply mentions theo pos+len từ Zalo SDK (Anh chốt 2026-06-03 Lớp 2).
+ * Pos là vị trí byte (UTF-8) trong raw text; len là độ dài full mention bao
+ * gồm cả ký tự @ + tên đầy đủ (vd "@Trung Trường - Hs Holding" = len 27).
+ *
+ * Algorithm:
+ *  1. Sort mentions theo pos tăng dần để xử lý từ đầu chuỗi.
+ *  2. Cắt text thành các segment: [plain trước mention][mention][plain sau].
+ *  3. Escape HTML từng segment riêng (KHÔNG escape cả chuỗi rồi cắt vì
+ *     escape làm dài chuỗi → pos shift sai).
+ *
+ * Lưu ý UTF-8: Zalo dùng byte position, Js string là UTF-16. Với tin tiếng
+ * Việt + emoji có thể lệch. Thử dùng string.substring trước, nếu sai shift
+ * sẽ fix lần sau bằng TextEncoder/Decoder.
+ */
+function applyMentionsFormat(
+  raw: string,
+  mentions: Array<{ uid: string; pos: number; len: number; type: 0 | 1 }>,
+): string {
+  if (!mentions || mentions.length === 0) return highlightTextRegex(raw);
+  const sorted = [...mentions].sort((a, b) => a.pos - b.pos);
+  let out = '';
+  let cursor = 0;
+  for (const m of sorted) {
+    if (m.pos < cursor) continue; // overlap → skip
+    // Plain text trước mention
+    if (m.pos > cursor) {
+      out += escapeHtml(raw.substring(cursor, m.pos));
+    }
+    // Mention chunk
+    const chunk = raw.substring(m.pos, m.pos + m.len);
+    out += `<span class="mention" data-uid="${m.uid}">${escapeHtml(chunk)}</span>`;
+    cursor = m.pos + m.len;
+  }
+  // Plain text còn lại
+  if (cursor < raw.length) {
+    out += escapeHtml(raw.substring(cursor));
+  }
+  // Linebreak + auto-link URL/SĐT (linkifyHtml an toàn với tag mention vừa chèn).
+  out = out.replace(/\r?\n/g, '<br>');
+  return linkifyHtml(out);
+}
+
+/**
+ * Fallback regex cho tin CŨ chưa có mentions JSONB (trước migration
+ * 20260603074923_add_message_mentions). Pattern hỗ trợ separator " - ".
+ */
+function highlightTextRegex(raw: string): string {
   if (!raw) return '';
   let s = escapeHtml(raw);
-  // Mention regex: match @ + 1-2 words capitalized only (tên người VN phổ biến).
-  // Trước đây {0,2} → 3 words max → bôi lố từ thường vào tên (vd "@Đại Khánh thể").
-  // {0,1} → max 2 words. Word phải BẮT ĐẦU BẰNG CHỮ HOA để loại từ thường tiếng Việt.
   s = s.replace(
-    /@(\p{Lu}[\p{L}0-9._-]*(?:\s\p{Lu}[\p{L}0-9._-]*){0,1})/gu,
+    /@(\p{Lu}[\p{L}0-9._]*(?:\s\p{Lu}[\p{L}0-9._]*){0,2}(?:\s[-–—]\s\p{Lu}[\p{L}0-9._]*(?:\s\p{Lu}[\p{L}0-9._]*){0,2})?)/gu,
     '<span class="mention">@$1</span>',
   );
-  s = s.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener" class="link">$1</a>');
   s = s.replace(/\r?\n/g, '<br>');
-  return s;
+  return linkifyHtml(s);
+}
+
+function highlightText(raw: string): string {
+  return highlightTextRegex(raw);
+}
+
+/**
+ * Anh chốt 2026-06-03: click vào mention span → load info user (giống avatar click).
+ * Event delegation: bắt click trên div container, check target có class .mention + data-uid.
+ * Stop propagation để không trigger sender-click của bubble cha.
+ */
+function onMentionClick(ev: MouseEvent): void {
+  const target = ev.target as HTMLElement | null;
+  if (!target) return;
+  // SĐT (2026-06-22): click .phone-link → tra Zalo qua nick hội thoại (cha xử lý).
+  const phoneEl = target.closest('.phone-link') as HTMLElement | null;
+  if (phoneEl?.dataset.phone) {
+    ev.stopPropagation();
+    emit('open-phone', phoneEl.dataset.phone);
+    return;
+  }
+  // Walk up tới element gần nhất có class .mention (vì <strong>/<em> bên trong có thể là target)
+  const mentionEl = target.closest('.mention') as HTMLElement | null;
+  if (!mentionEl) return;
+  const uid = mentionEl.dataset.uid;
+  if (!uid) return;
+  ev.stopPropagation();
+  // Emit open-profile (event handler ZaloUserInfoDialog đã có sẵn ở MessageThread.vue)
+  emit('open-profile', uid);
 }
 
 const formattedText = computed(() => {
   const raw = parseDisplayContent(props.message.content);
+  // Anh chốt 2026-06-03: ưu tiên mentions từ Zalo SDK (pos+len chính xác
+  // 100%). Tin cũ trước migration không có mentions → fallback regex.
+  const msgMentions = (props.message as any).mentions;
+  if (Array.isArray(msgMentions) && msgMentions.length > 0) {
+    return applyMentionsFormat(raw, msgMentions);
+  }
   return highlightText(raw);
 });
 
@@ -451,6 +646,9 @@ const formattedText = computed(() => {
  */
 const receiptState = computed<'sending' | 'delivered' | 'seen' | 'sent'>(() => {
   const m = props.message;
+  // 2026-06-24 — tin gửi THẤT BẠI (metadata.sendStatus='failed') → trả 'sent' để ẩn chip
+  // receipt (tránh kẹt "Đang gửi"); badge "Gửi thất bại + lý do" đã hiện trong bubble.
+  if ((m.metadata as { sendStatus?: string } | null | undefined)?.sendStatus === 'failed') return 'sent';
   if (m.seenAt) return 'seen';
   if (m.deliveredAt) return 'delivered';
   const ageMs = Date.now() - new Date(m.sentAt).getTime();
@@ -504,6 +702,12 @@ const messageCaption = computed<string>(() => {
 });
 
 const formattedCaption = computed(() => highlightText(messageCaption.value));
+
+// Bug B 2026-06-22: tin gửi thất bại (metadata.sendStatus='failed') → hiện lý do.
+const sendFailReason = computed<string | null>(() => {
+  const m = props.message.metadata as { sendStatus?: string; failReason?: string } | null | undefined;
+  return m?.sendStatus === 'failed' ? (m.failReason || 'không gửi được') : null;
+});
 
 // ── Sticker — fetch metadata + CSS sprite animation cho animated stickers ──
 interface StickerMeta {
@@ -595,8 +799,17 @@ function openVideo() {
   const p = safeParse(props.message.content);
   const url = (p?.href as string) || (p?.hdUrl as string) || (p?.normalUrl as string);
   if (typeof url === 'string' && url.startsWith('http')) {
-    emit('preview-video', url);
+    emit('preview-video', url, videoDownloadName(url));
   }
+}
+
+// Tên tải video (anh báo 2026-06-21: tải từ CRM ra tên-HASH). Zalo thật đặt tên video =
+// chính ID tin nhắn Zalo (zaloMsgId, dãy ~13 số) → CRM tải cũng đặt y vậy cho khớp. Đuôi
+// suy từ URL (mp4/mov...), mặc định .mp4. Thiếu zaloMsgId (hiếm) → "video.<ext>".
+function videoDownloadName(url: string): string {
+  const ext = (url.split('?')[0].match(/\.([A-Za-z0-9]{2,5})$/)?.[1] || 'mp4').toLowerCase();
+  const id = (props.message.zaloMsgId || '').trim();
+  return id ? `${id}.${ext}` : `video.${ext}`;
 }
 
 function isReminderMessage(msg: Message): boolean {
@@ -697,12 +910,51 @@ function onPickerReact(key: string) {
   emit('toggle-reaction', key);
 }
 
-function openFile(href: string) {
-  window.open(href, '_blank');
+// 2026-06-13 (anh báo tải file mất tên): kho lưu media/{hash}.ext nên mở thẳng URL → tải về
+// tên-hash. Tải QUA cổng CRM /media/download (cùng origin, gắn Content-Disposition tên thật) →
+// trình duyệt giữ đúng tên. Dùng axios api (kèm auth) → blob → <a download="tên thật">.
+// 2026-06-13 (anh báo 1 file tải ra tên hash + Chrome hỏi popup): lỗi cổng tải lúc đó là
+// TIMEOUT tạm thời → trước đây fallback window.open(href) = tải tên-hash (sai). Giờ: RETRY 1
+// lần (timeout 60s cho file lớn), nếu vẫn lỗi thì BÁO toast (KHÔNG window.open để tránh tên-hash).
+const downloadingFiles = new Set<string>();
+async function openFile(href: string, name?: string) {
+  if (downloadingFiles.has(href)) return; // chống double-click → tránh Chrome hỏi popup "tải nhiều"
+  downloadingFiles.add(href);
+  const { api } = await import('@/api/index');
+  const fetchBlob = () => api.get('/media/download', {
+    params: { url: href, name: name || '' },
+    responseType: 'blob',
+    timeout: 60000, // file lớn (vài MB) + MinIO cold → nới timeout, tránh fallback tên-hash
+  });
+  try {
+    let res;
+    try { res = await fetchBlob(); }
+    catch { res = await fetchBlob(); } // retry 1 lần (lỗi mạng/timeout tạm thời)
+    const blobUrl = URL.createObjectURL(res.data as Blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = name || 'tep';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 4000);
+  } catch (e) {
+    console.error('[openFile] tải qua cổng lỗi sau retry:', e);
+    try { useToast().warning('Tải tệp lỗi tạm thời, thử lại sau ít giây.'); } catch { /* */ }
+  } finally {
+    downloadingFiles.delete(href);
+  }
 }
 </script>
 
 <style scoped>
+/* 2026-06-11 — placeholder ảnh tin nhắn không tải được (Zalo hết hạn link). */
+.chat-image-failed {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  width: 180px; height: 120px; border-radius: 10px;
+  background: #f1f5f9; color: #94a3b8;
+  font-size: 11.5px; border: 1px dashed #cbd5e1;
+}
 /* Phase A UI fix (2026-05-21):
    - align-items: flex-start → avatar luôn nằm TOP-LEFT của bubble (cả user msg + group msg)
    - Bỏ msg-avatar margin-bottom hack (cũ: align với bottom + offset sender name)
@@ -745,6 +997,20 @@ function openFile(href: string) {
 .sender-name-clickable { cursor: pointer; }
 .sender-name-clickable:hover { text-decoration: underline; }
 
+/* M55 2026-05-30 — Other sale sender tag trên bubble self khi sale cùng chăm gửi */
+.other-sale-tag {
+  font-size: 10px;
+  font-weight: 600;
+  color: #7c2d12;
+  background: rgba(254, 215, 170, 0.6);
+  border-radius: 6px;
+  padding: 1px 6px;
+  margin-bottom: 4px;
+  display: inline-block;
+  cursor: help;
+  border: 1px solid rgba(251, 146, 60, 0.4);
+}
+
 .message-bubble {
   padding: 8px 13px;
   border-radius: 15px;
@@ -755,6 +1021,8 @@ function openFile(href: string) {
   position: relative;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06);
 }
+/* INBOUND bubble — GIỮ NGUYÊN trắng như cũ (Anh chốt lại 2026-06-03:
+   chỉ nền tím PHẦN TÊN người gửi, không nhuộm cả bubble) */
 .message-bubble.is-other {
   background: var(--smax-bg, #ffffff);
   color: var(--smax-text, #212121);
@@ -762,9 +1030,61 @@ function openFile(href: string) {
   border: 1px solid var(--smax-grey-200, #ebedf0);
 }
 .message-bubble.is-self {
-  background: var(--smax-bubble-self, #d0e6ff);
+  background: var(--smax-bubble-self, #d7ecf7);
   color: var(--smax-text, #212121);
   border-radius: 15px 15px 4px 15px;
+}
+
+/* INBOUND sender name row (Anh chốt 2026-06-03 - 3 case):
+   Pill tím pastel BAO QUANH TÊN người gửi để phân biệt với OUTBOUND.
+   Bubble nội dung giữ TRẮNG nguyên — chỉ tên ở trên có nền tím. */
+.message-bubble.is-other .sender-name {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+  margin-bottom: 4px;
+  cursor: pointer;
+  background: #ede9fe; /* violet-100 pastel — nền chỉ ÔM tên */
+  border: 1px solid rgba(196, 181, 253, 0.55);
+  border-radius: 10px;
+  padding: 2px 8px;
+  line-height: 1.4;
+}
+.message-bubble.is-other .sender-name-primary {
+  color: #5b21b6; /* violet-700, contrast 7.6:1 AAA với bg pastel */
+  font-size: 12px;
+  font-weight: 600;
+}
+.message-bubble.is-other .sender-name:hover .sender-name-primary {
+  text-decoration: underline;
+}
+/* CASE A khi có crmName: "Chị Lan · Lan Nguyen" — tên Zalo phụ nhỏ hơn */
+.message-bubble.is-other .sender-zalo-secondary {
+  color: #6d28d9; /* violet-700 nhạt, contrast 6.1:1 (skeptic FIX 3) */
+  font-size: 11px;
+  font-weight: 400;
+  margin-left: 3px;
+}
+/* CASE B chip "Sale: {owner}" — solid violet để chip rõ ràng (skeptic FIX 1) */
+.message-bubble.is-other .sender-internal-chip {
+  display: inline-flex;
+  align-items: center;
+  background: #5b21b6; /* solid violet */
+  color: #ffffff;       /* trắng trên violet đậm = 9:1 AAA */
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 8px;
+  margin-left: 5px;
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+}
+.message-bubble.is-other .sender-name.is-internal {
+  background: #f5f3ff; /* nhạt hơn 1 cấp khi có chip Sale đặc */
+}
+.message-bubble.is-other .sender-name.is-internal .sender-name-primary {
+  color: #4c1d95; /* violet-800 sẫm hơn để sender chính nổi với chip phụ */
 }
 
 .bubble-time {
@@ -839,7 +1159,10 @@ function openFile(href: string) {
   background: rgba(33, 150, 243, 0.08);
   border-left: 3px solid var(--smax-primary, #2962ff);
   margin-bottom: 6px;
+  transition: background-color 0.15s ease;
 }
+.reply-card.reply-clickable { cursor: pointer; }
+.reply-card.reply-clickable:hover { background: rgba(33, 150, 243, 0.16); }
 .reply-header {
   display: flex; align-items: center; gap: 4px;
   font-size: 10.5px;
@@ -881,8 +1204,30 @@ function openFile(href: string) {
   word-break: break-word;
   white-space: pre-wrap; /* fallback nếu \n không được replace bằng <br> */
 }
+/* Auto-link URL + SĐT (2026-06-22) — v-html nên dùng :deep. SĐT là <span> nên cần style
+   riêng để trông bấm-được; URL là <a> ăn màu link mặc định, gắn thêm cho đồng nhất. */
+.text-content :deep(.link),
+.media-caption :deep(.link) { color: var(--brand, #1786be); word-break: break-all; }
+.text-content :deep(.phone-link),
+.media-caption :deep(.phone-link) {
+  color: var(--brand, #1786be);
+  cursor: pointer;
+  border-bottom: 1px dashed currentColor;
+}
+.text-content :deep(.phone-link:hover),
+.media-caption :deep(.phone-link:hover) { opacity: 0.8; }
 
 /* Caption text below media (image/video/sticker/gif/file + text) */
+.send-failed {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #d9534f;
+}
+.send-failed :deep(.v-icon) { color: #d9534f; }
 .media-caption {
   margin-top: 6px;
   font-size: 13.5px;
@@ -897,6 +1242,17 @@ function openFile(href: string) {
   background: var(--smax-primary-soft, #e3f2fd);
   padding: 0 4px;
   border-radius: 3px;
+  transition: background 0.15s ease;
+}
+/* Anh chốt 2026-06-03: cursor pointer + hover CHỈ áp cho mention CÓ data-uid
+   (tin mới có metadata từ SDK). Tin cũ regex fallback KHÔNG có data-uid →
+   không click được → không show cursor pointer (tránh user click hụt). */
+:deep(.mention[data-uid]) {
+  cursor: pointer;
+}
+:deep(.mention[data-uid]:hover) {
+  background: var(--smax-primary, #2962ff);
+  color: white;
 }
 :deep(.link) {
   color: var(--smax-primary, #2962ff);
@@ -947,6 +1303,24 @@ function openFile(href: string) {
   max-width: 100%;
   max-height: 280px;
   object-fit: cover;
+}
+/* FIX 2026-06-22 (anh báo video bot gửi bể khung): video THIẾU thumbnail (vd bot gửi từ block —
+   payload.thumbnailUrl rỗng) rơi vào thẻ <video> này. Trước đây KHÔNG có CSS → render full độ phân
+   giải gốc → vỡ khung chat. Gói gọn 300×280 giữ tỉ lệ (browser tự scale theo max-width/height),
+   khớp khung thumbnail branch trên → 2 video cùng file hiển thị đồng nhất. */
+.chat-video-wrap {
+  display: inline-block;
+  border-radius: 10px;
+  overflow: hidden;
+  max-width: 300px;
+  line-height: 0;
+}
+.chat-video {
+  display: block;
+  max-width: 300px;
+  max-height: 280px;
+  border-radius: 10px;
+  background: #000;
 }
 .video-play-overlay {
   position: absolute; inset: 0;
@@ -1001,7 +1375,10 @@ function openFile(href: string) {
 .voice-fallback { font-size: 12px; color: var(--smax-grey-700); font-style: italic; }
 
 .recall-card {
-  display: inline-block;
+  /* 2026-06-20 (anh báo dồn sau tên): block riêng dòng + hug content + tách khỏi tên người gửi. */
+  display: block;
+  width: fit-content;
+  margin-top: 3px;
   padding: 6px 10px;
   background: rgba(107, 114, 128, 0.06);
   border-radius: 7px;

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * scoring/types.ts — Phase 6 Lead Scoring Engine type definitions.
  *
@@ -153,16 +155,18 @@ export type AutoTagKey =
   | 'atrisk' // score giảm > 20 trong 7 ngày
   | 'has-appointment'; // có Appointment scheduled tương lai
 
+// Việt hóa 100% — PA3 ngắn gọn (Anh chốt 2026-06-06). Nhóm AUTO DETECT tả TRẠNG THÁI/
+// thời điểm (KHÔNG dùng từ "tích cực/tương tác" của nhóm Engagement → tránh lẫn).
 export const AUTO_TAG_LABELS: Record<AutoTagKey, string> = {
-  active: 'Hoạt động',
-  cooling: 'Đang nguội',
-  cold: 'Nguội',
+  active: 'Đang chat',
+  cooling: 'Chớm nguội',
+  cold: 'Đã nguội',
   frozen: 'Đóng băng',
-  rewarmed: 'Ấm trở lại',
+  rewarmed: 'Ấm lại',
   stuck: 'Đình trệ',
-  ready: 'Sẵn sàng chốt',
-  atrisk: 'Có nguy cơ',
-  'has-appointment': 'Có lịch hẹn',
+  ready: 'Chốt được',
+  atrisk: 'Rủi ro mất',
+  'has-appointment': 'Sắp gặp',
 };
 
 export const AUTO_TAG_ICONS: Record<AutoTagKey, string> = {
@@ -206,6 +210,9 @@ export interface ContactAggregateResult {
   autoTags: AutoTagKey[]; // UNION từ Friend.autoTags
   stuckSinceAggregate: Date | null; // MIN(Friend.stuckSince) khi all Friend stuck
   lastActivity: Date | null; // MAX(Friend.lastInboundAt | lastOutboundAt | lastInteractionAt)
+  // Phase Lead Pool v2.A 2026-05-29 — tách riêng để forgotten pool query đúng nghĩa
+  lastInboundAt: Date | null;  // MAX(Friend.lastInboundAt) — lần KH reply cuối
+  lastOutboundAt: Date | null; // MAX(Friend.lastOutboundAt) — lần sale gửi cuối
 }
 
 // ─── Scoring config snapshot ──────────────────────────────────────────────

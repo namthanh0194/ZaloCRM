@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * zinstant-proxy-routes.ts — Parse Zalo zinstant bank card → trả structured data.
  *
@@ -11,7 +13,9 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { logger } from '../../shared/utils/logger.js';
 import { zaloPool } from '../zalo/zalo-pool.js';
 import { prisma } from '../../shared/database/prisma-client.js';
+import { getZaloScope } from '../zalo/zalo-scope.js';
 import { authMiddleware } from '../auth/auth-middleware.js';
+import { zaloOps } from '../../shared/zalo-operations.js';
 
 // Public routes (no auth) — bankcard parser is hit from Zalo iframe context
 // where cookies don't reliably forward, and sticker assets are read-only CDN
@@ -180,12 +184,42 @@ export async function zinstantProxyRoutes(app: FastifyInstance): Promise<void> {
       return reply.header('Cache-Control', 'public, max-age=86400').send(cached.data);
     }
 
-    // Tìm connected Zalo account bất kì để gọi API (sticker là global Zalo data,
-    // không phải per-account)
-    const account = await prisma.zaloAccount.findFirst({
-      where: { status: 'connected' },
-      select: { id: true },
-    });
+    // Public endpoint cho <img src> — JWT không pass qua img tag.
+    // Tự verify nếu có header (route được gọi từ axios api.get); nếu không có → fallback
+    // dùng any connected account trong org bất kỳ (sticker URL public của Zalo CDN).
+    let user: { id: string; orgId: string; role: string } | null = null;
+    try {
+      await request.jwtVerify();
+      user = request.user as any;
+    } catch { /* no JWT — fallback */ }
+
+    // 2026-06-11 FIX (sticker hỏng/vỡ): chọn account theo trạng thái SỐNG của pool, KHÔNG
+    // theo DB status — DB hay kẹt 'qr_pending' sau re-QR dù pool đang connected → trước đây
+    // where:{status:'connected'} không khớp account nào → 503 → <img> sticker vỡ. Pool mới
+    // là nguồn thật để gọi getStickersDetail.
+    const liveConnectedIds = Object.entries(zaloPool.getAllStatuses())
+      .filter(([, s]) => s === 'connected')
+      .map(([accId]) => accId);
+    let account: { id: string } | null = null;
+    if (liveConnectedIds.length) {
+      if (user?.id && user.orgId) {
+        const scope = await getZaloScope(user.id, user.orgId, user.role);
+        const allowed = scope.isOrgAdmin
+          ? liveConnectedIds
+          : liveConnectedIds.filter((accId) => scope.accessibleIds.includes(accId));
+        account = await prisma.zaloAccount.findFirst({
+          where: { orgId: user.orgId, id: { in: allowed } },
+          select: { id: true },
+        });
+      } else {
+        // No-auth path (img tag): bất kỳ nick nào pool đang connected.
+        account = await prisma.zaloAccount.findFirst({
+          where: { id: { in: liveConnectedIds } },
+          select: { id: true },
+          orderBy: { lastConnectedAt: 'desc' },
+        });
+      }
+    }
     if (!account) return reply.status(503).send({ error: 'no connected Zalo account' });
 
     const instance = zaloPool.getInstance(account.id);
@@ -234,14 +268,24 @@ export async function zinstantProxyRoutes(app: FastifyInstance): Promise<void> {
 
   // ── GET /api/v1/zalo-sticker-list — fetch popular categories cho picker
   // Trả category list để frontend hiển thị sticker picker
-  app.get('/api/v1/zalo-sticker-list', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get('/api/v1/zalo-sticker-list', { preHandler: authMiddleware }, async (request: FastifyRequest, reply: FastifyReply) => {
     const { keyword } = request.query as { keyword?: string };
 
+    // Phase Zalo Account Mutation Gate 2026-05-27: scope org + accessible
+    const user = request.user!;
+    const scope = await getZaloScope(user.id, user.orgId, user.role);
     const account = await prisma.zaloAccount.findFirst({
-      where: { status: 'connected' },
-      select: { id: true },
+      where: {
+        orgId: user.orgId,
+        status: 'connected',
+        ...(scope.isOrgAdmin ? {} : { id: { in: scope.accessibleIds } }),
+      },
+      select: { id: true, displayName: true },
     });
-    if (!account) return reply.status(503).send({ error: 'no connected Zalo account' });
+    if (!account) {
+      logger.warn(`[sticker-list] no connected account — user=${user.id} role=${user.role} isOrgAdmin=${scope.isOrgAdmin} accessibleIds=${scope.accessibleIds.length}`);
+      return reply.status(503).send({ error: 'no connected Zalo account' });
+    }
 
     const instance = zaloPool.getInstance(account.id);
     const stickerApi = instance?.api as {
@@ -249,17 +293,27 @@ export async function zinstantProxyRoutes(app: FastifyInstance): Promise<void> {
       getStickersDetail?: (ids: number[]) => Promise<unknown[]>;
     } | undefined;
 
+    if (!instance) {
+      logger.warn(`[sticker-list] instance null in pool — account=${account.id} (${account.displayName}). Pool not loaded?`);
+      return reply.status(503).send({ error: 'Zalo instance not ready — vào "Quản lý nick" reconnect rồi thử lại' });
+    }
     if (!stickerApi?.getStickers || !stickerApi.getStickersDetail) {
-      return reply.status(503).send({ error: 'Zalo sticker API not available' });
+      logger.warn(`[sticker-list] SDK methods missing — account=${account.id} hasGetStickers=${!!stickerApi?.getStickers} hasGetStickersDetail=${!!stickerApi?.getStickersDetail}`);
+      return reply.status(503).send({ error: 'Zalo sticker API not available (SDK version mismatch?)' });
     }
 
     try {
-      // getStickers trả ids theo keyword (suggest stickers). Default keyword="vui" để
-      // lấy stickers phổ biến — sale có thể search keyword khác sau.
-      const ids = await stickerApi.getStickers(keyword || 'vui');
-      if (!ids || ids.length === 0) return reply.send({ stickers: [] });
+      const kw = keyword || 'vui';
+      logger.info(`[sticker-list] fetching kw="${kw}" via account=${account.id} (${account.displayName})`);
+      const ids = await stickerApi.getStickers(kw);
+      logger.info(`[sticker-list] getStickers("${kw}") returned ${ids?.length ?? 0} ids: ${JSON.stringify(ids?.slice(0, 5))}...`);
+      if (!ids || ids.length === 0) {
+        // KHÔNG cache empty response — tránh stuck UI 10 phút
+        return reply.header('Cache-Control', 'no-store').send({ stickers: [], debug: { keyword: kw, accountUsed: account.displayName, idsReturned: 0 } });
+      }
 
       const details = await stickerApi.getStickersDetail(ids.slice(0, 40));
+      logger.info(`[sticker-list] getStickersDetail returned ${details?.length ?? 0} details`);
       const stickers = details.map((d) => {
         const s = d as Record<string, unknown>;
         return {
@@ -272,10 +326,11 @@ export async function zinstantProxyRoutes(app: FastifyInstance): Promise<void> {
           duration: Number(s.duration || 0),
         };
       });
-      return reply.header('Cache-Control', 'private, max-age=600').send({ stickers });
-    } catch (err) {
-      logger.warn('[sticker-list] fetch error:', err);
-      return reply.status(502).send({ error: 'upstream Zalo API failed' });
+      // Chỉ cache khi có data
+      return reply.header('Cache-Control', stickers.length > 0 ? 'private, max-age=600' : 'no-store').send({ stickers });
+    } catch (err: any) {
+      logger.warn(`[sticker-list] fetch error: ${err?.message || err} stack=${err?.stack?.slice(0, 300)}`);
+      return reply.status(502).send({ error: 'upstream Zalo API failed', detail: err?.message });
     }
   });
 
@@ -319,7 +374,7 @@ export async function zinstantProxyRoutes(app: FastifyInstance): Promise<void> {
         pkgId: Number(bizPkgRaw.pkgId ?? 0),
         createdTs: Number(bizPkgRaw.createdTs ?? 0),
       } : null,
-      isEnterpriseAccount: Number(profile.isEnterpriseAccount ?? 0),
+      isExtensionAccount: Number(profile.isExtensionAccount ?? 0),
       oaInfo: profile.oaInfo ?? null,
       oaStatus: profile.oa_status ?? profile.oaStatus ?? null,
     };
@@ -340,7 +395,8 @@ export async function zinstantProxyRoutes(app: FastifyInstance): Promise<void> {
           return normalizeProfile(uid, p);
         }
       } catch (err) {
-        logger.warn(`[user-info] account ${accId} failed for ${uid}:`, err);
+        // Miss bình thường khi nick không sở hữu UID (per-nick UID) → debug, không warn.
+        logger.debug(`[user-info] account ${accId} miss for ${uid}:`, err);
       }
     }
     return null;
@@ -349,8 +405,12 @@ export async function zinstantProxyRoutes(app: FastifyInstance): Promise<void> {
   // ── POST /api/v1/zalo-user-info/batch — bulk lookup tránh N+1 HTTP request từ FE
   // Body: { uids: string[] } → trả { users: { [uid]: profile|null } }
   // Hit cache trước, miss thì fetch song song qua tất cả connected accounts.
-  app.post('/api/v1/zalo-user-info/batch', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { uids } = (request.body || {}) as { uids?: string[] };
+  // ── Fix 2026-06-03 (Anh báo: nhóm chat "máy chủ đang lỗi", click user không load) ──
+  // Route đọc request.user!.id NHƯNG thiếu preHandler authMiddleware → request.user=null
+  // → TypeError 500 silent → FE toast "Máy chủ lỗi". Pattern bẫy đã ghi memory
+  // reference_zalocrm_auth_missing_trap.md.
+  app.post('/api/v1/zalo-user-info/batch', { preHandler: authMiddleware }, async (request: FastifyRequest, reply: FastifyReply) => {
+    const { uids, accountId } = (request.body || {}) as { uids?: string[]; accountId?: string };
     if (!Array.isArray(uids) || uids.length === 0) return { users: {} };
 
     const uniqueUids = Array.from(new Set(uids.filter(u => typeof u === 'string' && u.length > 0))).slice(0, USER_INFO_BATCH_CAP);
@@ -368,15 +428,32 @@ export async function zinstantProxyRoutes(app: FastifyInstance): Promise<void> {
 
     if (misses.length === 0) return { users };
 
-    const accounts = await prisma.zaloAccount.findMany({
-      where: { status: 'connected' },
-      select: { id: true },
-    });
-    if (accounts.length === 0) {
-      misses.forEach(uid => { users[uid] = null; });
-      return { users };
+    // Phase Zalo Account Mutation Gate 2026-05-27: scope org + accessible
+    const userForScope = request.user!;
+    const scope = await getZaloScope(userForScope.id, userForScope.orgId, userForScope.role);
+
+    // PERF 2026-06-11 (anh báo lag VPS): UID là PER-NICK. Trước đây mỗi uid loop TẤT CẢ
+    // nick → nhóm 20 người × 50 nick = 1000 lượt Zalo SDK/lần mở nhóm (gây lag + spam
+    // 1000 log). Nếu FE truyền accountId (nick của hội thoại) → CHỈ gọi đúng nick đó.
+    // Fallback thử-tất-cả khi không có accountId (giữ tương thích).
+    let accountIds: string[];
+    if (accountId && (scope.isOrgAdmin || scope.accessibleIds.includes(accountId))) {
+      accountIds = [accountId];
+    } else {
+      const accounts = await prisma.zaloAccount.findMany({
+        where: {
+          orgId: userForScope.orgId,
+          status: 'connected',
+          ...(scope.isOrgAdmin ? {} : { id: { in: scope.accessibleIds } }),
+        },
+        select: { id: true },
+      });
+      if (accounts.length === 0) {
+        misses.forEach(uid => { users[uid] = null; });
+        return { users };
+      }
+      accountIds = accounts.map(a => a.id);
     }
-    const accountIds = accounts.map(a => a.id);
 
     await Promise.all(misses.map(async (uid) => {
       const data = await resolveProfile(uid, accountIds);
@@ -391,22 +468,88 @@ export async function zinstantProxyRoutes(app: FastifyInstance): Promise<void> {
     return reply.header('Cache-Control', 'private, max-age=60').send({ users });
   });
 
-  app.get('/api/v1/zalo-user-info/:uid', async (request: FastifyRequest, reply: FastifyReply) => {
+  // ── POST /api/v1/zalo-user-info/find-by-phone ──────────────────────────────
+  // 2026-06-22 (anh báo UI chat): SĐT trong tin nhắn → bấm để TRA CỨU người dùng Zalo
+  // QUA NICK đang mở hội thoại (findUser: SĐT → UID). Tìm ra UID → FE mở ZaloUserInfoDialog
+  // (đã hiển thị full info + Contact CRM). Thủ công 1 SĐT / 1 click (giống nút "Tìm Zalo"
+  // Lead Pool) nên KHÔNG vi phạm cấm auto-quét SĐT của Zalo.
+  app.post('/api/v1/zalo-user-info/find-by-phone', { preHandler: authMiddleware }, async (request: FastifyRequest, reply: FastifyReply) => {
+    const user = request.user!;
+    const { phone, accountId } = (request.body ?? {}) as { phone?: string; accountId?: string };
+    if (!phone) return reply.status(400).send({ error: 'phone required' });
+    if (!accountId) return reply.status(400).send({ error: 'accountId required' });
+
+    // Chuẩn hoá → "84xxxxxxxxx" (Zalo findUser nhận số quốc tế, bỏ dấu +). 0xxx → 84xxx.
+    let digits = String(phone).replace(/\D/g, '');
+    if (digits.startsWith('840')) digits = '84' + digits.slice(3);
+    else if (digits.startsWith('0')) digits = '84' + digits.slice(1);
+    if (!/^84\d{9,10}$/.test(digits)) {
+      return reply.status(400).send({ error: 'phone_invalid', detail: 'SĐT không hợp lệ' });
+    }
+
+    // Scope nick: phải thuộc quyền user (chống cross-tenant + nick ngoài quyền) — giống GET :uid.
+    const scope = await getZaloScope(user.id, user.orgId, user.role);
+    const allowed = scope.isOrgAdmin || scope.accessibleIds.includes(accountId);
+    if (!allowed) return reply.status(403).send({ error: 'nick_not_allowed', detail: 'Bạn không có quyền dùng nick này' });
+
+    try {
+      const result = (await zaloOps.findUser(accountId, digits)) as Record<string, unknown> | null;
+      const u = result || {};
+      const uid = String(u.uid || u.userId || '') || null;
+      if (!uid) return reply.send({ found: false });
+      return reply.send({
+        found: true,
+        uid,
+        zaloName: String(u.zaloName || u.displayName || u.display_name || u.zalo_name || '') || null,
+        avatar: String(u.avatar || '') || null,
+      });
+    } catch (err) {
+      logger.warn(`[find-by-phone] nick=${accountId} lookup failed:`, err);
+      return reply.status(502).send({ error: 'zalo_lookup_failed', detail: 'Không tra được Zalo (nick có thể đang offline)' });
+    }
+  });
+
+  // Fix 2026-06-03: cùng bug như batch — thêm preHandler authMiddleware
+  // ── Fix 2026-06-03 (Anh báo): thêm ?force=1 để bypass cache → load SDK
+  //    profile mới nhất, đồng bộ Contact.gender + avatarUrl ngay khi sale
+  //    mở dialog user info ở /chat. Anh chốt: mỗi lần open dialog → refresh
+  //    background → update Contact nếu khác.
+  app.get('/api/v1/zalo-user-info/:uid', { preHandler: authMiddleware }, async (request: FastifyRequest, reply: FastifyReply) => {
     const { uid } = request.params as { uid: string };
+    const { force, accountId } = request.query as { force?: string; accountId?: string };
+    const bypassCache = force === '1' || force === 'true';
     if (!uid) return reply.status(400).send({ error: 'uid required' });
 
     const cached = userInfoCache.get(uid);
-    if (cached && cached.expiresAt > Date.now()) {
+    if (!bypassCache && cached && cached.expiresAt > Date.now()) {
       return reply.header('Cache-Control', 'private, max-age=600').send(cached.data);
     }
 
-    // Thử TẤT CẢ connected accounts đến khi có 1 trả profile.
-    // Lý do: nhiều tài khoản trong cùng group nhưng chỉ 1 số là friend của UID
-    // → account không friend trả empty → trước đó chỉ thử account đầu tiên → 404.
-    const accounts = await prisma.zaloAccount.findMany({
-      where: { status: 'connected' },
-      select: { id: true },
-    });
+    // Phase Zalo Account Mutation Gate 2026-05-27: scope org + accessible (cross-tenant fix)
+    const userForScope = request.user!;
+    const scopeForLookup = await getZaloScope(userForScope.id, userForScope.orgId, userForScope.role);
+
+    // PERF 2026-06-11 (anh báo lag VPS 30-50 nick): UID là PER-NICK (mỗi nick có UID
+    // khác nhau cho cùng người — xem reference_zalo_per_account_uid). Trước đây thử
+    // TẤT CẢ nick connected của org → product 50 nick = 50 lượt gọi Zalo SDK (49 lỗi
+    // "Tham số không hợp lệ") ~538ms mỗi lần mở dialog + đốt quota Zalo. Nếu FE truyền
+    // accountId (nick của hội thoại đang mở) → CHỈ gọi đúng nick đó (~30ms). Fallback
+    // thử-tất-cả chỉ khi KHÔNG có accountId (giữ tương thích các chỗ gọi khác).
+    let accounts: Array<{ id: string }>;
+    if (accountId) {
+      // Chỉ gọi đúng nick — verify nick thuộc scope (chống cross-tenant + nick ngoài quyền).
+      const allowed = scopeForLookup.isOrgAdmin || scopeForLookup.accessibleIds.includes(accountId);
+      accounts = allowed ? [{ id: accountId }] : [];
+    } else {
+      accounts = await prisma.zaloAccount.findMany({
+        where: {
+          orgId: userForScope.orgId,
+          status: 'connected',
+          ...(scopeForLookup.isOrgAdmin ? {} : { id: { in: scopeForLookup.accessibleIds } }),
+        },
+        select: { id: true },
+      });
+    }
     if (accounts.length === 0) return reply.status(503).send({ error: 'no connected Zalo account' });
 
     let profile: Record<string, unknown> | null = null;
@@ -426,7 +569,9 @@ export async function zinstantProxyRoutes(app: FastifyInstance): Promise<void> {
           break;
         }
       } catch (err) {
-        logger.warn(`[user-info] account ${acc.id} failed for ${uid}:`, err);
+        // Miss là BÌNH THƯỜNG khi thử nick không sở hữu UID này (per-nick UID) → debug,
+        // không warn (trước đây spam 1000+ dòng/phút khi product nhiều nick).
+        logger.debug(`[user-info] account ${acc.id} miss for ${uid}:`, err);
       }
     }
 
@@ -472,11 +617,76 @@ export async function zinstantProxyRoutes(app: FastifyInstance): Promise<void> {
           pkgId: Number(bizPkgRaw.pkgId ?? 0),
           createdTs: Number(bizPkgRaw.createdTs ?? 0),
         } : null,
-        isEnterpriseAccount: Number(profile.isEnterpriseAccount ?? 0),
+        isExtensionAccount: Number(profile.isExtensionAccount ?? 0),
         oaInfo: profile.oaInfo ?? null,
         oaStatus: profile.oa_status ?? profile.oaStatus ?? null,
       };
       userInfoCache.set(uid, { data, expiresAt: Date.now() + USER_INFO_TTL_MS });
+
+      // ── Fix 2026-06-03 (Anh báo): update Contact gender + avatar nếu khác ──
+      // SDK trả gender: 0=male, 1=female, -1=unknown. Map sang enum Contact.gender.
+      // Update Contact theo zaloUid nếu data SDK mới hơn data DB (gender hoặc avatar khác).
+      // Fire-and-forget, không block response.
+      void (async () => {
+        try {
+          const genderMap: Record<number, 'male' | 'female' | null> = {
+            0: 'male',
+            1: 'female',
+          };
+          const sdkGender = genderMap[data.gender] ?? null;
+          const sdkAvatar = data.avatarBig || data.avatar || null;
+          const sdkZaloName = data.zaloName || null;
+
+          // FIX #1 (2026-06-18, anh báo gender bị ép sai): tra contact theo zaloGlobalId
+          // (ID canonical XUYÊN NICK) thay vì zaloUid=uid (per-nick → click qua nick khác là
+          // TRẬT, fix không vào đúng KH → F5 lại về giá trị cũ). Fallback zaloUid khi thiếu globalId.
+          const gid = data.globalId && data.globalId !== 'undefined' ? data.globalId : null;
+          const contact = await prisma.contact.findFirst({
+            where: gid
+              ? { orgId: userForScope.orgId, zaloGlobalId: gid }
+              : { orgId: userForScope.orgId, zaloUid: uid },
+            // FIX 2026-06-03: Contact dùng `zaloUsername` (zalo_username), KHÔNG có
+            // cột `zaloName` → typecheck fail + cập nhật tên Zalo từ SDK âm thầm hỏng.
+            select: { id: true, gender: true, genderLocked: true, avatarUrl: true, zaloUsername: true },
+          });
+          if (!contact) return;
+
+          const updateData: Record<string, unknown> = {};
+          // FIX #2 (2026-06-18): KHÔNG đè gender nếu đã KHOÁ (sale chỉnh tay) → chống ghi đè ngược.
+          if (sdkGender && !contact.genderLocked && contact.gender !== sdkGender) updateData.gender = sdkGender;
+          if (sdkAvatar && contact.avatarUrl !== sdkAvatar) updateData.avatarUrl = sdkAvatar;
+          if (sdkZaloName && contact.zaloUsername !== sdkZaloName) updateData.zaloUsername = sdkZaloName;
+
+          if (Object.keys(updateData).length > 0) {
+            await prisma.contact.update({
+              where: { id: contact.id },
+              data: updateData,
+            });
+            logger.info(`[user-info] refresh updated Contact ${contact.id} fields: ${Object.keys(updateData).join(',')}`);
+          }
+
+          // Fix 2026-06-16 (anh báo avatar/tên KH lệch SDK): persist luôn Friend per-nick
+          // (zaloAvatarUrl/zaloDisplayName). Header chat đọc fallback từ field này, và sau
+          // reload list lấy lại từ DB → trước đây chỉ update Contact nên vẫn lệch. Chỉ
+          // update khi có accountId (nick đang xem, đã verify scope ở trên) để target đúng
+          // cặp nick × UID per-nick (zaloUidInNick = uid).
+          if (accountId && (sdkAvatar || sdkZaloName)) {
+            const friendPatch: Record<string, unknown> = {};
+            if (sdkAvatar) friendPatch.zaloAvatarUrl = sdkAvatar;
+            if (sdkZaloName) friendPatch.zaloDisplayName = sdkZaloName;
+            const fr = await prisma.friend.updateMany({
+              where: { zaloAccountId: accountId, zaloUidInNick: uid },
+              data: friendPatch,
+            });
+            if (fr.count > 0) {
+              logger.info(`[user-info] refresh updated Friend (nick ${accountId} uid ${uid}) fields: ${Object.keys(friendPatch).join(',')}`);
+            }
+          }
+        } catch (updateErr) {
+          logger.warn(`[user-info] Contact refresh update failed for ${uid}:`, updateErr);
+        }
+      })();
+
       return reply.header('Cache-Control', 'private, max-age=600').send(data);
     } catch (err) {
       logger.warn(`[user-info] fetch error for ${uid}:`, err);

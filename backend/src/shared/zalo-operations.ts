@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * zalo-operations.ts — DRY wrapper for all zca-js API calls.
  * Every Zalo operation goes through this service:
@@ -34,7 +36,10 @@ export type OpCategory =
   | 'group_admin'   // create, rename, avatar, settings, add/remove members, deputy, transfer, block
   | 'group_read'    // list, info, members, polls, invite links, pending
   | 'friend_action' // add, accept, reject, cancel, remove, block, alias
-  | 'friend_read'   // list, find, online, recommendations, sent requests
+  // 2026-06-06 (Anh chốt) — TÁCH friend_read cũ thành 3 nhóm để quota không ăn lẫn:
+  | 'friend_lookup' // findUser (Tìm SĐT→UID — việc của chiến dịch gửi lời mời)
+  | 'contact_sync'  // getAllFriends (đọc/đồng bộ danh bạ — chạy nền khi reconnect)
+  | 'friend_read'   // còn lại: online, recommendations, sent requests, alias list
   | 'profile'       // update name, avatar, status
   | 'query';        // getUserInfo, getGroupInfo — read-only
 
@@ -103,11 +108,41 @@ function isSessionExpiredError(err: any): boolean {
   return SESSION_EXPIRED_PATTERNS.some(p => msg.includes(p));
 }
 
+/**
+ * Lỗi mạng tạm thời (chập chờn) — Zalo server đóng socket khi upload nhiều ảnh
+ * cùng lúc (album 6-7 tấm), hoặc blip mạng. Retry thường thành công.
+ * Bằng chứng: "sendImage failed: TypeError: fetch failed" + "SocketError: other side closed"
+ * + Symbol(undici UND_ERR_SOCKET) khi gửi album 7 ảnh (zca-js Promise.all upload song song).
+ */
+function isTransientNetworkError(err: any): boolean {
+  // undici socket errors mang Symbol UND_ERR — bắt cả ở err và err.cause.
+  const undiciFlag = (e: any) => e && (e[Symbol.for('undici.error.UND_ERR')] === true
+    || Object.getOwnPropertySymbols(e).some((s) => String(s).includes('UND_ERR')));
+  if (undiciFlag(err) || undiciFlag(err?.cause)) return true;
+  const msg = (String(err?.message || '') + ' ' + String(err?.cause?.message || '')).toLowerCase();
+  return (
+    msg.includes('fetch failed') ||
+    msg.includes('other side closed') ||
+    msg.includes('socket') ||
+    msg.includes('econnreset') ||
+    msg.includes('etimedout') ||
+    msg.includes('und_err')
+  );
+}
+
 function isMalformedJsonResponseError(err: any): boolean {
+  // SyntaxError từ V8 JSON.parse có nhiều variant:
+  //   "Unexpected token X in JSON at position Y"
+  //   "Unexpected end of JSON input"
+  //   "No number after minus sign in JSON at position Y"
+  //   "X is not valid JSON" (Node 20+)
+  // → catch theo class hoặc substring "JSON" + position phrase.
+  if (err?.name === 'SyntaxError') return true;
   const msg = String(err?.message || err || '');
   return (
     msg.includes('Unexpected token') ||
     msg.includes('Unexpected end of JSON input') ||
+    msg.includes('in JSON at position') ||
     msg.includes('is not valid JSON')
   );
 }
@@ -146,13 +181,16 @@ async function exec<T>(opts: ExecOptions, fn: (api: any) => Promise<T>): Promise
     throw new ZaloOpError(limit.reason || 'Rate limited', 'RATE_LIMITED', 429);
   }
 
-  // 3. Execute with retry on session expiry
+  // 3. Execute with retry on session expiry + transient network blip.
+  //    MAX_ATTEMPTS=3 để lỗi socket tạm thời (album nhiều ảnh) có cơ hội thử lại.
+  const MAX_ATTEMPTS = 3;
   let lastError: any;
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     try {
       const result = await fn(instance.api);
 
-      // Record successful operation
+      // Record successful operation. (getAllFriends giờ là category 'contact_sync'
+      // nên đã tự đếm vào rl:daily:nick:contact_sync — không cần recordOperation riêng.)
       zaloRateLimiter.recordSend(accountId, category);
 
       // 4. Emit Socket.IO event if configured
@@ -194,7 +232,15 @@ async function exec<T>(opts: ExecOptions, fn: (api: any) => Promise<T>): Promise
         }
       }
 
-      // Non-session error or second attempt — throw
+      // Lỗi mạng tạm thời (socket đứt khi upload album nhiều ảnh) → retry với backoff.
+      if (isTransientNetworkError(err) && attempt < MAX_ATTEMPTS - 1) {
+        const delayMs = 400 * (attempt + 1); // 400ms, 800ms
+        logger.warn(`[zalo-ops:${accountId}] ${operation} lỗi mạng tạm thời (attempt ${attempt + 1}/${MAX_ATTEMPTS}), thử lại sau ${delayMs}ms: ${err?.message ?? err}`);
+        await new Promise((r) => setTimeout(r, delayMs));
+        continue;
+      }
+
+      // Non-session, non-transient error or last attempt — throw
       break;
     }
   }
@@ -233,9 +279,12 @@ async function sendMessage(accountId: string, threadId: string, threadType: 0 | 
     (api) => api.sendMessage(msg, threadId, threadType));
 }
 
-async function sendImage(accountId: string, threadId: string, threadType: 0 | 1, attachments: any[], io?: Server | null) {
+// 2026-06-12 FIX: thêm `msg` (kể cả '') vào payload. zca-js sendMessage.cjs:445 đọc
+// `msg.length` → thiếu msg = crash undefined. Có msg + attachments là local path CÓ ĐUÔI
+// ảnh (.jpg/.png/.webp) → Zalo nhận ẢNH INLINE (không phải file). caption tùy chọn.
+async function sendImage(accountId: string, threadId: string, threadType: 0 | 1, attachments: any[], io?: Server | null, caption: string = '') {
   return exec({ accountId, category: 'message', operation: 'sendImage', io },
-    (api) => api.sendMessage({ attachments }, threadId, threadType));
+    (api) => api.sendMessage({ msg: caption, attachments }, threadId, threadType));
 }
 
 async function sendSticker(
@@ -251,6 +300,30 @@ async function sendSticker(
 async function sendLink(accountId: string, threadId: string, threadType: 0 | 1, link: any) {
   return exec({ accountId, category: 'message', operation: 'sendLink' },
     (api) => api.sendLink(link, threadId, threadType));
+}
+
+// ─── Reminders / Nhắc hẹn (2026-06-16) ──────────────────────────────────────
+// zca-js createReminder/editReminder/removeReminder. type 0=user, 1=group (như threadType).
+// startTime = epoch ms; repeat 0=None,1=Daily,2=Weekly,3=Monthly. Trả ReminderUser có reminderId.
+async function createReminder(
+  accountId: string, threadId: string, threadType: 0 | 1,
+  options: { title: string; startTime?: number; repeat?: number; emoji?: string },
+): Promise<any> {
+  return exec({ accountId, category: 'message', operation: 'createReminder' },
+    (api) => api.createReminder(options, threadId, threadType));
+}
+async function editReminder(
+  accountId: string, threadId: string, threadType: 0 | 1,
+  options: { title: string; topicId: string; startTime?: number; repeat?: number; emoji?: string },
+): Promise<any> {
+  return exec({ accountId, category: 'message', operation: 'editReminder' },
+    (api) => api.editReminder(options, threadId, threadType));
+}
+async function removeReminder(
+  accountId: string, reminderId: string, threadId: string, threadType: 0 | 1,
+): Promise<any> {
+  return exec({ accountId, category: 'message', operation: 'removeReminder' },
+    (api) => api.removeReminder(reminderId, threadId, threadType));
 }
 
 async function sendCard(accountId: string, threadId: string, threadType: 0 | 1, cardData: any) {
@@ -317,8 +390,15 @@ async function sendTypingEvent(accountId: string, threadId: string, threadType: 
 }
 
 async function deleteMessage(accountId: string, msgId: string, cliMsgId: string, ownerId: string, threadId: string, threadType: 0 | 1, onlyMe: boolean) {
+  // FIX 2026-06-18: zca-js deleteMessage nhận OBJECT dest, không phải positional.
+  // Trước đây gọi positional → dest = msgId (string) → lib đọc dest.data.uidFrom của
+  // undefined → 500 "Cannot read properties of undefined (reading 'uidFrom')".
+  // ownerId = uidFrom (uid người gửi). threadType (0 user/1 group) → type.
   return exec({ accountId, category: 'chat_action', operation: 'deleteMessage' },
-    (api) => api.deleteMessage(msgId, cliMsgId, ownerId, threadId, threadType, onlyMe));
+    (api) => api.deleteMessage(
+      { data: { cliMsgId, msgId, uidFrom: ownerId }, threadId, type: threadType },
+      onlyMe,
+    ));
 }
 
 // FIX 2026-05-21: zca-js api.undo(payload, threadId, type) — payload object { msgId, cliMsgId }.
@@ -450,7 +530,8 @@ async function disperseGroup(accountId: string, groupId: string) {
 }
 
 // ─── Group Read ─────────────────────────────────────────────────────────────
-async function getGroupInfo(accountId: string, groupId: string) {
+// zca-js getGroupInfo nhận string HOẶC string[] (batch) → gridInfoMap keyed by id.
+async function getGroupInfo(accountId: string, groupId: string | string[]) {
   return exec({ accountId, category: 'group_read', operation: 'getGroupInfo' },
     (api) => api.getGroupInfo(groupId));
 }
@@ -460,9 +541,11 @@ async function getAllGroups(accountId: string) {
     (api) => api.getAllGroups());
 }
 
-async function getGroupMembersInfo(accountId: string, groupId: string) {
+// LƯU Ý: zca-js getGroupMembersInfo nhận DANH SÁCH UID MEMBER (string|string[]),
+// KHÔNG phải groupId. Lấy uid từ getGroupInfo().memVerList trước khi gọi.
+async function getGroupMembersInfo(accountId: string, memberIds: string | string[]) {
   return exec({ accountId, category: 'group_read', operation: 'getGroupMembersInfo' },
-    (api) => api.getGroupMembersInfo(groupId));
+    (api) => api.getGroupMembersInfo(memberIds as unknown as string));
 }
 
 async function getGroupBlockedMembers(accountId: string, groupId: string) {
@@ -524,12 +607,16 @@ async function sharePoll(accountId: string, pollId: string) {
 
 // ─── Friend Operations ──────────────────────────────────────────────────────
 async function getAllFriends(accountId: string) {
-  return exec({ accountId, category: 'friend_read', operation: 'getAllFriends' },
+  // 2026-06-06 — đọc/đồng bộ danh bạ: category riêng 'contact_sync' (chạy nền,
+  // KHÔNG ăn quota tìm khách của chiến dịch).
+  return exec({ accountId, category: 'contact_sync', operation: 'getAllFriends' },
     (api) => api.getAllFriends());
 }
 
 async function findUser(accountId: string, query: string) {
-  return exec({ accountId, category: 'friend_read', operation: 'findUser' },
+  // 2026-06-06 — Tìm SĐT→UID: category riêng 'friend_lookup' (việc của chiến dịch
+  // gửi lời mời, tách khỏi đồng bộ danh bạ nền).
+  return exec({ accountId, category: 'friend_lookup', operation: 'findUser' },
     (api) => api.findUser(query));
 }
 
@@ -666,6 +753,11 @@ export const zaloOps = {
   sendLink,
   sendCard,
   sendVoice,
+
+  // Reminders / Nhắc hẹn (2026-06-16)
+  createReminder,
+  editReminder,
+  removeReminder,
   sendVideo,
   sendFile,
   uploadAttachment,

@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <Transition name="panel-slide">
     <div v-if="open" class="panel-backdrop" @click.self="$emit('close')">
@@ -313,8 +315,6 @@ const ACTION_LABELS: Record<string, string> = {
   create: 'Thêm',
   edit: 'Sửa',
   delete: 'Xóa',
-  approve: 'Duyệt',
-  pay: 'TT',
   view_all: 'Xem all',
 };
 function actionLabel(a: string) {
@@ -338,6 +338,8 @@ const RESOURCE_LABELS: Record<string, string> = {
   engagement_score: 'Engagement / Score',
   audit_log: 'Audit Log',
   settings: 'Cài đặt',
+  care_session: 'Phiên chăm sóc',
+  media: 'Kho phương tiện',
 };
 function resourceLabel(r: string) {
   return RESOURCE_LABELS[r] ?? r;

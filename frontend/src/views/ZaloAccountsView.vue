@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <div class="za-page">
     <!-- TOP BAR -->
@@ -24,7 +26,8 @@
       </div>
     </div>
 
-    <!-- Phase Privacy v2 2026-05-23 — Tab strip: Quản lý nick / Riêng tư -->
+    <!-- Phase Privacy v2 2026-05-23 — Tab strip: Quản lý nick / Riêng tư
+         Phase Internal Contact 2-method 2026-05-23 — thêm tab "🏠 Liên lạc nội bộ" top-level -->
     <div class="za-tabs">
       <button
         class="za-tab"
@@ -33,7 +36,9 @@
       >
         Quản lý nick
       </button>
+      <!-- Open-core: tab "Riêng tư" chỉ hiện ở bản Extension; Community ẩn (code vẫn ở source). -->
       <button
+        v-if="isExtension"
         class="za-tab"
         :class="{ active: activeTab === 'privacy' }"
         @click="setTab('privacy')"
@@ -43,10 +48,61 @@
           ({{ privacyCounter.used }}/{{ privacyCounter.max }})
         </span>
       </button>
+      <!-- T13 2026-06-21: tab "Nick đã xóa" — xem/khôi phục/dọn nick đã ẩn. -->
+      <button
+        class="za-tab"
+        :class="{ active: activeTab === 'archived' }"
+        @click="setTab('archived')"
+      >
+        🗑 Nick đã xóa
+      </button>
+      <!-- GỠ 2026-06-10 (CEO-review): tab "Sửa nick nhận thông báo" (setup thủ công)
+           đã bỏ — gây bug gửi nhầm UID. Nick nhận giờ chỉ đến từ luồng tạo user bằng SĐT
+           + Check Live ở trang Thông báo hệ thống. Ẩn nút, không cho vào tab. -->
+      <button
+        v-if="false"
+        class="za-tab"
+        :class="{ active: activeTab === 'internal-contact' }"
+        @click="setTab('internal-contact')"
+      >
+        🏠 Sửa nick nhận thông báo
+      </button>
     </div>
 
     <!-- Tab content: manage (default) -->
     <template v-if="activeTab === 'manage'">
+    <!-- Sub-tab Đơn giản (grid card, sale) / Nâng cao (bảng, admin) — Anh chốt 2026-06-09 -->
+    <div class="za-subtabs">
+      <button class="za-subtab" :class="{ active: viewMode === 'simple' }" @click="viewMode = 'simple'">
+        <v-icon size="15">mdi-view-grid-outline</v-icon> Đơn giản
+      </button>
+      <button class="za-subtab" :class="{ active: viewMode === 'advanced' }" @click="viewMode = 'advanced'">
+        <v-icon size="15">mdi-table</v-icon> Nâng cao
+      </button>
+    </div>
+
+    <!-- ===== TAB ĐƠN GIẢN: grid card ===== -->
+    <template v-if="viewMode === 'simple'">
+      <!-- Mục 1 (2026-06-11): chuyển nhóm theo trạng thái ↔ theo người dùng -->
+      <div class="za-groupby">
+        <span class="za-groupby-lbl">Nhóm theo:</span>
+        <button class="za-groupby-opt" :class="{ active: simpleGroupBy === 'status' }" @click="simpleGroupBy = 'status'">Trạng thái</button>
+        <button class="za-groupby-opt" :class="{ active: simpleGroupBy === 'owner' }" @click="simpleGroupBy = 'owner'">Người dùng</button>
+      </div>
+      <NickGridCards
+        :accounts="visibleAccounts"
+        :reconnecting-ids="reconnectingIds"
+        :group-by="simpleGroupBy"
+        @reconnect="onCardReconnect"
+        @delete="onConfirmDelete"
+        @disconnect="onCardDisconnect"
+        @open-detail="openDrawer"
+        @add="openAddDialog"
+      />
+    </template>
+
+    <!-- ===== TAB NÂNG CAO: bảng đầy đủ ===== -->
+    <template v-else>
     <!-- STATS CARDS -->
     <StatsCards :stats="stats" />
 
@@ -62,40 +118,11 @@
         <option value="idle">Idle</option>
         <option value="error">Error / Disconnected</option>
       </select>
-      <!-- Phòng ban filter (multi-select) — Phase 4 2026-05-22 -->
-      <div class="chip-multi" :class="{ open: showDeptPicker }">
-        <button class="chip-btn" type="button" @click.stop="showDeptPicker = !showDeptPicker">
-          <span>Phòng ban</span>
-          <span v-if="deptFilter.length" class="chip-count">{{ deptFilter.length }}</span>
-          <span class="chip-caret">▾</span>
-        </button>
-        <div v-if="showDeptPicker" class="chip-pop" @click.stop>
-          <div class="chip-pop-head">
-            <span>Lọc theo phòng ban (cascade)</span>
-            <button v-if="deptFilter.length" class="chip-clear" @click="deptFilter = []">Bỏ tất cả</button>
-          </div>
-          <div class="chip-pop-list">
-            <label
-              v-for="d in deptFlatOptions"
-              :key="d.id"
-              class="chip-pop-row"
-              :style="{ paddingLeft: 10 + d.depth * 14 + 'px' }"
-            >
-              <input type="checkbox" :value="d.id" v-model="deptFilter" />
-              <span>{{ d.name }}</span>
-            </label>
-            <div v-if="!deptFlatOptions.length" class="chip-pop-empty">Chưa có phòng ban</div>
-          </div>
-        </div>
-      </div>
+      <!-- 2026-06-09: BỎ filter Phòng ban (nick không gắn phòng ban, chỉ Owner + Sale hỗ trợ). -->
       <select v-model="saleFilter" class="select">
         <option value="">Owner: Tất cả</option>
         <option v-for="u in ownerOptions" :key="u.id" :value="u.id">{{ u.fullName || u.email }}</option>
       </select>
-      <label class="toggle-group">
-        <input type="checkbox" v-model="groupByDept" />
-        <span>Group theo phòng ban</span>
-      </label>
       <select v-model="sortMode" class="select select-sort">
         <option value="recent">Sort: Hoạt động mới</option>
         <option value="msg-desc">Sort: Msg today (nhiều→ít)</option>
@@ -116,10 +143,16 @@
       :relative-time="relativeTime"
       :status-label="statusLabel"
       :uptime-color="uptimeColor"
+      :limit-for="limitFor"
       @open-detail="openDrawer"
       @action="onTableAction"
       @reassign-owner="onOpenReassign"
     />
+    </template>
+    <!-- /viewMode advanced -->
+
+    <!-- 2026-06-18 — Dialog cài đặt trần SDK đã DỜI sang Cài đặt › Kênh & Tự động ›
+         "Trần an toàn SDK Zalo" (chỉ admin). Trang này GIỮ cột usage (loadSdkLimits đọc để hiện). -->
 
     <!-- Phase 4 2026-05-22: Owner reassign drawer -->
     <OwnerReassignDrawer
@@ -135,6 +168,26 @@
       <PrivacyNicksTab />
     </template>
 
+    <!-- Tab content: internal-contact (Phase Internal Contact 2-method 2026-05-23)
+         Phase user-create-with-zalo 2026-05-27: ADMIN ONLY (sale không sửa nick nhận thông báo,
+         admin sẽ sửa cho sale khi cần). Gate ở tab button + safeguard fallback nếu URL hack. -->
+    <template v-else-if="activeTab === 'internal-contact' && canManageZalo">
+      <InternalContactSetupPage />
+    </template>
+    <template v-else-if="activeTab === 'internal-contact' && !canManageZalo">
+      <div class="za-locked-tab">
+        <div class="za-locked-icon">🔒</div>
+        <h3>Chỉ admin có quyền sửa nick nhận thông báo</h3>
+        <p>Liên hệ admin để cập nhật. Sale không được tự sửa để tránh sai thông tin nhận login + thông báo hệ thống.</p>
+        <button class="btn-primary" @click="setTab('manage')">← Quay lại Quản lý nick</button>
+      </div>
+    </template>
+
+    <!-- T13 2026-06-21: tab Nick đã xóa -->
+    <template v-else-if="activeTab === 'archived'">
+      <ArchivedNicksPanel @changed="refreshAll" />
+    </template>
+
     <!-- DETAIL DRAWER -->
     <AccountDetailDrawer
       v-model="drawerOpen"
@@ -143,10 +196,12 @@
       :relative-time="relativeTime"
       :status-label="statusLabel"
       :uptime-color="uptimeColor"
+      :limit-for="limitFor"
       @add-crew="onAddCrew"
       @remove-crew="onRemoveCrew"
       @action="onDrawerAction"
       @reassign-owner="onOpenReassign"
+      @refresh="refreshAll"
     />
 
     <!-- BULK ACTION BAR -->
@@ -157,75 +212,32 @@
       @clear="clearSelection"
     />
 
-    <!-- ADD ACCOUNT DIALOG -->
-    <div v-if="showAddDialog" class="modal-backdrop" @click.self="showAddDialog = false">
-      <div class="modal">
-        <div class="modal-head">
-          <h3>Kết nối nick Zalo mới</h3>
-          <button class="x-btn" @click="showAddDialog = false">✕</button>
-        </div>
-        <div class="modal-body">
-          <div class="field">
-            <label>Tên hiển thị</label>
-            <input v-model="newAccountName" placeholder="VD: Sale Hùng — Vinhomes" />
-          </div>
-          <div class="field">
-            <label>Proxy URL (tùy chọn)</label>
-            <input v-model="newAccountProxy" placeholder="http://user:pass@host:port" />
-            <div class="hint">Để trống nếu kết nối Zalo trực tiếp qua internet</div>
-          </div>
-        </div>
-        <div class="modal-foot">
-          <button class="btn" @click="closeAddDialog">Huỷ</button>
-          <button class="btn btn-primary" :disabled="adding" @click="handleAddAccount">
-            {{ adding ? 'Đang tạo...' : 'Tạo + Quét QR' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- QR CODE DIALOG (reuse từ composable QR socket flow) -->
-    <div v-if="showQRDialog" class="modal-backdrop">
-      <div class="modal modal-qr">
-        <div class="modal-head">
-          <h3>Quét QR để đăng nhập Zalo</h3>
-        </div>
-        <div class="modal-body text-center">
-          <div v-if="qrImage" class="qr-img-wrap">
-            <img :src="'data:image/png;base64,' + qrImage" alt="QR" />
-            <div class="qr-step active"><span class="n">1</span> Mở app Zalo trên điện thoại</div>
-            <div class="qr-step"><span class="n">2</span> Cài đặt → Quản lý thiết bị → Quét QR</div>
-            <div class="qr-step"><span class="n">3</span> Đợi xác thực hoàn tất</div>
-          </div>
-          <div v-else-if="qrScanned" class="qr-scanned">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-            <p>Đã quét! Xác nhận trên điện thoại…</p>
-            <p v-if="scannedName" class="muted">{{ scannedName }}</p>
-          </div>
-          <div v-else>
-            <div class="loading-spinner"></div>
-            <p>Đang tạo QR code…</p>
-          </div>
-          <div v-if="qrError" class="error-text">{{ qrError }}</div>
-        </div>
-        <div class="modal-foot">
-          <button class="btn" @click="cancelQR">Đóng</button>
-        </div>
-      </div>
-    </div>
+    <!-- KẾT NỐI NICK — wizard 4 bước (Anh chốt 2026-06-09): SĐT→Check→xác nhận→QR→chúc mừng -->
+    <ConnectNickWizard
+      v-if="wizardOpen"
+      v-model:step="wizardStep"
+      :qr-image="qrImage"
+      :qr-scanned="qrScanned"
+      :scanned-name="scannedName"
+      :qr-error="qrError"
+      :qr-session-dead="qrSessionDead"
+      :sale-name="saleShortName"
+      :connected-nick-name="connectedNickName"
+      @checked="onWizardChecked"
+      @confirm-connect="onWizardConfirmConnect"
+      @reconnect-existing="onWizardReconnectExisting"
+      @rescan-existing="onWizardRescanExisting"
+      @retry-qr="onWizardRetryQr"
+      @close="closeWizard"
+    />
 
     <!-- DELETE CONFIRM -->
     <div v-if="showDeleteDialog" class="modal-backdrop" @click.self="showDeleteDialog = false">
       <div class="modal">
-        <div class="modal-head"><h3>Xoá nick khỏi CRM</h3></div>
+        <div class="modal-head"><h3>Xoá nick</h3></div>
         <div class="modal-body">
           <p>Xoá nick "<b>{{ deleteTarget?.displayName || deleteTarget?.zaloUid || deleteTarget?.id }}</b>" khỏi quản lý?</p>
-          <p class="hint">Nick sẽ bị ẩn khỏi danh sách. Nếu kết nối lại Zalo vào nick này, toàn bộ dữ liệu CRM sẽ hiện lại.</p>
-          <label class="purge-check">
-            <input type="checkbox" v-model="deletePurge" />
-            <span>Xoá toàn bộ dữ liệu của nick Zalo này và không hoàn tác</span>
-          </label>
-          <p v-if="deletePurge" class="hint hint-danger">Nếu kết nối lại Zalo, sẽ tạo một nick CRM mới với dữ liệu CRM mới.</p>
+          <div class="hint">Nick sẽ bị ẩn nhưng GIỮ toàn bộ tin nhắn (xem lại được). Kết nối lại đúng nick này sẽ tự khôi phục.</div>
         </div>
         <div class="modal-foot">
           <button class="btn" @click="showDeleteDialog = false">Huỷ</button>
@@ -235,7 +247,6 @@
         </div>
       </div>
     </div>
-
 
     <!-- ACCESS DIALOG (reuse existing) -->
     <ZaloAccessDialog
@@ -248,24 +259,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onUnmounted } from 'vue';
+import { ref, onMounted, computed, onUnmounted, watch } from 'vue';
 import { useZaloAccountsDashboard } from '@/composables/use-zalo-accounts-dashboard';
-import { useToast } from '@/composables/use-toast';
 import StatsCards from '@/components/zalo-accounts/StatsCards.vue';
 import AccountsTable from '@/components/zalo-accounts/AccountsTable.vue';
+// SdkLimitsDialog dời sang trang Cài đặt SdkLimitsSettingsPage (2026-06-18) — ko import ở đây nữa.
 import AccountDetailDrawer from '@/components/zalo-accounts/AccountDetailDrawer.vue';
+import ArchivedNicksPanel from '@/components/zalo-accounts/ArchivedNicksPanel.vue';
 import BulkActionBar from '@/components/zalo-accounts/BulkActionBar.vue';
 import OwnerReassignDrawer from '@/components/zalo-accounts/OwnerReassignDrawer.vue';
+import NickGridCards from '@/components/zalo-accounts/NickGridCards.vue';
+import ConnectNickWizard from '@/components/zalo-accounts/ConnectNickWizard.vue';
 import PrivacyNicksTab from '@/components/zalo-accounts/PrivacyNicksTab.vue';
+// Open-core: edition flag (true in Extension, false in Community). Privacy code
+// stays in the Community source — only the tab is hidden via this flag.
+import { isExtension } from '@ee/edition';
+import InternalContactSetupPage from '@/components/zalo-accounts/InternalContactSetupPage.vue';
 import ZaloAccessDialog from '@/components/settings/ZaloAccessDialog.vue';
 import { api } from '@/api/index';
 import { useRoute, useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+import { useToast } from '@/composables/use-toast';
+import { useConfirm } from '@/composables/use-confirm';
 import type { EnrichedAccount } from '@/composables/use-zalo-accounts-dashboard';
 
 const dash = useZaloAccountsDashboard();
 const {
   // dashboard data
-  stats, filtered, loadingStats, loadingEnriched,
+  stats, enriched, filtered, loadingStats, loadingEnriched,
   // filters
   search, statusFilter, saleFilter, sortMode,
   // selection
@@ -279,26 +300,44 @@ const {
   // helpers
   relativeTime, statusLabel, uptimeColor,
   // QR/socket from base composable
-  showQRDialog, qrImage, qrScanned, scannedName, qrError,
-  adding, deleting,
-  addAccount, loginAccount, reconnectAccount,
+  showQRDialog, qrImage, qrScanned, scannedName, qrError, qrSessionDead, duplicateInfo,
+  currentLoginAccountId,
+  deleting,
+  addAccount, loginAccount, deleteAccount,
   cancelQR, setupSocket,
 } = dash;
 
+// 2026-06-06 — Trần SDK: load org default + nick override để vẽ thanh quota X/cap.
+// showSdkLimits bỏ (dialog dời sang Cài đặt). Giữ sdkOrgLimits/sdkNickOverrides để hiện cột usage.
+const sdkOrgLimits = ref<Record<string, { daily: number }>>({});
+const sdkNickOverrides = ref<Record<string, Record<string, { daily: number }>>>({});
+async function loadSdkLimits() {
+  try {
+    const { data } = await api.get('/zalo-accounts/sdk-limits');
+    sdkOrgLimits.value = data.orgDefault ?? {};
+    sdkNickOverrides.value = data.nickOverrides ?? {};
+  } catch { /* non-fatal: bảng vẫn hiển thị, cap = 0 */ }
+}
+// limitFor: trần hiệu lực 1 nick + category (ưu tiên nick override → org default → 0).
+function limitFor(nickId: string, category: string): number {
+  return sdkNickOverrides.value[nickId]?.[category]?.daily
+    ?? sdkOrgLimits.value[category]?.daily
+    ?? 0;
+}
+
 // Local UI state
-const showAddDialog = ref(false);
-const newAccountName = ref('');
-const newAccountProxy = ref('');
+// 2026-06-09: sub-tab Đơn giản (grid card sale) / Nâng cao (bảng admin). Mặc định Đơn giản.
+const viewMode = ref<'simple' | 'advanced'>('simple');
+// Mục 1 (2026-06-11): nhóm grid card theo trạng thái (mặc định) hoặc theo người dùng.
+const simpleGroupBy = ref<'status' | 'owner'>('status');
+// Wizard kết nối 4 bước (thay 2 dialog Add+QR cũ).
+const wizardOpen = ref(false);
+const wizardStep = ref<'phone' | 'confirm' | 'qr' | 'done'>('phone');
+const wizardPhone = ref('');
+const connectedNickName = ref<string | null>(null);
 const showDeleteDialog = ref(false);
 const deleteTargetId = ref<string | null>(null);
-const deletePurge = ref(false);
 const bulkLoading = ref(false);
-const _toast = useToast();
-function showToast(text: string, type: 'success' | 'error' | 'warning' = 'success') {
-  if (type === 'success') _toast.success(text);
-  else if (type === 'error') _toast.error(text);
-  else _toast.warning(text);
-}
 const lastRefresh = ref(new Date());
 
 const showAccessDialog = ref(false);
@@ -312,12 +351,43 @@ const lastRefreshLabel = computed(() => relativeTime(lastRefresh.value.toISOStri
 // Phase Privacy v2 2026-05-23 — Tab strip state + URL sync
 const route = useRoute();
 const router = useRouter();
-type TabKey = 'manage' | 'privacy';
-const activeTab = ref<TabKey>((route.query.tab as TabKey) === 'privacy' ? 'privacy' : 'manage');
+const authStore = useAuthStore();
+const toast = useToast();
+const { confirm } = useConfirm();
+const reconnectingIds = ref<Set<string>>(new Set());
+// RBAC 2026-06-08 — quản lý nick + sửa liên lạc nội bộ của sale theo grants 'zalo_account.edit'
+// (owner/admin tự bypass). Thay cho check legacy role.
+const canManageZalo = computed(() => authStore.canAccess('zalo_account', 'edit'));
+// GỠ 2026-06-10 (CEO-review): bỏ 'internal-contact' khỏi tab hợp lệ — URL hack
+// ?tab=internal-contact sẽ rơi về 'manage'. Cơ chế setup thủ công đã gỡ.
+type TabKey = 'manage' | 'privacy' | 'internal-contact' | 'archived';
+// Community edition: 'privacy' not a valid tab → ?tab=privacy falls back to 'manage'.
+const VALID_TABS: TabKey[] = isExtension ? ['manage', 'privacy'] : ['manage'];
+const activeTab = ref<TabKey>(VALID_TABS.includes(route.query.tab as TabKey) ? (route.query.tab as TabKey) : 'manage');
 function setTab(t: TabKey) {
   activeTab.value = t;
   router.replace({ query: { ...route.query, tab: t === 'manage' ? undefined : t } });
   if (t === 'privacy') loadPrivacyCounter();
+  if (t === 'internal-contact') loadInternalContactBadge();
+}
+
+// Phase Internal Contact 2-method 2026-05-23 — badge "Chưa setup" / "✓" trên tab
+const internalContactBadge = ref<string>('');
+const internalContactReady = ref(false);
+async function loadInternalContactBadge() {
+  try {
+    const { data } = await api.get('/me/internal-contact');
+    if (data.recipient?.status === 'ready') {
+      internalContactBadge.value = '✓';
+      internalContactReady.value = true;
+    } else if (data.method) {
+      internalContactBadge.value = 'pending';
+      internalContactReady.value = false;
+    } else {
+      internalContactBadge.value = '!';
+      internalContactReady.value = false;
+    }
+  } catch { /* silent */ }
 }
 
 // Counter (N/max) hiển thị trên tab "Riêng tư"
@@ -440,39 +510,183 @@ async function onRefresh() {
   lastRefresh.value = new Date();
 }
 
+// ── Wizard kết nối 4 bước (2026-06-09) ──
+// Tên sale ngắn (last word) cho màn chúc mừng.
+const saleShortName = computed(() => {
+  const f = authStore.user?.fullName?.trim();
+  return f ? (f.split(/\s+/).pop() || f) : 'Bạn';
+});
+
 function openAddDialog() {
-  newAccountName.value = '';
-  newAccountProxy.value = '';
-  showAddDialog.value = true;
+  wizardStep.value = 'phone';
+  wizardPhone.value = '';
+  connectedNickName.value = null;
+  reviveAccountId.value = null; // T2: reset cờ revive mỗi lần mở wizard fresh
+  wizardOpen.value = true;
 }
-function closeAddDialog() {
-  showAddDialog.value = false;
+function closeWizard() {
+  wizardOpen.value = false;
+  cancelQR(); // hủy phiên QR đang chờ (tránh nick treo qr_pending rác)
 }
 
-async function handleAddAccount() {
-  const ok = await addAccount(newAccountName.value, newAccountProxy.value);
-  if (ok) {
-    showAddDialog.value = false;
+// T2 2026-06-20: id nick ĐÃ XÓA của chính mình khớp UID (BE check-phone trả reviveAccountId).
+// → login THẲNG trên record cũ (revive) thay vì tạo nick mới ở bước Xác nhận.
+const reviveAccountId = ref<string | null>(null);
+
+// B1→B2: wizard đã gọi check-phone, lưu phone.
+function onWizardChecked(payload: { phone: string; info: any }) {
+  wizardPhone.value = payload.phone;
+  reviveAccountId.value = payload.info?.reviveAccountId ?? null;
+  if (payload.info?.found && payload.info?.info?.displayName) {
+    connectedNickName.value = payload.info.info.displayName;
+  }
+}
+
+// B2→B3: sale xác nhận → tạo nick (gửi kèm SĐT để BE check trùng owner) + login QR.
+async function onWizardConfirmConnect() {
+  wizardStep.value = 'qr';
+  // T2 2026-06-20: nick ĐÃ XÓA của chính mình khớp UID → login THẲNG trên record cũ (revive),
+  // KHÔNG tạo nick mới (giữ uid + toàn bộ tin nhắn cũ).
+  if (reviveAccountId.value) {
+    await loginAccount(reviveAccountId.value);
+    return;
+  }
+  // displayName/proxy để trống — lấy tên thật sau QR. phone giúp BE chặn trùng (fix ①).
+  const res = await addAccount('', undefined, wizardPhone.value);
+  if (!res.ok) {
+    // 409 trùng nick người khác → quay lại confirm, hiện thông báo chặn (fix ①).
+    if (res.code === 'account_owned_by_other') {
+      wizardStep.value = 'confirm';
+      alert(res.message); // box chặn đã hiện ở B2; alert backup nếu sale bỏ qua check
+    } else {
+      wizardStep.value = 'phone';
+      alert(res.message || 'Không tạo được nick. Thử lại.');
+    }
+    return;
+  }
+  // Nếu BE trả record cũ (nick của chính mình) → reconnect record đó, không tạo mới.
+  if (res.reused && res.account?.id) {
+    await onWizardReconnectExisting(res.account.id);
+    return;
+  }
+  // Nick mới → trigger QR login. FIX #5 (2026-06-16): dùng THẲNG id BE vừa trả (res.account.id),
+  // KHÔNG fetch list rồi đoán `list[length-1]` (sai nick nếu list sort khác created-asc hoặc 2
+  // sale tạo nick song song → login QR nhầm nick).
+  if (res.account?.id) await loginAccount(res.account.id);
+  else { wizardStep.value = 'phone'; alert('Không lấy được nick vừa tạo. Thử lại.'); }
+}
+
+// Trùng nick CỦA CHÍNH MÌNH → 2026-06-21 (anh chốt): QUÉT QR MỚI thẳng trên record cũ (revive),
+// KHÔNG thử reconnect ngầm bằng session cũ. Lý do: session cũ thường ĐÃ CHẾT → reconnect fire-and-
+// forget trả 200 "đang kết nối" GIẢ → wizard vào "done" ảo mà nick không online. QR luôn chắc chắn.
+async function onWizardReconnectExisting(accountId: string) {
+  connectedNickName.value = wizardPhone.value;
+  wizardStep.value = 'qr';
+  await loginAccount(accountId);
+}
+
+// T2 2026-06-20: nick mình NGẮT THỦ CÔNG / ĐÃ XÓA (phiên cũ đã đóng) → đi THẲNG quét QR mới
+// trên chính record cũ (revive), KHÔNG gọi reconnectAccount (BE skip im lặng nick manual).
+async function onWizardRescanExisting(accountId: string) {
+  connectedNickName.value = wizardPhone.value;
+  wizardStep.value = 'qr';
+  await loginAccount(accountId);
+}
+
+function onWizardRetryQr() {
+  // Tạo QR mới (FRESH phiên) cho nick đang chờ — dùng khi QR hết hiệu lực (qrSessionDead).
+  const id = currentLoginAccountId.value;
+  if (id) loginAccount(id);
+}
+
+// Khi QR dialog đóng lúc wizard đang ở bước QR → CHỈ báo "Hoàn tất" nếu nick THẬT SỰ
+// connected (FIX #1 2026-06-16 — Anh chốt: Hoàn tất phải là nick connected thật, không phải
+// "dialog đóng = xong"). Trước đây bất kỳ lý do nào đóng dialog (QR hết hạn, nick khác connect)
+// đều nhảy 'done' giả. Giờ: refresh danh sách → kiểm nick đang login có liveStatus='connected'
+// + có zaloUid; KHÔNG thì coi như chưa xong (giữ nguyên bước qr / đóng wizard tùy lý do).
+watch(showQRDialog, async (open, was) => {
+  if (!(was && !open && wizardOpen.value && wizardStep.value === 'qr')) return;
+  const loginId = currentLoginAccountId.value;
+  await refreshAll(); // refresh danh sách nick mới nhất trước khi verify
+  // code-review: dùng `enriched` (danh sách GỐC) KHÔNG phải `filtered` — nếu sale đang bật ô
+  // tìm/lọc trạng thái, nick vừa connected có thể bị filter loại → verify false oan → wizard
+  // kẹt ở bước qr dù nick đã online. enriched luôn chứa mọi nick.
+  const acct = enriched.value.find((a: EnrichedAccount) => a.id === loginId);
+  const reallyConnected = !!acct
+    && (acct.liveStatus || acct.status || '').toLowerCase() === 'connected'
+    && !!acct.zaloUid;
+  if (reallyConnected) {
+    if (scannedName.value) connectedNickName.value = scannedName.value;
+    else connectedNickName.value = acct!.displayName ?? connectedNickName.value;
+    wizardStep.value = 'done';
+  }
+  // Nếu CHƯA connected thật: không báo done. Dialog đã đóng do QR hết hạn/lỗi → các handler
+  // riêng (zalo:duplicate→closeWizard, qr-session-dead→giữ bước qr + nút Quét lại) lo phần đó.
+});
+
+// Fix ②: BE báo nick quét trúng zaloUid đã tồn tại (record rác đã bị dọn) → đóng wizard,
+// hiện thông báo tử tế. Người dùng biết rõ vì sao "quét mãi không xong".
+watch(duplicateInfo, (info) => {
+  if (!info) return;
+  closeWizard();
+  alert(info.message);
+  (duplicateInfo as any).value = null; // reset để lần sau còn trigger
+});
+
+// ── Grid card (tab Đơn giản) handlers ──
+function openQrForReconnect(account: any) {
+  wizardStep.value = 'qr';
+  wizardOpen.value = true;
+  connectedNickName.value = account.displayName ?? null;
+  loginAccount(account.id);
+}
+
+async function onCardReconnect(account: any) {
+  // 2026-06-21 (anh chốt): "Kết nối lại" nick ĐÃ NGẮT = QUÉT QR MỚI (mọi lý do). Trước đây nick
+  // passive/disconnected thử reconnect ngầm bằng session cũ → session thường ĐÃ CHẾT → "tự end" /
+  // báo thành công ẢO mà nick không online. Health-check cron vẫn tự reconnect session-còn-sống
+  // ngầm (5 phút/lần); nút thủ công này = QR mới, chắc chắn ra giao diện quét.
+  openQrForReconnect(account);
+}
+function onConfirmDelete(account: any) {
+  // Mở modal xác nhận (giống tab nâng cao). 2026-06-20 (T10): BE bỏ purge — xóa LUÔN là ẩn-mềm
+  // (giữ uid + tin nhắn). Card chỉ cho xóa khi nick ĐÃ NGẮT.
+  deleteTargetId.value = account.id;
+  showDeleteDialog.value = true;
+}
+
+// Grid "Ngắt kết nối" → dùng chung flow disable (bulk-action) như tab nâng cao.
+async function onCardDisconnect(account: any) {
+  // 2026-06-21 (anh chốt): thay confirm() native xấu → dialog HS + GÕ "OK" xác nhận (chống bấm nhầm).
+  if (!(await confirm({
+    title: `Ngắt kết nối "${account.displayName || 'nick'}"?`,
+    message: 'Nick sẽ ngắt khỏi CRM (vẫn giữ tin nhắn). Kết nối lại bằng cách quét QR mới.',
+    tone: 'danger',
+    requireTypedConfirm: 'OK',
+    confirmText: 'Ngắt kết nối',
+    cancelText: 'Hủy',
+  }))) return;
+  try {
+    await api.post('/zalo-accounts/bulk-action', { ids: [account.id], action: 'disable' });
     await refreshAll();
-    // Auto-launch QR for the latest account
-    // The created account is the most recent — find it and trigger login
-    setTimeout(async () => {
-      const list = await api.get('/zalo-accounts');
-      const latest = list.data[list.data.length - 1];
-      if (latest) await loginAccount(latest.id);
-    }, 300);
+  } catch (e: any) {
+    toast.push('Ngắt kết nối thất bại: ' + (e.response?.data?.error || e.message), 'error');
   }
 }
 
 function onTableAction(payload: { account: any; action: 'reconnect' | 'sync' }) {
   if (payload.action === 'reconnect') {
-    if (payload.account.liveStatus !== 'connected') {
-      reconnectAccount(payload.account.id);
+    if (payload.account.liveStatus === 'connected') {
+      // Already connected → trigger sync-history instead as "refresh"
+      api.post(`/zalo-accounts/${payload.account.id}/sync-history`).catch(() => {});
+    } else {
+      // 2026-06-21: mọi nick CHƯA kết nối → quét QR mới (không reconnect ngầm báo ảo).
+      openQrForReconnect(payload.account);
     }
   } else if (payload.action === 'sync') {
     api.post(`/zalo-accounts/${payload.account.id}/sync-contacts`)
-      .then(() => { refreshAll(); showToast('Đồng bộ danh bạ thành công'); })
-      .catch((e) => showToast('Sync thất bại: ' + (e.response?.data?.error || e.message), 'error'));
+      .then(() => refreshAll())
+      .catch((e) => alert('Sync thất bại: ' + (e.response?.data?.error || e.message)));
   }
 }
 
@@ -483,18 +697,28 @@ async function onDrawerAction(payload: { accountId: string; action: string }) {
       case 'sync-contacts':
         await api.post(`/zalo-accounts/${id}/sync-contacts`);
         await refreshAll();
-        showToast('Đồng bộ danh bạ thành công');
+        toast.push('Đồng bộ danh bạ thành công', 'success');
         break;
       case 'sync-history':
         await api.post(`/zalo-accounts/${id}/sync-history`);
-        showToast('Đồng bộ lịch sử chat thành công');
+        toast.push('Đồng bộ lịch sử chat thành công', 'success');
         break;
-      case 'reconnect':
-        await reconnectAccount(id);
+      case 'reconnect': {
+        // 2026-06-21: "Kết nối lại" = quét QR mới (không reconnect ngầm báo ảo).
+        const acct = filtered.value.find((a) => a.id === id);
+        if (acct) openQrForReconnect(acct);
+        else { wizardStep.value = 'qr'; wizardOpen.value = true; await loginAccount(id); }
         break;
-      case 'qr-login':
-        await loginAccount(id);
+      }
+      case 'qr-login': {
+        // 2026-06-11 FIX: mở wizard ở bước QR (ConnectNickWizard render qrImage) thay vì
+        // loginAccount trần — trước đây chỉ set showQRDialog (dialog cũ không còn render)
+        // → "bấm QR không nhảy QR". openQrForReconnect set wizardStep='qr' + loginAccount.
+        const acct = filtered.value.find((a) => a.id === id);
+        if (acct) openQrForReconnect(acct);
+        else { wizardStep.value = 'qr'; wizardOpen.value = true; await loginAccount(id); }
         break;
+      }
       case 'edit-proxy':
         // Simple inline prompt — replaces the dedicated proxy dialog for now.
         // eslint-disable-next-line no-alert
@@ -503,19 +727,27 @@ async function onDrawerAction(payload: { accountId: string; action: string }) {
         await api.put(`/zalo-accounts/${id}/proxy`, { proxyUrl: url.trim() || null });
         await refreshAll();
         break;
-      case 'disconnect':
-        // eslint-disable-next-line no-alert
-        if (!window.confirm('Ngắt kết nối nick này?')) return;
+      case 'disconnect': {
+        if (!(await confirm({
+          title: 'Ngắt kết nối nick?',
+          message: 'Nick sẽ ngắt khỏi CRM (vẫn giữ tin nhắn). Kết nối lại bằng quét QR mới.',
+          tone: 'danger',
+          requireTypedConfirm: 'OK',
+          confirmText: 'Ngắt kết nối',
+          cancelText: 'Hủy',
+        }))) return;
         await api.post('/zalo-accounts/bulk-action', { ids: [id], action: 'disable' });
         await refreshAll();
+        toast.push('Đã ngắt kết nối nick', 'success');
         break;
+      }
       case 'delete':
         deleteTargetId.value = id;
         showDeleteDialog.value = true;
         break;
     }
   } catch (e: any) {
-    showToast('Lỗi: ' + (e.response?.data?.error || e.message), 'error');
+    toast.push('Lỗi: ' + (e.response?.data?.error || e.message), 'error');
   }
 }
 
@@ -527,8 +759,7 @@ function onAddCrew(accountId: string) {
 }
 
 async function onRemoveCrew(payload: { accountId: string; accessId: string }) {
-  // eslint-disable-next-line no-alert
-  if (!window.confirm('Bỏ gán sale này?')) return;
+  if (!(await confirm({ title: 'Bỏ gán sale này?', tone: 'danger', confirmText: 'Bỏ gán', cancelText: 'Hủy' }))) return;
   try {
     await api.delete(`/zalo-accounts/${payload.accountId}/access/${payload.accessId}`);
     await refreshAll();
@@ -544,8 +775,14 @@ function onAccessDialogClose() {
 
 async function onBulkAction(action: 'reconnect' | 'sync-contacts' | 'disable') {
   if (action === 'disable') {
-    // eslint-disable-next-line no-alert
-    if (!window.confirm(`Disable ${selectedCount.value} nick? Status sẽ chuyển sang disconnected.`)) return;
+    if (!(await confirm({
+      title: `Ngắt kết nối ${selectedCount.value} nick?`,
+      message: 'Các nick chọn sẽ chuyển sang ngắt kết nối (vẫn giữ tin nhắn).',
+      tone: 'danger',
+      requireTypedConfirm: 'OK',
+      confirmText: 'Ngắt kết nối',
+      cancelText: 'Hủy',
+    }))) return;
   }
   bulkLoading.value = true;
   try {
@@ -561,17 +798,15 @@ async function onBulkAction(action: 'reconnect' | 'sync-contacts' | 'disable') {
 
 async function handleDelete() {
   if (!deleteTarget.value) return;
-  try {
-    const purge = deletePurge.value;
-    await api.delete(`/zalo-accounts/${deleteTarget.value.id}${purge ? '?purge=true' : ''}`);
+  const ok = await deleteAccount(deleteTarget.value as any);
+  if (ok) {
     showDeleteDialog.value = false;
     deleteTargetId.value = null;
-    deletePurge.value = false;
-    drawerOpen.value = false;
-    showToast(purge ? 'Đã xoá nick và dữ liệu' : 'Đã ẩn nick khỏi quản lý');
+    drawerOpen.value = false; // 2026-06-11: đóng drawer chi tiết sau khi xoá (giống main)
+    toast.push('Đã ẩn nick khỏi quản lý (giữ tin nhắn — kết nối lại sẽ khôi phục)', 'success');
     await refreshAll();
-  } catch (e: any) {
-    showToast('Xoá thất bại: ' + (e.response?.data?.error || e.message), 'error');
+  } else {
+    toast.push('Xoá nick thất bại', 'error');
   }
 }
 
@@ -580,7 +815,7 @@ async function handleDelete() {
 // ─────────────────────────────────────────────────────────────────
 onMounted(async () => {
   setupSocket();
-  await Promise.all([refreshAll(), fetchDeptTree(), loadPrivacyCounter()]);
+  await Promise.all([refreshAll(), fetchDeptTree(), loadPrivacyCounter(), loadInternalContactBadge(), loadSdkLimits()]);
   lastRefresh.value = new Date();
 
   // Light polling — refresh stats every 60s while page is open.
@@ -617,6 +852,36 @@ onMounted(async () => {
   font-variant-numeric: tabular-nums;
 }
 .za-tab-counter.full { background: #FEF2F2; color: #B91C1C; }
+
+/* 2026-06-09 — sub-tab Đơn giản / Nâng cao (cấp 2): pill segmented, cùng tông brand Atlas v2. */
+.za-subtabs {
+  display: inline-flex; gap: 3px; padding: 3px;
+  background: #F3F4F6; border-radius: 10px;
+  margin-bottom: 16px;
+}
+.za-subtab {
+  background: transparent; border: none; cursor: pointer;
+  padding: 7px 16px; font-family: inherit; font-size: 13px; font-weight: 600;
+  color: #6B7280; border-radius: 7px;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: color .15s, background .15s, box-shadow .15s;
+}
+.za-subtab:hover { color: #374151; }
+.za-subtab.active {
+  color: #5E6AD2; background: #FFFFFF;
+  box-shadow: 0 1px 2px rgba(16,24,40,.08);
+}
+
+/* Mục 1 — gạt nhóm theo trạng thái / người dùng (atlas v2) */
+.za-groupby { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 14px; }
+.za-groupby-lbl { font-size: 12.5px; color: #6b7280; font-weight: 600; margin-right: 2px; }
+.za-groupby-opt {
+  background: #fff; border: 1px solid #e5e7eb; cursor: pointer;
+  padding: 6px 14px; font-family: inherit; font-size: 12.5px; font-weight: 600;
+  color: #6b7280; border-radius: 8px; transition: all .15s;
+}
+.za-groupby-opt:hover { border-color: #c7d2fe; color: #374151; }
+.za-groupby-opt.active { background: #eef0ff; border-color: #5e6ad2; color: #5e6ad2; }
 
 /* Phase 4 redesign 2026-05-22: filter chip Phòng ban + group-by toggle */
 .chip-multi { position: relative; }
@@ -910,12 +1175,4 @@ onMounted(async () => {
 @keyframes spin {
   to { transform: rotate(360deg) }
 }
-.purge-check {
-  display: flex; align-items: flex-start; gap: 8px;
-  margin-top: 12px; padding: 10px 12px;
-  background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px;
-  cursor: pointer; font-size: 12.5px; color: #991B1B; line-height: 1.4;
-}
-.purge-check input { margin-top: 2px; flex-shrink: 0; }
-.hint-danger { color: #B91C1C; font-weight: 500; margin-top: 8px; }
 </style>

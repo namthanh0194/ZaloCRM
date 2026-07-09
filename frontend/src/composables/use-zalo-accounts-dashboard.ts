@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * Dashboard composable — wraps the existing use-zalo-accounts QR/socket flow
  * and adds the dashboard-specific data: enriched list, team KPI stats,
@@ -25,6 +27,9 @@ export interface EnrichedAccount {
   liveStatus: string;
   hasProxy: boolean;
   lastConnectedAt: string | null;
+  // 2026-06-16: phân biệt ngắt thủ công vs mất kết nối thụ động.
+  disconnectedAt: string | null;                       // mốc mất kết nối (ISO)
+  disconnectReason: 'manual' | 'passive' | null;        // manual=sale ngắt; passive=nick rớt
   createdAt: string;
   owner: { id: string; fullName: string | null; email: string } | null;
   ownerUserId: string | null;
@@ -47,6 +52,10 @@ export interface EnrichedAccount {
   uptime7d: number;
   lastActivityAt: string | null;
   healthAlert: boolean;
+  // 2026-06-06 — SDK counts/ngày (Redis rate-limiter) cho bảng ma trận.
+  sdkCounts?: Record<string, number>;
+  sdkTotal?: number;
+  contactSyncToday?: number;
 }
 
 export interface TeamStats {
@@ -69,14 +78,24 @@ export interface TeamStats {
 export interface NickMetricsToday {
   msgReceivedFromFriends: number;
   msgReceivedFromStrangers: number;
+  msgReceivedTotal: number;
   msgSentByUser: number;
   msgSentByBot: number;
+  msgSentTotal: number;
+  // 2026-06-06 — gửi đi tách bạn/lạ (cap chỉ áp gửi-người-lạ).
+  msgSentToStrangers?: number;
+  msgSentToFriends?: number;
   friendReqSent: number;
   friendReqAccepted: number;
   friendReqRejected: number;
+  // 2026-05-28 split user vs bot
+  friendReqByUser: number;
+  friendReqByBot: number;
   phoneSearchTotal: number;
   phoneSearchFoundZalo: number;
   phoneSearchNoZalo: number;
+  phoneSearchByUser: number;
+  phoneSearchByBot: number;
 }
 
 export interface UptimeBucket {
@@ -95,14 +114,12 @@ export interface BulkActionResult {
 }
 
 export function useZaloAccountsDashboard() {
-  const base = useZaloAccounts();
+  // onStatusChange: khi nick đổi trạng thái qua socket → refresh cả list enriched (grid card)
+  // + stats, để card tự đổi "mất kết nối" → "đang kết nối" mà KHÔNG cần F5. refreshAll là
+  // function declaration (hoisted) nên closure tham chiếu được dù khai báo bên dưới.
+  const base = useZaloAccounts({ onStatusChange: () => { void refreshAll(); } });
 
   const enriched = ref<EnrichedAccount[]>([]);
-
-  base.onStatusChange(() => {
-    fetchStats();
-    fetchEnriched();
-  });
   const stats = ref<TeamStats | null>(null);
   const loadingEnriched = ref(false);
   const loadingStats = ref(false);

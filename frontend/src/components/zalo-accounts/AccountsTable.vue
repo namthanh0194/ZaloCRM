@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <div class="accounts-table-wrap">
     <table class="accounts-table">
@@ -9,12 +11,16 @@
           <th>Nick Zalo</th>
           <th>Trạng thái</th>
           <th>Sale phụ trách (Owner)</th>
-          <th>Phòng ban</th>
           <th>Đội ngũ chia sẻ</th>
-          <th>Msg today</th>
+          <th class="th-sdk">
+            SDK / Giới hạn hôm nay
+            <!-- 2026-06-18: nút "⚙️ Trần" đã dời sang Cài đặt › Kênh & Tự động › "Trần an toàn SDK Zalo"
+                 (chỉ admin). Cột này GIỮ để xem usage; cấu hình trần KHÔNG còn ở đây. -->
+          </th>
+          <th title="Tin nhắn GỬI ĐI cho người lạ hôm nay / giới hạn người lạ. Bạn bè + tin nhận KHÔNG tính.">Gửi người lạ</th>
           <th>Hôm nay <span class="th-hint">📥📤🤖🤝🔍</span></th>
           <th>Hoạt động 7d</th>
-          <th>Hoạt động cuối</th>
+          <th>Kết nối / Hoạt động</th>
           <th class="th-actions">Action</th>
         </tr>
       </thead>
@@ -22,7 +28,7 @@
         <template v-for="group in rowGroups" :key="group.key">
           <!-- Group header (chỉ hiện khi groupByDept=true) -->
           <tr v-if="groupByDept && group.label" class="group-row">
-            <td colspan="10">
+            <td colspan="12">
               <div class="group-head">
                 <span class="group-name">{{ group.label }}</span>
                 <span class="group-count">{{ group.accounts.length }} nick</span>
@@ -105,15 +111,6 @@
             <span v-else class="muted-italic">Chưa có owner</span>
           </td>
           <td>
-            <!-- Phòng ban của owner — Phase 4 2026-05-22 -->
-            <div v-if="acct.ownerDepartment" class="dept-cell">
-              <span class="dept-name">{{ acct.ownerDepartment.name }}</span>
-              <span v-if="acct.ownerDeptRole === 'leader'" class="dept-role leader">Trưởng phòng</span>
-              <span v-else-if="acct.ownerDeptRole === 'deputy'" class="dept-role deputy">Phó phòng</span>
-            </div>
-            <span v-else class="muted-italic">—</span>
-          </td>
-          <td>
             <!-- Đội ngũ chia sẻ (crew không gồm owner) -->
             <div v-if="crewWithoutOwner(acct).length" class="sales-stack">
               <span
@@ -130,6 +127,27 @@
             </div>
             <span v-else class="muted-italic">—</span>
           </td>
+          <!-- 2026-06-06 — Cột SDK ma trận: 4 thanh quota X/cap (đổi màu theo %) -->
+          <td class="td-sdk">
+            <div class="sdk-grid">
+              <div class="sdk-row" title="Tổng lượt gọi SDK hôm nay">
+                <span class="sk">⚡ SDK</span>
+                <span class="sv">{{ acct.sdkTotal ?? 0 }}</span>
+              </div>
+              <template v-for="m in [
+                  { cat: 'friend_action', ic: '🤝', lb: 'Kết bạn' },
+                  { cat: 'friend_lookup', ic: '🔍', lb: 'Tìm SĐT' },
+                  { cat: 'contact_sync', ic: '🔄', lb: 'Đồng bộ DB' },
+                  { cat: 'message', ic: '💌', lb: 'Tin nhắn' },
+                ]" :key="m.cat">
+                <div class="sdk-row" :class="sdkBar(acct, m.cat).cls" :title="`${m.lb}: ${sdkBar(acct, m.cat).used}/${sdkBar(acct, m.cat).cap}`">
+                  <span class="sk">{{ m.ic }}</span>
+                  <span class="sv">{{ sdkBar(acct, m.cat).used }}<small>/{{ sdkBar(acct, m.cat).cap }}</small></span>
+                  <div class="sbar"><i :style="{ width: sdkBar(acct, m.cat).pct + '%' }"></i></div>
+                </div>
+              </template>
+            </div>
+          </td>
           <td>
             <div class="progress" :class="progressClass(acct.msgToday, acct.quota)">
               <span class="vals">{{ acct.msgToday }}/{{ acct.quota }}</span>
@@ -137,23 +155,41 @@
             </div>
           </td>
           <td>
-            <!-- Phase metrics layer 2026-05-22: 5 mini-chips breakdown. Click row → detail drawer tab "Số liệu" -->
-            <div v-if="acct.metricsToday" class="metrics-chips">
-              <span class="mc-chip recv" :title="`Nhận: ${acct.metricsToday.msgReceivedFromFriends} bạn / ${acct.metricsToday.msgReceivedFromStrangers} lạ`">
-                📥 {{ acct.metricsToday.msgReceivedFromFriends + acct.metricsToday.msgReceivedFromStrangers }}
-              </span>
-              <span class="mc-chip sent" :title="`Sale gửi: ${acct.metricsToday.msgSentByUser}`">
-                📤 {{ acct.metricsToday.msgSentByUser }}
-              </span>
-              <span v-if="acct.metricsToday.msgSentByBot > 0" class="mc-chip bot" :title="`Bot gửi: ${acct.metricsToday.msgSentByBot}`">
-                🤖 {{ acct.metricsToday.msgSentByBot }}
-              </span>
-              <span v-if="acct.metricsToday.friendReqSent > 0" class="mc-chip friend" :title="`Friend-add: ${acct.metricsToday.friendReqSent} sent / ${acct.metricsToday.friendReqAccepted} accept`">
-                🤝 {{ acct.metricsToday.friendReqSent }}
-              </span>
-              <span v-if="acct.metricsToday.phoneSearchTotal > 0" class="mc-chip phone" :title="`Phone search: ${acct.metricsToday.phoneSearchTotal} total / ${acct.metricsToday.phoneSearchFoundZalo} found`">
-                🔍 {{ acct.metricsToday.phoneSearchTotal }}
-              </span>
+            <!-- Phase Hôm nay redesign 2026-05-28: mini 4-col table.
+                 4 metric × 4 col: Loại · Nguồn 1 · Nguồn 2 · Σ.
+                 📥 Đến: 👥 bạn / 🕵🏽 lạ. Còn lại: 👤 sale / 🤖 bot.
+                 Click row → drawer chi tiết (vẫn giữ qua @click onRowClick). -->
+            <div v-if="acct.metricsToday" class="hn-mt">
+              <div class="hn-mt-head">
+                <div class="h label">Loại</div>
+                <div class="h">Nguồn 1</div>
+                <div class="h">Nguồn 2</div>
+                <div class="h total">Σ</div>
+              </div>
+              <div class="hn-mt-row" :title="`Đến: ${acct.metricsToday.msgReceivedFromFriends} bạn / ${acct.metricsToday.msgReceivedFromStrangers} lạ`">
+                <div class="label"><span class="em">📥</span>Đến</div>
+                <div class="friend" :class="{ zero: acct.metricsToday.msgReceivedFromFriends === 0 }"><span class="cell-icon">👥</span>{{ acct.metricsToday.msgReceivedFromFriends }}</div>
+                <div class="stranger" :class="{ zero: acct.metricsToday.msgReceivedFromStrangers === 0 }"><span class="cell-icon">🕵🏽</span>{{ acct.metricsToday.msgReceivedFromStrangers }}</div>
+                <div class="total" :class="{ zero: acct.metricsToday.msgReceivedTotal === 0 }">{{ acct.metricsToday.msgReceivedTotal }}</div>
+              </div>
+              <div class="hn-mt-row" :title="`Đi: ${acct.metricsToday.msgSentByUser} sale / ${acct.metricsToday.msgSentByBot} bot`">
+                <div class="label"><span class="em">📤</span>Đi</div>
+                <div class="user" :class="{ zero: acct.metricsToday.msgSentByUser === 0 }"><span class="cell-icon">👤</span>{{ acct.metricsToday.msgSentByUser }}</div>
+                <div class="bot" :class="{ zero: acct.metricsToday.msgSentByBot === 0 }"><span class="cell-icon">🤖</span>{{ acct.metricsToday.msgSentByBot }}</div>
+                <div class="total" :class="{ zero: acct.metricsToday.msgSentTotal === 0 }">{{ acct.metricsToday.msgSentTotal }}</div>
+              </div>
+              <div class="hn-mt-row" :title="`Kết bạn: ${acct.metricsToday.friendReqByUser} thủ công / ${acct.metricsToday.friendReqByBot} auto`">
+                <div class="label"><span class="em">🤝</span>Kết bạn</div>
+                <div class="user" :class="{ zero: acct.metricsToday.friendReqByUser === 0 }"><span class="cell-icon">👤</span>{{ acct.metricsToday.friendReqByUser }}</div>
+                <div class="bot" :class="{ zero: acct.metricsToday.friendReqByBot === 0 }"><span class="cell-icon">🤖</span>{{ acct.metricsToday.friendReqByBot }}</div>
+                <div class="total" :class="{ zero: acct.metricsToday.friendReqSent === 0 }">{{ acct.metricsToday.friendReqSent }}</div>
+              </div>
+              <div class="hn-mt-row" :title="`Tìm KH: ${acct.metricsToday.phoneSearchByUser} thủ công / ${acct.metricsToday.phoneSearchByBot} auto`">
+                <div class="label"><span class="em">🔍</span>Tìm KH</div>
+                <div class="user" :class="{ zero: acct.metricsToday.phoneSearchByUser === 0 }"><span class="cell-icon">👤</span>{{ acct.metricsToday.phoneSearchByUser }}</div>
+                <div class="bot" :class="{ zero: acct.metricsToday.phoneSearchByBot === 0 }"><span class="cell-icon">🤖</span>{{ acct.metricsToday.phoneSearchByBot }}</div>
+                <div class="total" :class="{ zero: acct.metricsToday.phoneSearchTotal === 0 }">{{ acct.metricsToday.phoneSearchTotal }}</div>
+              </div>
             </div>
             <span v-else class="muted-italic">—</span>
           </td>
@@ -168,11 +204,19 @@
               />
             </span>
           </td>
-          <td>{{ relativeTime(acct.lastActivityAt) }}</td>
+          <td>
+            <!-- 2026-06-09: ngày giờ KẾT NỐI (lastConnectedAt) + hoạt động cuối (lastActivityAt) -->
+            <div class="conn-cell">
+              <div class="conn-at" :title="acct.lastConnectedAt ? 'Kết nối lúc: ' + fmtDateTime(acct.lastConnectedAt) : 'Chưa từng kết nối'">
+                <span class="conn-ic">🔗</span>{{ acct.lastConnectedAt ? fmtDateTime(acct.lastConnectedAt) : '—' }}
+              </div>
+              <div class="conn-act" title="Hoạt động cuối (có tin nhắn)">{{ relativeTime(acct.lastActivityAt) }}</div>
+            </div>
+          </td>
           <td class="td-actions" @click.stop>
             <!-- Actions gate theo canManage (owner-of-nick hoặc org admin) — anh chốt 2026-05-22 -->
             <template v-if="acct.canManage">
-              <button class="icon-btn" title="Reconnect" :disabled="acct.liveStatus === 'connected'" @click="onActionClick(acct, 'reconnect')">
+              <button class="icon-btn" :title="acct.liveStatus === 'connected' ? 'Sync' : 'Re-login'" @click="onActionClick(acct, 'reconnect')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
               </button>
               <button class="icon-btn" title="Sync danh bạ" @click="onActionClick(acct, 'sync')">
@@ -192,7 +236,7 @@
         </tr>
         </template>
         <tr v-if="!accounts.length">
-          <td colspan="10" class="empty-row">
+          <td colspan="12" class="empty-row">
             <div class="empty-msg">
               <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/></svg>
               <div>Không có nick nào khớp bộ lọc</div>
@@ -209,6 +253,10 @@ import { computed } from 'vue';
 import type { EnrichedAccount, UptimeBucket } from '@/composables/use-zalo-accounts-dashboard';
 import UptimeSparkline from './UptimeSparkline.vue';
 import NickAvatarLock from '@/components/privacy/NickAvatarLock.vue';
+import { useAuthStore } from '@/stores/auth';
+
+// Fix ③ (2026-06-11): chuyển nhượng nick CHỈ chủ tổ chức (khớp gate BE role='owner').
+const authStore = useAuthStore();
 
 const props = defineProps<{
   accounts: EnrichedAccount[];
@@ -221,12 +269,37 @@ const props = defineProps<{
   relativeTime: (iso: string | null) => string;
   statusLabel: (live: string) => { label: string; color: string };
   uptimeColor: (uptime: number) => 'success' | 'warning' | 'error';
+  // 2026-06-06 — trần hiệu lực per-nick (đã gộp nick override + org default ở composable).
+  //   limitFor(nickId, category) → daily limit để vẽ thanh quota X/cap.
+  limitFor?: (nickId: string, category: string) => number;
 }>();
+
+// Ngày giờ kết nối — format ngắn giờ VN (Asia/Ho_Chi_Minh). VD: "09/06 15:42".
+function fmtDateTime(iso: string | null): string {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+    }).replace(',', '');
+  } catch { return '—'; }
+}
+
+// Thanh quota SDK: trả { pct, cls, used, cap } cho 1 nick + category.
+function sdkBar(acct: EnrichedAccount, category: string): { used: number; cap: number; pct: number; cls: string } {
+  const used = acct.sdkCounts?.[category] ?? 0;
+  const cap = props.limitFor ? props.limitFor(acct.id, category) : 0;
+  const pct = cap > 0 ? Math.min(100, Math.round((used / cap) * 100)) : 0;
+  const cls = pct >= 100 ? 'q-crit' : pct >= 70 ? 'q-warn' : 'q-ok';
+  return { used, cap, pct, cls };
+}
 
 const emit = defineEmits<{
   (e: 'open-detail', id: string): void;
   (e: 'action', payload: { account: EnrichedAccount; action: 'reconnect' | 'sync' }): void;
   (e: 'reassign-owner', account: EnrichedAccount): void;
+  // 2026-06-06 — mở dialog cài đặt trần SDK (org default + nick override).
+  (e: 'configLimits'): void;
 }>();
 
 // Phase 4 2026-05-22: group rows theo phòng ban khi groupByDept=true.
@@ -276,8 +349,8 @@ function onActionClick(account: EnrichedAccount, action: 'reconnect' | 'sync') {
 }
 
 function onOwnerClick(account: EnrichedAccount) {
-  // Chỉ owner-of-nick HOẶC org admin được reassign. BE cũng gate, FE chỉ skip UX noise.
-  if (!account.canManage) return;
+  // Fix ③ 2026-06-11: chỉ CHỦ TỔ CHỨC được chuyển nhượng (BE đã siết role='owner').
+  if (!authStore.isOwner) return;
   emit('reassign-owner', account);
 }
 
@@ -531,6 +604,26 @@ tbody tr.alert:hover { background: #FFF5F5 }
 .progress.high .bar > i { background: #F59E0B }
 .progress.over .bar > i { background: #EF4444 }
 
+/* 2026-06-06 — cột SDK ma trận */
+.th-sdk { white-space: nowrap; }
+.sdk-cfg-btn {
+  margin-left: 8px; border: 1px solid #d1d5db; background: #fff; border-radius: 6px;
+  padding: 2px 8px; font-size: 11px; font-weight: 600; color: #2563eb; cursor: pointer;
+}
+.sdk-cfg-btn:hover { background: #eff6ff; }
+.td-sdk { min-width: 160px; }
+.sdk-grid { display: flex; flex-direction: column; gap: 3px; }
+.sdk-row { display: grid; grid-template-columns: 64px 1fr; align-items: center; gap: 5px; font-size: 11px; color: #4b5563; position: relative; }
+.sdk-row .sk { color: #6b7280; white-space: nowrap; }
+.sdk-row .sv { font-weight: 700; font-variant-numeric: tabular-nums; }
+.sdk-row .sv small { font-weight: 500; color: #9ca3af; }
+.sdk-row .sbar { grid-column: 1 / -1; height: 3px; background: #f3f4f6; border-radius: 99px; overflow: hidden; margin-top: 1px; }
+.sdk-row .sbar > i { display: block; height: 100%; border-radius: 99px; background: #2563eb; }
+.sdk-row.q-warn .sbar > i { background: #f59e0b; }
+.sdk-row.q-warn .sv { color: #d97706; }
+.sdk-row.q-crit .sbar > i { background: #ef4444; }
+.sdk-row.q-crit .sv { color: #dc2626; }
+
 .uptime {
   display: inline-flex;
   align-items: center;
@@ -557,8 +650,7 @@ tbody tr.alert:hover { background: #FFF5F5 }
   color: #6B7280;
   margin-left: 2px;
 }
-.icon-btn:hover:not(:disabled) { background: #F3F4F6; color: #111827 }
-.icon-btn:disabled { opacity: 0.35; cursor: not-allowed }
+.icon-btn:hover { background: #F3F4F6; color: #111827 }
 .icon-btn svg { width: 14px; height: 14px }
 
 /* Owner cell (chính chủ) — Phase 4 clickable */
@@ -576,6 +668,11 @@ tbody tr.alert:hover { background: #FFF5F5 }
 /* Department cell — Phase 4 2026-05-22 */
 .dept-cell { display: inline-flex; flex-direction: column; gap: 3px; }
 .dept-name { font-size: 12px; font-weight: 600; color: #1F2937; }
+/* 2026-06-09 — cột Kết nối / Hoạt động */
+.conn-cell { display: flex; flex-direction: column; gap: 2px; }
+.conn-at { font-size: 11.5px; color: #374151; font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.conn-ic { font-size: 10px; }
+.conn-act { font-size: 10.5px; color: #9CA3AF; }
 .dept-role {
   font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 9999px;
   text-transform: uppercase; letter-spacing: 0.3px; width: max-content;
@@ -585,21 +682,71 @@ tbody tr.alert:hover { background: #FFF5F5 }
 
 /* Phase metrics layer 2026-05-22 — cột "Hôm nay" mini-chips */
 .th-hint { font-weight: 400; color: #9CA3AF; font-size: 11px; margin-left: 4px; letter-spacing: 1px; }
-.metrics-chips { display: inline-flex; flex-wrap: wrap; gap: 4px; }
-.mc-chip {
-  display: inline-flex; align-items: center; gap: 2px;
-  font-size: 11px; font-weight: 600;
-  padding: 2px 6px; border-radius: 9999px;
-  border: 1px solid transparent;
+/* ═══════════ Phase Hôm nay redesign 2026-05-28 — mini 4-col table (HD-first 1280×720) ═══════════ */
+.hn-mt {
+  border: 1px solid #F3F4F6;
+  border-radius: 5px;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1.2fr 0.95fr 0.95fr 0.7fr;
   font-variant-numeric: tabular-nums;
-  cursor: help;
-  white-space: nowrap;
+  min-width: 188px;
+  max-width: 240px;
 }
-.mc-chip.recv  { background: #F1F5F9; color: #475569; border-color: #E2E8F0; }
-.mc-chip.sent  { background: #ECFDF5; color: #047857; border-color: #A7F3D0; }
-.mc-chip.bot   { background: #F5F3FF; color: #6D28D9; border-color: #C4B5FD; }
-.mc-chip.friend{ background: #EFF6FF; color: #1D4ED8; border-color: #BFDBFE; }
-.mc-chip.phone { background: #ECFEFF; color: #0E7490; border-color: #A5F3FC; }
+.hn-mt-head { display: contents; }
+.hn-mt-head .h {
+  background: #F9FAFB;
+  padding: 3px 4px;
+  font-size: 9px;
+  font-weight: 600;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #F3F4F6;
+  line-height: 1.2;
+}
+.hn-mt-head .h.label { justify-content: flex-start; padding-left: 6px; }
+.hn-mt-head .h.total { background: rgba(41, 98, 255, 0.08); color: #2962FF; }
+
+.hn-mt-row { display: contents; cursor: help; }
+.hn-mt-row > div {
+  padding: 3px 4px;
+  border-bottom: 1px solid #F3F4F6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1F2937;
+  line-height: 1.2;
+}
+.hn-mt-row > div.label {
+  background: #F9FAFB;
+  font-size: 10px;
+  color: #374151;
+  font-weight: 500;
+  justify-content: flex-start;
+  padding-left: 6px;
+  gap: 4px;
+}
+.hn-mt-row > div.label .em { font-size: 11px; }
+.hn-mt-row > div.total {
+  background: rgba(41, 98, 255, 0.04);
+  color: #2962FF;
+  font-weight: 700;
+  font-size: 11.5px;
+}
+.hn-mt-row > div.user { color: #2962FF; background: rgba(41, 98, 255, 0.06); }
+.hn-mt-row > div.bot { color: #F59E0B; background: rgba(245, 158, 11, 0.08); }
+.hn-mt-row > div.friend { color: #047857; background: rgba(16, 185, 129, 0.06); }
+.hn-mt-row > div.stranger { color: #B45309; background: rgba(245, 158, 11, 0.06); }
+.hn-mt-row > div.zero { color: #D1D5DB; font-weight: 400; }
+.hn-mt-row > div .cell-icon { opacity: 0.75; font-size: 10px; line-height: 1; }
+.hn-mt-row:last-of-type > div { border-bottom: 0; }
 
 /* Group row (groupByDept=true) */
 .group-row td {

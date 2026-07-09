@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <div>
     <h1 class="text-h4 mb-4">
@@ -58,7 +60,7 @@
             <v-card-text>
               <v-text-field v-model="form.fullName" label="Họ tên *" class="mb-2" />
               <v-text-field v-model="form.email" label="Email *" type="email" class="mb-2" />
-              <v-text-field v-model="form.password" label="Mật khẩu *" type="password" class="mb-2" />
+              <v-text-field v-model="form.password" label="Mật khẩu *" :type="showCreatePassword ? 'text' : 'password'" :append-inner-icon="showCreatePassword ? 'mdi-eye-off' : 'mdi-eye'" @click:append-inner="showCreatePassword = !showCreatePassword" class="mb-2" />
               <v-select v-model="form.role" :items="roleOptions" item-title="label" item-value="value" label="Vai trò" />
               <v-alert v-if="dialogError" type="error" density="compact" class="mt-2">{{ dialogError }}</v-alert>
             </v-card-text>
@@ -93,7 +95,7 @@
           <v-card>
             <v-card-title>Đặt lại mật khẩu</v-card-title>
             <v-card-text>
-              <v-text-field v-model="newPassword" label="Mật khẩu mới *" type="password" />
+              <v-text-field v-model="newPassword" label="Mật khẩu mới *" :type="showNewPassword ? 'text' : 'password'" :append-inner-icon="showNewPassword ? 'mdi-eye-off' : 'mdi-eye'" @click:append-inner="showNewPassword = !showNewPassword" />
               <v-alert v-if="dialogError" type="error" density="compact" class="mt-2">{{ dialogError }}</v-alert>
             </v-card-text>
             <v-card-actions>
@@ -176,6 +178,8 @@ const showDelete = ref(false);
 const saving = ref(false);
 const dialogError = ref('');
 const newPassword = ref('');
+const showCreatePassword = ref(false);
+const showNewPassword = ref(false);
 const selectedUser = ref<OrgUser | null>(null);
 
 const form = ref({ fullName: '', email: '', password: '', role: 'member' });

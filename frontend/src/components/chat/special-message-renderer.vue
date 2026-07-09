@@ -1,5 +1,7 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
-  <div class="special-message" :data-type="type">
+  <div class="special-message" :data-type="type" @click="onContentClick">
     <!-- Bank Account card (Zalo zinstant.bankcard) — render UI riêng dùng VietQR API
          Backend parse VietQR EMVCo string từ Zalo HTML → trả {bankCode, accountNumber, color, ...} -->
     <div
@@ -291,6 +293,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { linkifyHtml } from '@/composables/use-rich-format';
 
 const props = defineProps<{
   type: string;
@@ -299,14 +302,28 @@ const props = defineProps<{
 }>();
 
 // Emit "callback" cho cuộc gọi nhỡ (E17/E18) / "open-profile" cho danh thiếp E21/E22.
+// "open-phone" (2026-06-22) — click SĐT trong tin rich (vd thông báo "Khách vừa phản hồi")
+// → cha (MessageThread) tra Zalo qua nick hội thoại rồi mở dialog user info.
 const emit = defineEmits<{
   (e: 'callback'): void;
   (e: 'open-profile', uid: string): void;
+  (e: 'open-phone', phone: string): void;
 }>();
 function onCallback() { emit('callback'); }
 function onOpenProfile() {
   const uid = profileUid.value;
   if (uid) emit('open-profile', uid);
+}
+
+// Click SĐT (.phone-link) bất kỳ trong tin rich → emit open-phone (event delegation
+// trên root .special-message để bắt cả title/body render qua v-html).
+function onContentClick(ev: MouseEvent) {
+  const target = ev.target as HTMLElement | null;
+  const phoneEl = target?.closest('.phone-link') as HTMLElement | null;
+  if (phoneEl?.dataset.phone) {
+    ev.stopPropagation();
+    emit('open-phone', phoneEl.dataset.phone);
+  }
 }
 
 // ── Bank transfer ────────────────────────────────────────────────────────
@@ -552,11 +569,18 @@ function applyRichFormat(text: string, sList: StyleMark[], mList: MentionMark[])
   return out;
 }
 
-/** Fallback: format raw text without style marks — just escape + mention regex + linebreak. */
+/** Fallback: format raw text without style marks — just escape + mention regex + linebreak.
+ * Fix 2026-06-03 (Anh báo): sync với message-bubble.vue highlightText().
+ * Tên có separator " - " (vd "Trung Trường - Hs Holding") phải bôi đầy đủ.
+ * Pattern: @ + 1-3 chữ hoa + (optional " - " + 1-3 chữ hoa).
+ * Ràng buộc chữ hoa để loại từ thường VN (vd "@Đại Khánh thể" → chỉ bôi "@Đại Khánh"). */
 function plainFormat(text: string): string {
   if (!text) return '';
   let s = escapeHtml(text);
-  s = s.replace(/@([\p{L}][\p{L}0-9._-]+(?:\s[\p{L}][\p{L}0-9._-]+){0,2})/gu, '<span class="mention">@$1</span>');
+  s = s.replace(
+    /@(\p{Lu}[\p{L}0-9._]*(?:\s\p{Lu}[\p{L}0-9._]*){0,2}(?:\s[-–—]\s\p{Lu}[\p{L}0-9._]*(?:\s\p{Lu}[\p{L}0-9._]*){0,2})?)/gu,
+    '<span class="mention">@$1</span>',
+  );
   s = s.replace(/\r?\n/g, '<br>');
   return s;
 }
@@ -565,9 +589,10 @@ function plainFormat(text: string): string {
 const richTitleHtml = computed<string>(() => {
   const t = props.content?.title || props.content?.subject;
   if (typeof t !== 'string' || !t.trim()) return '';
-  return styles.value.length || mentions.value.length
+  const formatted = styles.value.length || mentions.value.length
     ? applyRichFormat(t, styles.value, mentions.value)
     : plainFormat(t);
+  return linkifyHtml(formatted);
 });
 
 const richBodyHtml = computed<string>(() => {
@@ -579,7 +604,7 @@ const richBodyHtml = computed<string>(() => {
     || '';
   if (typeof raw !== 'string' || !raw.trim()) return '';
   // Body uses simpler format (Zalo styles thường chỉ apply trên title)
-  return plainFormat(raw);
+  return linkifyHtml(plainFormat(raw));
 });
 
 const richHref = computed<string>(() => {
@@ -744,6 +769,14 @@ const linkDescription = computed<string>(() => {
   font-size: 12.5px;
 }
 .rich-link:hover { text-decoration: underline; }
+/* Auto-link URL + SĐT trong tin rich (2026-06-22) — v-html nên dùng :deep. */
+.special-message :deep(.link) { color: var(--brand, #1786be); word-break: break-all; }
+.special-message :deep(.phone-link) {
+  color: var(--brand, #1786be);
+  cursor: pointer;
+  border-bottom: 1px dashed currentColor;
+}
+.special-message :deep(.phone-link:hover) { opacity: 0.8; }
 .rich-thumb {
   display: block;
   max-width: 100%;

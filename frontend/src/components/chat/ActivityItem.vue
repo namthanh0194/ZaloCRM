@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <div class="activity-item" :class="`cat-${item.category || 'system'}`">
     <span class="act-icon" :style="`color: ${categoryColor}`">{{ icon }}</span>
@@ -210,6 +212,12 @@ const detailsLine = computed(() => {
   // Friend alias change
   if (action === 'friend_alias_change' && (d.old !== undefined || d.new !== undefined)) {
     return `: "${escape(String(d.old || ''))}" → "${escape(String(d.new || ''))}"`;
+  }
+  // Generic fallback 2026-05-29: BE pass details.summary tiếng Việt đẹp
+  // (vd Lead Pool: "Phạm Chí Thành đã nhận lead từ Pool · Nguồn: Tệp khách hàng · Điểm 12 · Hạn note: 30 phút").
+  // Em dùng cho mọi action có summary thay vì raw JSON details.
+  if (typeof d.summary === 'string' && d.summary.trim()) {
+    return ` — ${escape(d.summary)}`;
   }
   return '';
 });

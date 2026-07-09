@@ -1,16 +1,18 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <div class="settings-layout">
     <!-- Sidebar -->
     <aside class="sl-sidebar" aria-label="Cài đặt sidebar">
       <header class="sl-header">
         <h1 class="sl-title">
-          <span class="sl-icon">⚙</span>
+          <v-icon class="sl-icon" icon="mdi-cog-outline" size="20" />
           <span>Cài đặt</span>
         </h1>
       </header>
 
       <div class="sl-search">
-        <span class="ic">🔍</span>
+        <v-icon class="ic" icon="mdi-magnify" size="16" />
         <input
           v-model="searchQuery"
           type="text"
@@ -31,9 +33,9 @@
             :key="`sr-${item.route}`"
             :to="item.route"
             class="sl-item"
-            :class="{ active: $route.path === item.route }"
+            :class="{ active: isItemActive(item.route) }"
           >
-            <span class="sl-item-icon">{{ item.icon }}</span>
+            <v-icon class="sl-item-icon" :icon="item.icon" size="18" />
             <span class="sl-item-label">{{ item.label }}</span>
             <span v-if="item.comingSoon" class="sl-lock" title="Sắp ra mắt">🔒</span>
           </RouterLink>
@@ -48,7 +50,7 @@
               :class="{ collapsed: !openGroups[group.id] }"
               @click="toggleGroup(group.id)"
             >
-              <span class="sl-group-icon">{{ group.icon }}</span>
+              <v-icon class="sl-group-icon" :icon="group.icon" size="17" />
               <span class="sl-group-label">{{ group.label }}</span>
               <span class="sl-chevron">▾</span>
             </button>
@@ -58,9 +60,9 @@
                 :key="item.route"
                 :to="item.route"
                 class="sl-item"
-                :class="{ active: $route.path === item.route }"
+                :class="{ active: isItemActive(item.route) }"
               >
-                <span class="sl-item-icon">{{ item.icon }}</span>
+                <v-icon class="sl-item-icon" :icon="item.icon" size="18" />
                 <span class="sl-item-label">{{ item.label }}</span>
                 <span v-if="item.comingSoon" class="sl-lock" title="Sắp ra mắt">🔒</span>
               </RouterLink>
@@ -94,6 +96,20 @@ import { useSettingsNav } from '@/composables/use-settings-nav';
 const route = useRoute();
 const router = useRouter();
 const { visibleGroups, activeItem, searchItems, defaultRoute } = useSettingsNav();
+
+// Active class check — support query param (vd /settings/channels/zalo?tab=internal-contact
+// active KHÁC /settings/channels/zalo plain — 2 entry trỏ cùng path nhưng tab khác).
+function isItemActive(itemRoute: string): boolean {
+  const [itemPath, itemQuery] = itemRoute.split('?');
+  if (itemPath !== route.path) return false;
+  if (!itemQuery) {
+    // Item không query → active chỉ khi current cũng không match query của entry khác
+    const currentTab = route.query.tab as string | undefined;
+    return !currentTab;
+  }
+  const expected = new URLSearchParams(itemQuery).get('tab');
+  return expected === (route.query.tab as string | undefined);
+}
 
 const searchQuery = ref('');
 

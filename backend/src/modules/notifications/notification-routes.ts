@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * Notification routes — computed on-the-fly notifications for the authenticated user.
  * Sources: unreplied conversations, today/tomorrow appointments, disconnected Zalo accounts.
@@ -6,6 +8,8 @@ import type { FastifyInstance } from 'fastify';
 import { prisma } from '../../shared/database/prisma-client.js';
 import { authMiddleware } from '../auth/auth-middleware.js';
 import { zaloPool } from '../zalo/zalo-pool.js';
+import { getZaloScope } from '../zalo/zalo-scope.js';
+import { getContactScope } from '../contacts/contact-scope.js';
 
 interface NotificationItem {
   id: string;
@@ -23,10 +27,22 @@ export async function notificationRoutes(app: FastifyInstance) {
     const user = request.user!;
     const notifications: NotificationItem[] = [];
 
+    // Phase Marketing+Analytics Scope 2026-05-27: scope notification theo viewer
+    const [zScope, cScope] = await Promise.all([
+      getZaloScope(user.id, user.orgId, user.role),
+      getContactScope(user.id, user.orgId, user.role),
+    ]);
+    const convScope: any = zScope.isOrgAdmin ? {} : { zaloAccountId: { in: zScope.accessibleIds } };
+    const apptScope: any =
+      !cScope.isOrgAdmin && cScope.accessibleContactIds !== null
+        ? { contactId: { in: cScope.accessibleContactIds } }
+        : {};
+    const accountScope: any = zScope.isOrgAdmin ? {} : { id: { in: zScope.accessibleIds } };
+
     // 1. Unreplied conversations > 30 min
     const thirtyMinAgo = new Date(Date.now() - 30 * 60000);
     const unreplied = await prisma.conversation.count({
-      where: { orgId: user.orgId, isReplied: false, lastMessageAt: { lt: thirtyMinAgo } },
+      where: { orgId: user.orgId, ...convScope, deletedAt: null, isReplied: false, lastMessageAt: { lt: thirtyMinAgo } },
     });
     if (unreplied > 0) {
       notifications.push({
@@ -48,6 +64,7 @@ export async function notificationRoutes(app: FastifyInstance) {
     const todayApts = await prisma.appointment.findMany({
       where: {
         orgId: user.orgId,
+        ...apptScope,
         appointmentDate: { gte: todayStart, lt: todayEnd },
         status: 'scheduled',
       },
@@ -73,6 +90,7 @@ export async function notificationRoutes(app: FastifyInstance) {
     const tmrApts = await prisma.appointment.count({
       where: {
         orgId: user.orgId,
+        ...apptScope,
         appointmentDate: { gte: tomorrowStart, lt: tomorrowEnd },
         status: 'scheduled',
       },
@@ -88,9 +106,9 @@ export async function notificationRoutes(app: FastifyInstance) {
       });
     }
 
-    // 4. Disconnected Zalo accounts
+    // 4. Disconnected Zalo accounts (2026-06-10: ẩn nick đã xóa mềm).
     const accounts = await prisma.zaloAccount.findMany({
-      where: { orgId: user.orgId },
+      where: { orgId: user.orgId, archivedAt: null, ...accountScope },
       select: { id: true, displayName: true },
     });
     for (const acc of accounts) {

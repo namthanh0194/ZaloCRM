@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * scoring/scoring-routes.ts — REST API cho Lead Scoring Engine.
  *
@@ -30,7 +32,7 @@ import { recomputeFriendFinalScore } from './scoring-hooks.js';
 import { zaloPool } from '../zalo/zalo-pool.js';
 import { zaloRateLimiter } from '../zalo/zalo-rate-limiter.js';
 import { formatMessage } from '../../shared/text-formatter.js';
-import { renderMessageTemplate } from '../automation/template-renderer.js';
+import { renderMessageTemplate } from '../../shared/templating/template-renderer.js';
 import { randomUUID } from 'node:crypto';
 
 export async function scoringRoutes(app: FastifyInstance): Promise<void> {
@@ -40,6 +42,10 @@ export async function scoringRoutes(app: FastifyInstance): Promise<void> {
 
   app.get('/api/v1/scoring/config', async (request: FastifyRequest, reply: FastifyReply) => {
     const user = request.user!;
+    // Phase Marketing+Analytics Scope 2026-05-27: admin-only — leak chiến lược chấm điểm
+    if (user.role !== 'admin' && user.role !== 'owner') {
+      return reply.status(403).send({ error: 'forbidden', code: 'scoring_admin_only' });
+    }
     try {
       const config = await getScoringConfig(user.orgId);
       return config;
@@ -122,6 +128,9 @@ export async function scoringRoutes(app: FastifyInstance): Promise<void> {
 
   app.get('/api/v1/scoring/rules', async (request: FastifyRequest, reply: FastifyReply) => {
     const user = request.user!;
+    if (user.role !== 'admin' && user.role !== 'owner') {
+      return reply.status(403).send({ error: 'forbidden', code: 'scoring_admin_only' });
+    }
     try {
       const rules = await prisma.scoreSignalRule.findMany({
         where: { orgId: user.orgId },

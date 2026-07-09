@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <!--
   PrivacyNicksTab — Phase Privacy v2 2026-05-23.
 
@@ -9,6 +11,19 @@
 -->
 <template>
   <div class="privacy-tab">
+    <!-- ═════════ BANNER TẠM KHÓA TÍNH NĂNG (2026-06-11) ═════════
+      Audit bảo mật phát hiện nick Riêng tư còn bị lộ nội dung qua kênh
+      thời gian thực + vài màn hình. Tạm chặn BẬT MỚI để tránh cảm giác an
+      toàn giả; vẫn cho TẮT. Gỡ banner + bỏ privacyFeatureLocked khi vá xong. -->
+    <div v-if="privacyFeatureLocked" class="privacy-locked-banner">
+      <span class="plb-icon">🛡️</span>
+      <div class="plb-text">
+        <strong>Tính năng Riêng tư đang tạm nâng cấp bảo mật</strong>
+        <span>Tạm thời chưa bật thêm nick Riêng tư mới. Các nick đang bật vẫn giữ nguyên,
+        và bạn vẫn có thể tắt. Đội kỹ thuật đang hoàn thiện lớp bảo vệ nội dung — sẽ mở lại sớm.</span>
+      </div>
+    </div>
+
     <!-- ═════════ PIN CONFIG GRID V2 ═════════ -->
     <section class="pin-grid">
       <!-- Primary action card (state-aware gradient) -->
@@ -19,15 +34,10 @@
           <div class="pin-sub">{{ primarySub }}</div>
         </div>
         <div class="pin-action">
-          <!-- Unlocked: split 2 buttons -->
-          <div v-if="store.isUnlocked" class="pin-btn-group">
-            <button class="pin-btn-split lock" @click="onLock">🔒 Khoá ngay</button>
-            <button class="pin-btn-split changepin" @click="onOpenChangePin">⚙ Đổi PIN</button>
-          </div>
-          <!-- Locked: 1 unlock button -->
-          <button v-else-if="store.hasPin" class="pin-btn primary" @click="onOpenUnlock">🔓 Mở khoá</button>
-          <!-- Empty: 1 setup button -->
-          <button v-else class="pin-btn empty" @click="onOpenSetup">⚙ Setup PIN</button>
+          <!-- Unlocked: nút khoá ngay -->
+          <button v-if="store.isUnlocked" class="pin-btn-split lock" @click="onLock">🔒 Khoá ngay</button>
+          <!-- Locked: nút mở khoá qua OTP -->
+          <button v-else class="pin-btn primary" @click="onOpenUnlock">🔓 Mở khoá</button>
         </div>
       </div>
 
@@ -58,7 +68,7 @@
         <h2 class="ptab-title">Nick Riêng tư của tôi</h2>
         <p class="ptab-sub">
           Default mọi nick là "Thường". Toggle sang "Riêng tư" → admin + sale khác sẽ thấy
-          content bị làm mờ. Chỉ bạn unlock được bằng PIN.
+          content bị làm mờ. Chỉ bạn unlock được qua mã OTP gửi về Zalo.
         </p>
       </div>
       <div class="ptab-counter" :class="{ full: privateCount >= maxPrivacyNicks }">
@@ -81,23 +91,27 @@
       <section v-if="privateNicks.length > 0" class="ptab-group">
         <div class="group-header"><span class="group-icon">🔒</span><span class="group-name">Nick Riêng tư</span><span class="group-count">{{ privateNicks.length }}</span></div>
         <div class="nick-list">
-          <NickRow v-for="n in privateNicks" :key="n.id" :nick="n" :is-internal-contact="internalContactId === n.id" :submitting="submittingId === n.id" @toggle="onToggleRequest(n)" @set-internal="onSetInternalContact(n)" />
+          <NickRow v-for="n in privateNicks" :key="n.id" :nick="n" :submitting="submittingId === n.id" :feature-locked="privacyFeatureLocked" @toggle="onToggleRequest(n)" />
         </div>
       </section>
 
       <section v-if="normalNicks.length > 0" class="ptab-group">
         <div class="group-header"><span class="group-icon">📭</span><span class="group-name">Nick Thường</span><span class="group-count">{{ normalNicks.length }}</span></div>
         <div class="nick-list">
-          <NickRow v-for="n in normalNicks" :key="n.id" :nick="n" :is-internal-contact="internalContactId === n.id" :submitting="submittingId === n.id" @toggle="onToggleRequest(n)" @set-internal="onSetInternalContact(n)" />
+          <NickRow v-for="n in normalNicks" :key="n.id" :nick="n" :submitting="submittingId === n.id" :feature-locked="privacyFeatureLocked" @toggle="onToggleRequest(n)" />
         </div>
       </section>
     </template>
 
     <div v-if="errorMsg" class="ptab-error" @click="errorMsg = ''">⚠ {{ errorMsg }} <span class="dismiss">✕</span></div>
 
-    <!-- Dialogs: reuse PrivacyUnlockDialog cho unlock + PrivacyPinSetupDialog cho setup/change -->
-    <PrivacyUnlockDialog v-model="unlockOpen" :nick="meAsNick" @unlocked="onUnlocked" />
-    <PrivacyPinSetupDialog v-model="setupOpen" :mode="setupMode" @done="onSetupDone" />
+    <!-- OTP unlock modal — context nêu rõ nick + bật/tắt (anh chốt 2026-06-06) -->
+    <PrivacyUnlockOtpModal
+      :open="unlockOpen"
+      :context="unlockContext"
+      @close="onUnlockClose"
+      @unlocked="onUnlocked"
+    />
   </div>
 </template>
 
@@ -105,9 +119,7 @@
 import { ref, computed, onMounted, onUnmounted, h, defineComponent } from 'vue';
 import { api } from '@/api/index';
 import { usePrivacyStore } from '@/stores/privacy';
-import { useAuthStore } from '@/stores/auth';
-import PrivacyUnlockDialog from '@/components/privacy/PrivacyUnlockDialog.vue';
-import PrivacyPinSetupDialog from '@/components/privacy/PrivacyPinSetupDialog.vue';
+import PrivacyUnlockOtpModal from '@/components/privacy/PrivacyUnlockOtpModal.vue';
 
 interface MyNick {
   id: string;
@@ -120,18 +132,19 @@ interface MyNick {
 }
 
 const store = usePrivacyStore();
-const auth = useAuthStore();
+
+// 2026-06-11 — MỞ LẠI bật mới nick Riêng tư sau khi vá xong 3 đợt lỗ lộ nội dung
+// (audit bảo mật: realtime redact + scope org + list/search + guard). Đặt true để
+// khóa khẩn nếu phát hiện lỗ mới (đồng bộ với BE env PRIVACY_ENABLE_NEW).
+const privacyFeatureLocked = ref(false);
 
 const nicks = ref<MyNick[]>([]);
 const loading = ref(true);
 const submittingId = ref<string | null>(null);
 const errorMsg = ref('');
 const maxPrivacyNicks = ref(2);
-const internalContactId = ref<string | null>(null);
 
 const unlockOpen = ref(false);
-const setupOpen = ref(false);
-const setupMode = ref<'setup' | 'change'>('setup');
 const pendingToggle = ref<MyNick | null>(null);
 
 // Tick mỗi giây cho countdown realtime
@@ -142,26 +155,20 @@ const privateNicks = computed(() => nicks.value.filter((n) => n.privacyMode === 
 const normalNicks = computed(() => nicks.value.filter((n) => n.privacyMode !== 'main'));
 const privateCount = computed(() => privateNicks.value.length);
 
-// PIN config grid — state-aware
+// Privacy config grid — state-aware (OTP-only: chỉ unlocked / locked)
 const primaryState = computed(() => {
-  if (!store.hasPin) return 'empty';
   if (store.isUnlocked) return '';
   return 'locked';
 });
-const primaryIcon = computed(() => {
-  if (!store.hasPin) return '⚙';
-  return store.isUnlocked ? '🔓' : '🔒';
-});
-const primaryTitle = computed(() => {
-  if (!store.hasPin) return 'Chưa setup PIN bảo mật';
-  return store.isUnlocked ? 'Đang mở khoá Riêng tư' : 'Riêng tư đang khoá';
-});
-const primarySub = computed(() => {
-  if (!store.hasPin) return 'Đặt PIN 4 chữ số để có thể bật Riêng tư cho nick của bạn.';
-  return store.isUnlocked
+const primaryIcon = computed(() => (store.isUnlocked ? '🔓' : '🔒'));
+const primaryTitle = computed(() =>
+  store.isUnlocked ? 'Đang mở khoá Riêng tư' : 'Riêng tư đang khoá',
+);
+const primarySub = computed(() =>
+  store.isUnlocked
     ? 'Bạn có thể xem nội dung tin nhắn của các nick Riêng tư đến hết countdown.'
-    : 'Nhập PIN để xem nội dung các nick bạn đã đặt Riêng tư.';
-});
+    : 'Mở khoá qua mã OTP gửi về Zalo (nick Liên lạc nội bộ) để xem nội dung nick Riêng tư.',
+);
 
 // Device info — parse từ active session
 const activeDevice = computed(() => {
@@ -187,24 +194,16 @@ const countdown = computed(() => {
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 });
 
-// Fake nick cho PrivacyUnlockDialog (vì dialog accept nick prop nhưng đây là user-level unlock)
-const meAsNick = computed(() => ({
-  displayName: auth.user?.fullName || 'Bạn',
-  avatarUrl: null,
-  zaloUid: null,
-}));
-
 async function loadAll() {
   loading.value = true;
   try {
     const [myNicksRes, meContactRes] = await Promise.all([
       api.get<{ nicks: MyNick[] }>('/privacy/my-nicks'),
-      api.get<{ internalContactZaloAccountId: string | null; maxPrivacyNicks: number; autoDefaulted?: boolean }>('/me/internal-contact'),
+      api.get<{ maxPrivacyNicks: number }>('/me/internal-contact'),
       store.fetchStatus(true),
     ]);
     const list = Array.isArray(myNicksRes.data) ? myNicksRes.data : (myNicksRes.data?.nicks ?? []);
     nicks.value = list;
-    internalContactId.value = meContactRes.data.internalContactZaloAccountId;
     maxPrivacyNicks.value = meContactRes.data.maxPrivacyNicks;
   } catch (err: any) {
     errorMsg.value = err?.response?.data?.error || 'Không tải được danh sách nick';
@@ -213,25 +212,31 @@ async function loadAll() {
   }
 }
 
-// Phase Privacy v2 2026-05-23: toggle privacy mode REQUIRE PIN confirm.
-// - Nếu chưa setup PIN → mở SetupPinDialog (mode='setup'). User setup xong → tự động unlock.
-// - Nếu hasPin + chưa unlock → mở UnlockDialog. User unlock xong → flip mode.
-// - Nếu hasPin + đã unlock → flip thẳng (đã có session, không cần re-confirm).
+// Anh chốt 2026-06-06: MỖI lần gạt 1 nick Thường↔Riêng tư đều bắt nhập OTP mới
+// (kể cả đang trong phiên unlock). Tin OTP nêu cụ thể nick + bật/tắt + owner.
 async function onToggleRequest(nick: MyNick) {
   if (submittingId.value) return;
-  if (!store.hasPin) {
-    pendingToggle.value = nick;
-    setupMode.value = 'setup';
-    setupOpen.value = true;
+  // 2026-06-11 — chặn BẬT MỚI khi tính năng đang tạm khóa (vẫn cho TẮT).
+  // nick.privacyMode !== 'main' = đang Thường → thao tác này là BẬT Riêng tư.
+  if (privacyFeatureLocked.value && nick.privacyMode !== 'main') {
+    errorMsg.value = 'Tính năng Riêng tư đang tạm nâng cấp bảo mật — chưa bật thêm nick mới được. Vui lòng đợi đội kỹ thuật mở lại.';
     return;
   }
-  if (!store.isUnlocked) {
-    pendingToggle.value = nick;
-    unlockOpen.value = true;
-    return;
-  }
-  await doFlipNick(nick);
+  pendingToggle.value = nick;
+  unlockOpen.value = true;
 }
+
+// Context cho OTP modal: nick đang gạt + hành động (bật=enable / tắt=disable Riêng tư).
+const unlockContext = computed<{ action: 'enable' | 'disable' | 'unlock'; nickName?: string; nickId?: string }>(() => {
+  const n = pendingToggle.value;
+  if (!n) return { action: 'unlock' };
+  // privacyMode='main' = đang Riêng tư → gạt sẽ TẮT (disable); ngược lại BẬT (enable).
+  return {
+    action: n.privacyMode === 'main' ? 'disable' : 'enable',
+    nickName: n.displayName || 'Nick chưa đặt tên',
+    nickId: n.id,
+  };
+});
 
 async function doFlipNick(nick: MyNick) {
   submittingId.value = nick.id;
@@ -248,44 +253,28 @@ async function doFlipNick(nick: MyNick) {
 }
 
 function onUnlocked() {
-  // Sau khi unlock thành công → flip nick đang pending nếu có
+  // Sau khi nhập OTP đúng → flip nick đang pending. Đóng modal.
+  unlockOpen.value = false;
   if (pendingToggle.value) {
     doFlipNick(pendingToggle.value);
     pendingToggle.value = null;
   }
 }
 
-function onSetupDone() {
-  // Sau khi setup PIN xong → reload status + flip pending nick
-  store.fetchStatus(true).then(() => {
-    if (pendingToggle.value) {
-      // Setup xong CHƯA unlock — user cần mở khoá tiếp
-      unlockOpen.value = true;
-    }
-  });
+function onUnlockClose() {
+  // Đóng modal mà chưa nhập OTP → huỷ pending toggle (không flip).
+  unlockOpen.value = false;
+  pendingToggle.value = null;
 }
 
-function onOpenUnlock() { unlockOpen.value = true; }
-function onOpenSetup() { setupMode.value = 'setup'; setupOpen.value = true; }
-function onOpenChangePin() { setupMode.value = 'change'; setupOpen.value = true; }
+// Mở khoá thuần (nút "🔓 Mở khoá" ở card) — không gắn nick nào, context mặc định.
+function onOpenUnlock() {
+  pendingToggle.value = null;
+  unlockOpen.value = true;
+}
 
 async function onLock() {
   await store.lock();
-}
-
-async function onSetInternalContact(nick: MyNick) {
-  if (submittingId.value) return;
-  const newValue = internalContactId.value === nick.id ? null : nick.id;
-  submittingId.value = nick.id;
-  errorMsg.value = '';
-  try {
-    await api.patch('/me/internal-contact', { zaloAccountId: newValue });
-    internalContactId.value = newValue;
-  } catch (err: any) {
-    errorMsg.value = err?.response?.data?.error || 'Đặt nick liên lạc nội bộ thất bại';
-  } finally {
-    submittingId.value = null;
-  }
 }
 
 function parseBrowser(ua: string | null): string {
@@ -315,10 +304,10 @@ onUnmounted(() => {
 const NickRow = defineComponent({
   props: {
     nick: { type: Object as () => MyNick, required: true },
-    isInternalContact: { type: Boolean, default: false },
     submitting: { type: Boolean, default: false },
+    featureLocked: { type: Boolean, default: false },
   },
-  emits: ['toggle', 'set-internal'],
+  emits: ['toggle'],
   setup(props, { emit }) {
     const initials = (name: string | null) => {
       if (!name) return '?';
@@ -350,28 +339,43 @@ const NickRow = defineComponent({
           n.avatarUrl ? h('img', { src: n.avatarUrl }) : initials(n.displayName),
         ]),
         h('div', { class: 'nr-info' }, [
-          h('div', { class: 'nr-name' }, [
-            n.displayName || 'Nick chưa đặt tên',
-            props.isInternalContact ? h('span', { class: 'nr-badge-internal', title: 'Nick liên lạc nội bộ của bạn' }, '🏠 Liên lạc nội bộ') : null,
-          ]),
+          h('div', { class: 'nr-name' }, [n.displayName || 'Nick chưa đặt tên']),
           h('div', { class: 'nr-meta' }, [
             h('span', { class: 'nr-dot', style: { background: stat.color } }),
             stat.label,
             n.zaloUid ? h('span', { class: 'nr-uid' }, [' · UID ' + n.zaloUid]) : null,
             n.friendCount > 0 ? h('span', { class: 'nr-uid' }, [' · 👥 ' + n.friendCount + ' bạn']) : null,
           ]),
-          !props.isInternalContact
-            ? h('button', { class: 'nr-set-internal', disabled: props.submitting, onClick: () => emit('set-internal') }, '🏠 Đặt làm nick liên lạc nội bộ')
-            : h('button', { class: 'nr-clear-internal', disabled: props.submitting, onClick: () => emit('set-internal') }, '✕ Bỏ liên lạc nội bộ'),
         ]),
-        h('button', {
-          class: ['nr-toggle', isMain ? 'on' : 'off'],
-          disabled: props.submitting,
-          onClick: () => emit('toggle'),
-          title: isMain ? 'Đang Riêng tư — click để chuyển Thường (yêu cầu PIN)' : 'Đang Thường — click để chuyển Riêng tư (yêu cầu PIN)',
+        // Segmented switch 2 ô rõ ràng: 🔓 Thường (trái) | 🔒 Riêng tư (phải).
+        // Ô đang chọn sáng màu. Click ô KIA → emit toggle (sẽ bắt OTP). Anh chốt 2026-06-06.
+        h('div', {
+          class: ['nr-seg', { disabled: props.submitting }],
+          role: 'group',
         }, [
-          h('span', { class: 'nr-toggle-track' }, [ h('span', { class: 'nr-toggle-thumb' }) ]),
-          h('span', { class: 'nr-toggle-label' }, isMain ? 'Riêng tư' : 'Thường'),
+          h('button', {
+            class: ['nr-seg-opt', 'normal', { active: !isMain }],
+            disabled: props.submitting,
+            onClick: () => { if (isMain) emit('toggle'); }, // chỉ gạt khi đang Riêng tư
+            title: isMain ? 'Gạt về Thường (cần nhập OTP)' : 'Đang để Thường',
+          }, [
+            h('span', { class: 'nr-seg-icon' }, '🔓'),
+            h('span', { class: 'nr-seg-label' }, 'Thường'),
+          ]),
+          h('button', {
+            // 2026-06-11 — khóa nút BẬT Riêng tư khi tính năng tạm nâng cấp (nick đang Thường).
+            class: ['nr-seg-opt', 'private', { active: isMain, locked: props.featureLocked && !isMain }],
+            disabled: props.submitting || (props.featureLocked && !isMain),
+            onClick: () => { if (!isMain) emit('toggle'); }, // chỉ gạt khi đang Thường
+            title: isMain
+              ? 'Đang để Riêng tư'
+              : (props.featureLocked
+                  ? 'Tính năng Riêng tư đang tạm nâng cấp bảo mật — chưa bật thêm được'
+                  : 'Gạt sang Riêng tư (cần nhập OTP)'),
+          }, [
+            h('span', { class: 'nr-seg-icon' }, props.featureLocked && !isMain ? '🛠️' : '🔒'),
+            h('span', { class: 'nr-seg-label' }, 'Riêng tư'),
+          ]),
         ]),
       ]);
     };
@@ -381,6 +385,17 @@ const NickRow = defineComponent({
 
 <style scoped>
 .privacy-tab { padding: 20px 4px; display: flex; flex-direction: column; gap: 20px; }
+
+/* ═════════ Banner tạm khóa tính năng (2026-06-11) ═════════ */
+.privacy-locked-banner {
+  display: flex; align-items: flex-start; gap: 14px;
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  border: 1px solid #FCD34D; border-radius: 12px; padding: 14px 18px;
+}
+.plb-icon { font-size: 22px; line-height: 1.3; flex-shrink: 0; }
+.plb-text { display: flex; flex-direction: column; gap: 3px; }
+.plb-text strong { font-size: 13.5px; color: #92400E; font-weight: 700; }
+.plb-text span { font-size: 12px; color: #78350F; line-height: 1.5; }
 
 /* ═════════ PIN Config Grid V2 ═════════ */
 .pin-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; }
@@ -458,14 +473,35 @@ const NickRow = defineComponent({
 :deep(.nr-set-internal):hover, :deep(.nr-clear-internal):hover { background: #EEF0FF; border-style: solid; }
 :deep(.nr-clear-internal) { color: #B91C1C; border-color: #FCA5A5; }
 :deep(.nr-clear-internal:hover) { background: #FEF2F2; }
-:deep(.nr-toggle) { display: inline-flex; align-items: center; gap: 8px; background: transparent; border: none; cursor: pointer; padding: 4px 0; font-family: inherit; }
-:deep(.nr-toggle-track) { width: 38px; height: 22px; border-radius: 9999px; background: #D1D5DB; position: relative; transition: background 0.15s; }
-:deep(.nr-toggle-thumb) { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: white; box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: transform 0.15s; }
-:deep(.nr-toggle.on .nr-toggle-track) { background: #5E6AD2; }
-:deep(.nr-toggle.on .nr-toggle-thumb) { transform: translateX(16px); }
-:deep(.nr-toggle-label) { font-size: 12px; font-weight: 600; color: #374151; min-width: 60px; text-align: left; }
-:deep(.nr-toggle.on .nr-toggle-label) { color: #5E6AD2; }
-:deep(.nr-toggle:disabled) { opacity: 0.5; cursor: not-allowed; }
+/* Segmented switch Thường | Riêng tư (anh chốt 2026-06-06) — rõ gạt bên nào là gì */
+:deep(.nr-seg) {
+  display: inline-flex; align-items: stretch; gap: 0;
+  background: #F1F3F5; border: 1px solid #E2E5E9; border-radius: 10px;
+  padding: 3px; flex-shrink: 0;
+}
+:deep(.nr-seg.disabled) { opacity: 0.55; pointer-events: none; }
+:deep(.nr-seg-opt) {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 14px; border: none; background: transparent; cursor: pointer;
+  border-radius: 7px; font-family: inherit; font-size: 12.5px; font-weight: 600;
+  color: #6B7280; transition: all 0.15s; white-space: nowrap;
+}
+:deep(.nr-seg-opt:hover:not(.active)) { color: #374151; background: rgba(0,0,0,0.03); }
+:deep(.nr-seg-icon) { font-size: 13px; line-height: 1; }
+/* Ô "Thường" active — xanh dương dịu (an toàn, mở) */
+:deep(.nr-seg-opt.normal.active) {
+  background: #FFFFFF; color: #1D4ED8;
+  box-shadow: 0 1px 3px rgba(29, 78, 216, 0.18);
+}
+/* Ô "Riêng tư" active — hổ phách/đỏ (cảnh báo, khoá) */
+:deep(.nr-seg-opt.private.active) {
+  background: #FFFFFF; color: #B45309;
+  box-shadow: 0 1px 3px rgba(180, 83, 9, 0.2);
+}
+:deep(.nr-seg-opt:disabled) { cursor: not-allowed; }
+/* Nút Riêng tư bị khóa tạm thời (2026-06-11) */
+:deep(.nr-seg-opt.private.locked) { opacity: 0.5; cursor: not-allowed; }
+:deep(.nr-seg-opt.private.locked:hover) { background: transparent; color: #6B7280; }
 
 .ptab-error { position: fixed; bottom: 24px; right: 24px; background: #FEF2F2; color: #B91C1C; border: 1px solid #FCA5A5; padding: 12px 18px; border-radius: 10px; font-size: 13px; display: flex; align-items: center; gap: 12px; cursor: pointer; box-shadow: 0 8px 24px rgba(185, 28, 28, 0.15); z-index: 1000; max-width: 480px; }
 .ptab-error .dismiss { color: #DC2626; font-weight: 700; }

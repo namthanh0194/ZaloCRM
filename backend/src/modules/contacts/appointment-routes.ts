@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * appointment-routes.ts — REST API for appointment management.
  * Supports list, detail, create, update, delete, today, and upcoming endpoints.
@@ -8,6 +10,7 @@ import { prisma } from '../../shared/database/prisma-client.js';
 import { authMiddleware } from '../auth/auth-middleware.js';
 import { logger } from '../../shared/utils/logger.js';
 import { logActivity, computeDiff } from '../activity/activity-logger.js';
+import { getContactScope, assertContactVisible } from './contact-scope.js';
 
 type QueryParams = Record<string, string>;
 
@@ -42,8 +45,14 @@ export async function appointmentRoutes(app: FastifyInstance): Promise<void> {
       const start = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
       const end = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
 
+      // Phase Contact Scope Hybrid 2026-05-27: filter theo KH visible
+      const cScope = await getContactScope(user.id, user.orgId, user.role);
+      const whereToday: any = { orgId: user.orgId, appointmentDate: { gte: start, lte: end } };
+      if (!cScope.isOrgAdmin && cScope.accessibleContactIds !== null) {
+        whereToday.contactId = { in: cScope.accessibleContactIds };
+      }
       const appointments = await prisma.appointment.findMany({
-        where: { orgId: user.orgId, appointmentDate: { gte: start, lte: end } },
+        where: whereToday,
         include: APPOINTMENT_INCLUDE,
         orderBy: [{ appointmentTime: 'asc' }, { appointmentDate: 'asc' }],
       });
@@ -63,12 +72,18 @@ export async function appointmentRoutes(app: FastifyInstance): Promise<void> {
       const in7Days = new Date(now);
       in7Days.setDate(in7Days.getDate() + 7);
 
+      // Phase Contact Scope Hybrid 2026-05-27
+      const cScope = await getContactScope(user.id, user.orgId, user.role);
+      const whereUpcoming: any = {
+        orgId: user.orgId,
+        appointmentDate: { gte: now, lte: in7Days },
+        status: 'scheduled',
+      };
+      if (!cScope.isOrgAdmin && cScope.accessibleContactIds !== null) {
+        whereUpcoming.contactId = { in: cScope.accessibleContactIds };
+      }
       const appointments = await prisma.appointment.findMany({
-        where: {
-          orgId: user.orgId,
-          appointmentDate: { gte: now, lte: in7Days },
-          status: 'scheduled',
-        },
+        where: whereUpcoming,
         include: APPOINTMENT_INCLUDE,
         orderBy: [{ appointmentDate: 'asc' }, { appointmentTime: 'asc' }],
       });
@@ -99,6 +114,18 @@ export async function appointmentRoutes(app: FastifyInstance): Promise<void> {
       if (status) where.status = status;
       if (contactId) where.contactId = contactId;
       if (source && source !== 'all') where.source = source;
+      // Phase Contact Scope Hybrid 2026-05-27
+      const cScope = await getContactScope(user.id, user.orgId, user.role);
+      if (!cScope.isOrgAdmin && cScope.accessibleContactIds !== null) {
+        // Intersect với contactId filter nếu đã có
+        if (where.contactId) {
+          if (!cScope.accessibleContactIds.includes(where.contactId)) {
+            return reply.status(404).send({ error: 'Contact not found' });
+          }
+        } else {
+          where.contactId = { in: cScope.accessibleContactIds };
+        }
+      }
       if (dateFrom || dateTo) {
         where.appointmentDate = {};
         if (dateFrom) where.appointmentDate.gte = new Date(dateFrom);
@@ -166,6 +193,13 @@ export async function appointmentRoutes(app: FastifyInstance): Promise<void> {
       });
 
       if (!appointment) return reply.status(404).send({ error: 'Appointment not found' });
+      // Phase Contact Scope Hybrid 2026-05-27
+      if (appointment.contactId) {
+        const visible = await assertContactVisible({
+          userId: user.id, orgId: user.orgId, legacyRole: user.role, contactId: appointment.contactId,
+        });
+        if (!visible) return reply.status(404).send({ error: 'Appointment not found' });
+      }
       return appointment;
     } catch (err) {
       logger.error('[appointments] Detail error:', err);
@@ -183,16 +217,34 @@ export async function appointmentRoutes(app: FastifyInstance): Promise<void> {
         return reply.status(400).send({ error: 'contactId and appointmentDate are required' });
       }
 
-      // Deduplication: prevent same contact + same date within org
-      const existing = await prisma.appointment.findFirst({
+      // Chống trùng (anh chốt 2026-06-16): CHỈ chặn khi cùng KH + cùng NGÀY + cùng GIỜ và lịch
+      // CÒN HIỆU LỰC (bỏ qua Hoàn thành/Huỷ/Vắng). Khác giờ trong ngày → cho phép. Khi trùng:
+      // báo RÕ lịch đang vướng (tên/giờ/ngày/phụ trách) để sale biết xử lý.
+      const conflict = await prisma.appointment.findFirst({
         where: {
           contactId: body.contactId,
           appointmentDate: new Date(body.appointmentDate),
+          appointmentTime: body.appointmentTime ?? null,
           orgId: user.orgId,
+          status: { in: ['scheduled', 'overdue'] },
+        },
+        select: {
+          id: true, title: true, appointmentTime: true, appointmentDate: true,
+          contact: { select: { fullName: true } },
+          assignedUser: { select: { fullName: true } },
         },
       });
-      if (existing) {
-        return reply.status(409).send({ error: 'Lịch hẹn đã tồn tại cho ngày này' });
+      if (conflict) {
+        const kh = conflict.contact?.fullName?.trim() || 'Khách này';
+        const dateLabel = new Intl.DateTimeFormat('vi-VN', {
+          timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', year: 'numeric',
+        }).format(conflict.appointmentDate);
+        const sale = conflict.assignedUser?.fullName ? ` · phụ trách ${conflict.assignedUser.fullName}` : '';
+        return reply.status(409).send({
+          error: 'appointment_conflict',
+          message: `${kh} đã có lịch "${conflict.title || 'Lịch hẹn'}" lúc ${conflict.appointmentTime || '—'} ngày ${dateLabel}${sale}. Chọn GIỜ khác hoặc xử lý lịch cũ trước.`,
+          conflictId: conflict.id,
+        });
       }
 
       const appointment = await prisma.appointment.create({
@@ -245,6 +297,12 @@ export async function appointmentRoutes(app: FastifyInstance): Promise<void> {
         }
       })();
 
+      // 2026-06-16 — đẩy Nhắc hẹn Zalo (nick hệ thống) cho sale: tin báo + createReminder.
+      // Fire-and-forget, lỗi Zalo KHÔNG ảnh hưởng tạo lịch (service tự nuốt lỗi).
+      void import('./appointment-zalo-service.js')
+        .then((m) => m.pushAppointmentOnCreate(appointment.id))
+        .catch(() => {});
+
       return reply.status(201).send(appointment);
     } catch (err) {
       logger.error('[appointments] Create error:', err);
@@ -272,11 +330,18 @@ export async function appointmentRoutes(app: FastifyInstance): Promise<void> {
 
       const statusChanging = body.status !== undefined && body.status !== existing.status;
       const dateChanging = body.appointmentDate && new Date(body.appointmentDate).getTime() !== existing.appointmentDate.getTime();
+      // 2026-06-18 — dời lịch = đổi NGÀY hoặc GIỜ → reset chu kỳ nhắc 3 lần + mốc digest.
+      const timeChanging = body.appointmentTime !== undefined && body.appointmentTime !== existing.appointmentTime;
+      const rescheduled = Boolean(dateChanging) || timeChanging;
 
       const updated = await prisma.appointment.update({
         where: { id },
         data: {
-          contactId: body.contactId,
+          // FIX 2026-06-09 (Anh báo "Failed to update appointment"): contactId là relation FK
+          // BẮT BUỘC — truyền null (editor gửi khi KH chưa link / đã gỡ link) làm Prisma ném
+          // "Unknown argument contactId" → 500. Chỉ update khi có giá trị thật; KHÔNG cho null
+          // hoá contact của lịch hẹn (mỗi lịch luôn thuộc 1 KH).
+          ...(body.contactId ? { contactId: body.contactId } : {}),
           assignedUserId: body.assignedUserId,
           appointmentDate: body.appointmentDate ? new Date(body.appointmentDate) : undefined,
           appointmentTime: body.appointmentTime,
@@ -288,6 +353,10 @@ export async function appointmentRoutes(app: FastifyInstance): Promise<void> {
           ...(typeof body.durationMin === 'number' ? { durationMin: body.durationMin } : {}),
           ...(body.location !== undefined ? { location: body.location || null } : {}),
           ...(statusChanging ? { statusChangedByUserId: user.id, statusChangedAt: new Date() } : {}),
+          // Dời lịch → nhắc lại từ đầu theo mốc mới (Luật mutation). Sửa nội dung khác KHÔNG reset.
+          ...(rescheduled
+            ? { actionPromptCount: 0, lastActionPromptAt: null, managerDigestedAt: null, managerDigestFirstAt: null }
+            : {}),
         },
         include: APPOINTMENT_INCLUDE,
       });
@@ -358,6 +427,13 @@ export async function appointmentRoutes(app: FastifyInstance): Promise<void> {
         }
       }
 
+      // 2026-06-16 — sync Nhắc hẹn Zalo: đóng lịch → xoá nhắc; đổi giờ → sửa nhắc.
+      if (statusChanging && ['completed', 'cancelled', 'no_show'].includes(body.status)) {
+        void import('./appointment-zalo-service.js').then((m) => m.removeAppointmentReminder(id)).catch(() => {});
+      } else if (dateChanging) {
+        void import('./appointment-zalo-service.js').then((m) => m.syncReminderOnReschedule(id)).catch(() => {});
+      }
+
       return updated;
     } catch (err) {
       logger.error('[appointments] Update error:', err);
@@ -407,10 +483,96 @@ export async function appointmentRoutes(app: FastifyInstance): Promise<void> {
         details: { appointmentId: id, oldStatus: existing.status, newStatus: status },
       });
 
+      // 2026-06-16 — đóng lịch (hoàn thành/huỷ/vắng) → xoá Nhắc hẹn Zalo (khỏi báo thừa).
+      if (status === 'completed' || status === 'cancelled' || status === 'no_show') {
+        void import('./appointment-zalo-service.js').then((m) => m.removeAppointmentReminder(id)).catch(() => {});
+      }
+
       return updated;
     } catch (err) {
       logger.error('[appointments] Status update error:', err);
       return reply.status(500).send({ error: 'Failed to update status' });
+    }
+  });
+
+  // ── Cài đặt Lịch hẹn → Nhắc hẹn Zalo (2026-06-16) ─────────────────────────
+  // GET trả cấu hình org; PUT (admin/owner) lưu bật/tắt + delay (phút) gửi link đánh dấu.
+  app.get('/api/v1/appointments/settings', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const user = request.user!;
+      const org = await prisma.organization.findUnique({
+        where: { id: user.orgId },
+        select: {
+          appointmentZaloReminderEnabled: true, appointmentActionDelayMinutes: true,
+          appointmentReminderOffsetsHours: true, appointmentDigestStopDays: true,
+          systemNotifyZaloAccountId: true,
+        },
+      });
+      const offsets = org?.appointmentReminderOffsetsHours;
+      return {
+        enabled: org?.appointmentZaloReminderEnabled ?? false,
+        actionDelayMinutes: org?.appointmentActionDelayMinutes ?? 15,
+        reminderOffsetsHours: Array.isArray(offsets) ? offsets : [1, 3, 6],
+        digestStopDays: org?.appointmentDigestStopDays ?? 7,
+        hasSystemNotifyNick: !!org?.systemNotifyZaloAccountId,
+      };
+    } catch (err) {
+      logger.error('[appointments] settings get error:', err);
+      return reply.status(500).send({ error: 'Failed to load settings' });
+    }
+  });
+  app.put('/api/v1/appointments/settings', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const user = request.user!;
+      if (!['owner', 'admin'].includes(user.role)) return reply.status(403).send({ error: 'forbidden' });
+      const body = (request.body ?? {}) as {
+        enabled?: boolean; actionDelayMinutes?: number;
+        reminderOffsetsHours?: unknown; digestStopDays?: number;
+      };
+      const data: Record<string, unknown> = {};
+      if (typeof body.enabled === 'boolean') data.appointmentZaloReminderEnabled = body.enabled;
+      if (body.actionDelayMinutes !== undefined) {
+        const v = Number(body.actionDelayMinutes);
+        if (!Number.isFinite(v) || v < 0 || v > 1440) {
+          return reply.status(400).send({ error: 'actionDelayMinutes_invalid', hint: 'Phải từ 0 đến 1440 phút' });
+        }
+        data.appointmentActionDelayMinutes = Math.round(v);
+      }
+      // 2026-06-18 — 3 mốc giờ nhắc (interval). Đúng 3 phần tử, mỗi giá trị 0 < v ≤ 168 giờ.
+      if (body.reminderOffsetsHours !== undefined) {
+        const arr = body.reminderOffsetsHours;
+        if (!Array.isArray(arr) || arr.length !== 3
+            || !arr.every((x) => Number.isFinite(Number(x)) && Number(x) > 0 && Number(x) <= 168)) {
+          return reply.status(400).send({ error: 'reminderOffsetsHours_invalid', hint: 'Cần đúng 3 số, mỗi số từ 1 đến 168 (giờ)' });
+        }
+        data.appointmentReminderOffsetsHours = arr.map((x) => Number(x));
+      }
+      // Số ngày dừng digest (0 = không bao giờ dừng).
+      if (body.digestStopDays !== undefined) {
+        const v = Number(body.digestStopDays);
+        if (!Number.isFinite(v) || v < 0 || v > 365) {
+          return reply.status(400).send({ error: 'digestStopDays_invalid', hint: 'Phải từ 0 đến 365 ngày' });
+        }
+        data.appointmentDigestStopDays = Math.round(v);
+      }
+      const org = await prisma.organization.update({
+        where: { id: user.orgId },
+        data,
+        select: {
+          appointmentZaloReminderEnabled: true, appointmentActionDelayMinutes: true,
+          appointmentReminderOffsetsHours: true, appointmentDigestStopDays: true,
+        },
+      });
+      const savedOffsets = org.appointmentReminderOffsetsHours;
+      return {
+        enabled: org.appointmentZaloReminderEnabled,
+        actionDelayMinutes: org.appointmentActionDelayMinutes,
+        reminderOffsetsHours: Array.isArray(savedOffsets) ? savedOffsets : [1, 3, 6],
+        digestStopDays: org.appointmentDigestStopDays,
+      };
+    } catch (err) {
+      logger.error('[appointments] settings put error:', err);
+      return reply.status(500).send({ error: 'Failed to save settings' });
     }
   });
 

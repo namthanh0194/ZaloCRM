@@ -1,7 +1,9 @@
-import { prisma } from '../../shared/database/prisma-client.js';
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
+import { prisma, tenantTransaction } from '../../shared/database/prisma-client.js';
 import { config } from '../../config/index.js';
 import { logger } from '../../shared/utils/logger.js';
-import { getProviderConfig, getAvailableProviders } from './provider-registry.js';
+import { getProviderConfig, getAvailableProviders, resolveProviderApiKey, getProviderBaseUrl } from './provider-registry.js';
 import { generateWithAnthropic } from './providers/anthropic.js';
 import { generateWithGemini } from './providers/gemini.js';
 import { generateWithOpenaiCompat } from './providers/openai-compat.js';
@@ -35,16 +37,10 @@ function buildConversationContext(messages: MessageContext[]) {
     .join('\n');
 }
 
-async function getProviderApiKey(orgId: string, provider: string) {
-  /* 1. Check registry (env-based) */
-  const providerDef = getProviderConfig(provider);
-  if (providerDef?.authToken) return providerDef.authToken;
-
-  /* 2. Fallback: per-org DB setting */
-  const setting = await prisma.appSetting.findFirst({
-    where: { orgId, settingKey: `ai_${provider}_api_key` },
-  });
-  return setting?.valuePlain || '';
+// M53 2026-05-30: exported để ai-virtual-chat-service reuse
+export async function getProviderApiKey(orgId: string, provider: string) {
+  /* Ưu tiên key per-org (UI, mã hoá) → legacy plain → env fallback. */
+  return resolveProviderApiKey(orgId, provider);
 }
 
 export async function getAiConfig(orgId: string) {
@@ -54,10 +50,8 @@ export async function getAiConfig(orgId: string) {
       data: { orgId, provider: config.aiDefaultProvider, model: config.aiDefaultModel, maxDaily: 500, enabled: true },
     });
   }
-  const availableProviders = getAvailableProviders();
-  const hasKey = async (p: string) => !!(await getProviderApiKey(orgId, p));
-  const [hasAnthropicKey, hasGeminiKey] = await Promise.all([hasKey('anthropic'), hasKey('gemini')]);
-  return { ...aiConfig, hasAnthropicKey, hasGeminiKey, availableProviders };
+  const availableProviders = await getAvailableProviders(orgId);
+  return { ...aiConfig, availableProviders };
 }
 
 export async function updateAiConfig(orgId: string, input: { provider?: string; model?: string; maxDaily?: number; enabled?: boolean }) {
@@ -109,22 +103,23 @@ async function loadConversation(conversationId: string, orgId: string) {
   return { ...conversation, messages: [...conversation.messages].reverse() };
 }
 
-async function generateText(provider: string, apiKey: string, model: string, system: string, prompt: string, maxTokens?: number) {
+// M53 2026-05-30: exported để ai-virtual-chat-service reuse
+export async function generateText(provider: string, apiKey: string, model: string, system: string, prompt: string, maxTokens?: number, baseUrlOverride?: string) {
   const providerDef = getProviderConfig(provider);
-  const baseUrl = providerDef?.baseUrl || '';
+  const baseUrl = baseUrlOverride || providerDef?.baseUrl || '';
 
   if (provider === 'anthropic') return generateWithAnthropic(baseUrl, apiKey, model, system, prompt, maxTokens);
   if (provider === 'gemini') return generateWithGemini(baseUrl, apiKey, model, system, prompt, maxTokens);
 
   /* OpenAI, Qwen, Kimi all use OpenAI-compatible chat/completions API */
-  if (provider === 'openai') return generateWithOpenaiCompat(`${baseUrl}/v1/chat/completions`, apiKey, model, system, prompt, maxTokens);
+  if (provider === 'openai') return generateWithOpenaiCompat(`${baseUrl}/v1/chat/completions`, apiKey, model, system, prompt, maxTokens, 'max_completion_tokens');
   if (provider === 'qwen') return generateWithOpenaiCompat(`${baseUrl}/compatible-mode/v1/chat/completions`, apiKey, model, system, prompt, maxTokens);
   if (provider === 'kimi') return generateWithOpenaiCompat(`${baseUrl}/v1/chat/completions`, apiKey, model, system, prompt, maxTokens);
 
   throw new Error(`Unsupported AI provider: ${provider}`);
 }
 
-async function saveSuggestion(input: { orgId: string; conversationId: string; messageId?: string; type: AiTaskType; content: string; confidence: number }) {
+async function saveSuggestion(input: { orgId: string; conversationId: string | null; messageId?: string; type: AiTaskType; content: string; confidence: number }) {
   return prisma.aiSuggestion.create({
     data: {
       orgId: input.orgId,
@@ -148,7 +143,7 @@ export async function generateAiOutput(input: { orgId: string; conversationId: s
   // Atomic quota check — count inside transaction to prevent TOCTOU race
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
-  const withinQuota = await prisma.$transaction(async (tx) => {
+  const withinQuota = await tenantTransaction(async (tx) => {
     const usedToday = await tx.aiSuggestion.count({ where: { orgId: input.orgId, createdAt: { gte: startOfDay } } });
     return usedToday < currentConfig.maxDaily;
   });
@@ -173,7 +168,7 @@ export async function generateAiOutput(input: { orgId: string; conversationId: s
       ? buildSummaryPrompt(language)
       : buildSentimentPrompt(language);
 
-  const raw = await generateText(currentConfig.provider, apiKey, currentConfig.model, system, userPrompt);
+  const raw = await generateText(currentConfig.provider, apiKey, currentConfig.model, system, userPrompt, undefined, await getProviderBaseUrl(input.orgId, currentConfig.provider));
 
   if (input.type === 'sentiment') {
     let parsed: SentimentResult;
@@ -277,7 +272,7 @@ export async function parseAppointmentFromText(input: { orgId: string; text: str
 
   let raw: string;
   try {
-    raw = await generateText(currentConfig.provider, apiKey, currentConfig.model, system, userPrompt);
+    raw = await generateText(currentConfig.provider, apiKey, currentConfig.model, system, userPrompt, undefined, await getProviderBaseUrl(input.orgId, currentConfig.provider));
   } catch (err: unknown) {
     // AI fail (429 quota, timeout, network) → fallback to rule-based parser
     const msg = err instanceof Error ? err.message : String(err);
@@ -438,6 +433,127 @@ function rangesToStyles(text: string, rangesRaw: unknown): ZaloRichStyle[] {
   return styles;
 }
 
+/* ──────────────────────────────────────────────────────────────────────────
+ * Sales-to-sales handoff message (2026-05-22 v2) — anh chốt template cứng
+ * cho tab "🎯 CRM" widget "Đồng đội cùng chăm KH". Khi sale A click "AI nhắn
+ * sale B phối hợp" → assemble tin nội bộ theo template KHÔNG dùng AI (tránh
+ * bug AI fail lần 1, predictable output, không tốn quota).
+ *
+ * Template anh cho (2026-05-22):
+ *   "Anh/Chị {toSaleName} ơi, KH {khName} em đang chăm đã ở trạng thái
+ *    {status} và tương tác được Nhiệt {priorityScore}, điểm {leadScore} rồi.
+ *    [Có lịch hẹn {appt}] Em thấy KH này có tương tác với Anh/Chị ngày gần
+ *    nhất là {lastInteractionWithTarget}, Anh/Chị review lại KH này để mình
+ *    cùng chăm tìm phương án chuyển đổi nhé."
+ * ────────────────────────────────────────────────────────────────────────── */
+export type SalesHandoffInput = {
+  orgId: string;
+  fromSaleName: string;
+  toSaleName: string;
+  contact: {
+    displayName: string;
+    phone?: string | null;
+    statusLabel?: string | null;
+    priorityScore?: number | null;
+    leadScore?: number | null;
+    engagementPattern?: string | null;
+    nextAppointmentAt?: Date | null;
+    nextAppointmentLocation?: string | null;
+  };
+  targetActivity?: {
+    lastInboundAt?: Date | null;     // KH gửi tin cuối cho nick của target sale
+    lastOutboundAt?: Date | null;    // Target sale gửi tin cuối cho KH
+    lastInteractionAt?: Date | null; // Tổng quát (max(inbound, outbound))
+    totalInbound?: number;
+    totalOutbound?: number;
+  };
+};
+
+export type SalesHandoffResult = { content: string; source: 'template' };
+
+function formatVnDateTime(d: Date): string {
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  return `${dd}/${mm} ${hh}:${mi}`;
+}
+
+function relativeVnDays(d: Date): string {
+  const diffMs = Date.now() - d.getTime();
+  const days = Math.floor(diffMs / 86400000);
+  if (days <= 0) {
+    const hours = Math.max(1, Math.floor(diffMs / 3600000));
+    return `${hours} giờ trước`;
+  }
+  if (days === 1) return 'hôm qua';
+  return `${days} ngày trước`;
+}
+
+function patternLabel(p?: string | null): string {
+  switch (p) {
+    case 'hot': return 'nóng';
+    case 'champion': return 'champion';
+    case 'stable': return 'ổn định';
+    case 'cooling': return 'đang nguội';
+    case 'cold': return 'lạnh';
+    case 'noise': return 'chưa đủ data';
+    default: return '';
+  }
+}
+
+export function aiGenerateSalesHandoffMessage(input: SalesHandoffInput): SalesHandoffResult {
+  const t = input.targetActivity || {};
+
+  // Trạng thái: statusLabel (CRM status) hoặc engagementPattern
+  const statusText = input.contact.statusLabel?.trim()
+    || patternLabel(input.contact.engagementPattern)
+    || 'đang chăm';
+
+  // Số liệu Nhiệt + Điểm — chỉ thêm nếu có
+  const numBits: string[] = [];
+  if (input.contact.priorityScore != null) numBits.push(`Nhiệt ${input.contact.priorityScore}`);
+  if (input.contact.leadScore != null) numBits.push(`điểm ${input.contact.leadScore}`);
+  const numText = numBits.length ? ` và tương tác được ${numBits.join(', ')}` : '';
+
+  // Lịch hẹn (nếu có)
+  let apptText = '';
+  if (input.contact.nextAppointmentAt) {
+    const at = formatVnDateTime(input.contact.nextAppointmentAt);
+    const loc = input.contact.nextAppointmentLocation ? ` tại ${input.contact.nextAppointmentLocation}` : '';
+    apptText = ` KH có lịch hẹn vào ${at}${loc}.`;
+  }
+
+  // Lần tương tác gần nhất giữa target sale × KH
+  // Ưu tiên lastInteractionAt → lastInboundAt → lastOutboundAt
+  const lastTouch = t.lastInteractionAt || t.lastInboundAt || t.lastOutboundAt;
+  let touchText = '';
+  if (lastTouch) {
+    touchText = `Em thấy KH này có tương tác với Anh/Chị ngày gần nhất là ${relativeVnDays(lastTouch)}, `;
+  } else {
+    touchText = `Em thấy KH này chưa có nhiều tương tác với Anh/Chị, `;
+  }
+
+  const content = [
+    `Anh/Chị ${input.toSaleName} ơi, `,
+    `KH ${input.contact.displayName} em đang chăm đã ở trạng thái ${statusText}${numText} rồi.`,
+    apptText,
+    ` ${touchText}`,
+    `Anh/Chị review lại KH này để mình cùng chăm tìm phương án chuyển đổi nhé.`,
+  ].join('').replace(/\s+/g, ' ').trim();
+
+  // Save vào aiSuggestion để track (best-effort, nullable conversationId 2026-05-28)
+  saveSuggestion({
+    orgId: input.orgId,
+    conversationId: null,
+    type: 'reply_draft',
+    content: JSON.stringify({ kind: 'sales_handoff', content }),
+    confidence: 1.0,
+  }).catch(() => {});
+
+  return { content, source: 'template' };
+}
+
 export async function aiFormatRichText(input: { orgId: string; rawText: string }): Promise<AiFormatResult> {
   const text = (input.rawText || '').toString();
   if (!text.trim()) return { text, styles: [], source: 'fallback' };
@@ -458,7 +574,7 @@ export async function aiFormatRichText(input: { orgId: string; rawText: string }
     // 2026-05-21 fix: cap đủ cho JSON output dài (text + nhiều style overlap per range).
     // Test với đoạn dự án 800 chars input → Gemini muốn trả ~7900 chars JSON ≈ 5000 tokens.
     // Set 8000 = sát limit Gemini 2.5 Flash (8192) + buffer. Nếu vẫn cap → cần shrink prompt.
-    const raw = await generateText(currentConfig.provider, apiKey, currentConfig.model, AI_FORMAT_SYSTEM_PROMPT, text, 8000);
+    const raw = await generateText(currentConfig.provider, apiKey, currentConfig.model, AI_FORMAT_SYSTEM_PROMPT, text, 8000, await getProviderBaseUrl(input.orgId, currentConfig.provider));
 
     let parsed: { ranges?: unknown } | null = null;
     try {
@@ -477,10 +593,10 @@ export async function aiFormatRichText(input: { orgId: string; rawText: string }
     // v4: phrase-based → BE tự indexOf → offsets chính xác 100%
     const styles = rangesToStyles(text, parsed?.ranges);
 
-    // Save vào aiSuggestion để track quota
+    // Save vào aiSuggestion để track quota (nullable conversationId 2026-05-28)
     await saveSuggestion({
       orgId: input.orgId,
-      conversationId: 'system',          // không gắn vào conv cụ thể
+      conversationId: null,               // format-rich không gắn vào conv cụ thể
       type: 'reply_draft',                // reuse type để tránh schema migration
       content: JSON.stringify({ kind: 'format_rich', styles }),
       confidence: 0.85,

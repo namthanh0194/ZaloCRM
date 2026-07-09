@@ -1,17 +1,28 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * message-handler.ts — persists incoming Zalo messages to the database.
  * Called from zalo-pool's startListener on every 'message' / 'undo' event.
  */
 import { prisma } from '../../shared/database/prisma-client.js';
 import { logger } from '../../shared/utils/logger.js';
+import { safeContactUpdate, safeContactCreate } from '../../shared/database/safe-contact-write.js';
+import { publishMessagePersisted } from '../../shared/bridge-bus.js';
 import { randomUUID } from 'node:crypto';
 import { emitWebhook } from '../api/webhook-service.js';
-import { runAutomationRules } from '../automation/automation-service.js';
+import { runAutomationRules } from '../../shared/ee-registry/automation.js';
+import { automationEventBus } from '../../shared/ee-registry/event-bus.js';
 import { applyContactAggregateFromMessage, applyContactInteraction, applyFriendAggregate } from '../contacts/contact-aggregate.js';
+import { followMergedInto } from '../contacts/resolve-contact.js';
+import { findExistingUserConversation } from './conversation-resolver.js';
+import { captureZaloProfile } from '../contacts/zalo-profile-capture.js';
 import { onInboundMessage as onInboundScoring, onOutboundMessage as onOutboundScoring } from '../scoring/scoring-hooks.js';
 import { syncReminderFromMessage } from '../contacts/reminder-sync.js';
 import { uploadBuffer } from '../../shared/storage/minio-client.js';
+import { compressImage } from '../media/media-service.js';
 import { config } from '../../config/index.js';
+// Open-core: customer-reply care-session reaction moved to extension engine
+// (emitted via the shared automation event bus below).
 
 export interface IncomingMessage {
   accountId: string;
@@ -33,6 +44,15 @@ export interface IncomingMessage {
   // Per-identity (per-account) display name + avatar — lưu vào Friend.zaloDisplayName/AvatarUrl
   contactZaloDisplayName?: string;
   contactZaloAvatarUrl?: string;
+  // Đợt 1 capture (getUserInfo đã trả) — gender/ngày sinh/SĐT công khai → captureZaloProfile.
+  contactGender?: unknown;
+  contactSdob?: unknown;
+  contactPhone?: string;
+  // Đợt 2b — status/cover/lastActionTime/isExtensionAccount (getUserInfo) → 4 cột Contact.
+  contactStatus?: unknown;
+  contactCover?: unknown;
+  contactLastActionTime?: unknown;
+  contactIsExtension?: unknown;
   groupName?: string;       // group name if group message
   groupAvatarUrl?: string;  // group avatar URL from Zalo (via getGroupInfo.avt)
   groupMembersCount?: number; // total members in group
@@ -42,6 +62,9 @@ export interface IncomingMessage {
   albumIndex?: number | null;
   albumTotal?: number | null;
   isBackfill?: boolean;     // true for old_messages / sync backfill — skip automations
+  // Anh chốt 2026-06-03 — Persist Zalo SDK TGroupMessage.mentions
+  // Shape: [{ uid, pos, len, type }] — chỉ group có; user 1-1 null.
+  mentions?: Array<{ uid: string; pos: number; len: number; type: 0 | 1 }>;
 }
 
 export interface HandleMessageResult {
@@ -69,6 +92,10 @@ export interface HandleMessageResult {
   contactId: string | null;
 }
 
+// ── v3.3 mirror inbound media — copy Zalo CDN URL về MinIO/S3/R2 ───────────
+// Inbound image/video/voice/file/gif: tin từ Zalo có URL CDN expire ngắn.
+// Mirror sang storage để bubble preview luôn-luôn-hiển-thị, không phụ thuộc CDN.
+
 const MIRROR_CONTENT_TYPES = new Set(['image', 'video', 'file', 'gif', 'voice', 'audio']);
 const MEDIA_URL_FIELDS = ['hdUrl', 'href', 'normalUrl', 'fileUrl', 'url', 'thumbUrl', 'thumb', 'thumbnail'] as const;
 
@@ -86,7 +113,7 @@ function isLocalStorageUrl(value: string): boolean {
   return value.startsWith(`${config.s3PublicUrl}/${config.s3Bucket}/`);
 }
 
-function isMirrorableUrl(value: unknown): value is string {
+export function isMirrorableUrl(value: unknown): value is string {
   return typeof value === 'string' &&
     /^https?:\/\//i.test(value) &&
     !isLocalStorageUrl(value);
@@ -133,15 +160,31 @@ function contentTypeToExtension(contentType: string): string {
   }
 }
 
-async function mirrorRemoteMediaUrl(url: string, contentType: string): Promise<string | null> {
-  const response = await fetch(url, { signal: AbortSignal.timeout(20_000) });
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
+export async function mirrorRemoteMediaUrl(url: string, contentType: string): Promise<string | null> {
+  // 2026-06-11 FIX (ảnh từ Zalo Desktop mất hình): Zalo CDN hay trả 200 nhưng body RỖNG
+  // (eventual consistency — ảnh vừa gửi chưa sẵn trên CDN). Trước đây upload buffer 0-byte
+  // rồi REPLACE href gốc bằng URL MinIO hỏng → ảnh mất vĩnh viễn. Giờ: RETRY 1 lần sau 1.5s
+  // để bắt bytes thật; nếu vẫn rỗng → throw để caller GIỮ URL Zalo gốc (khớp downloadMediaToTemp).
+  let buffer: Buffer | null = null;
+  let mimeType = '';
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 1500));
+    const response = await fetch(url, { signal: AbortSignal.timeout(20_000) });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    buffer = Buffer.from(await response.arrayBuffer());
+    mimeType = response.headers.get('content-type')?.split(';')[0] || guessMimeType(url, contentType);
+    if (buffer.length > 0) break;
   }
-  const arrayBuffer = await response.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-  const mimeType = response.headers.get('content-type')?.split(';')[0] || guessMimeType(url, contentType);
-  const uploaded = await uploadBuffer(buffer, mimeType, fileNameFromUrl(url, contentType, mimeType));
+  if (!buffer || buffer.length === 0) throw new Error('empty response');
+  // 2026-06-22: NÉN ảnh khách gửi vào trước khi LƯU mirror (R2) — nguồn ảnh lớn nhất. Bản mirror
+  // là bản CRM hiển thị + lưu trữ; nén webp giảm ~55% dung lượng. compressImage tự bỏ qua
+  // video/voice/gif + fallback bytes gốc nếu sharp lỗi (ảnh hỏng/format lạ).
+  let outBuf = buffer, outMime = mimeType;
+  if (contentType === 'image') {
+    const proc = await compressImage(buffer, mimeType);
+    outBuf = proc.buffer; outMime = proc.mimeType;
+  }
+  const uploaded = await uploadBuffer(outBuf, outMime, fileNameFromUrl(url, contentType, mimeType));
   return uploaded.url;
 }
 
@@ -229,7 +272,14 @@ export async function handleIncomingMessage(
   try {
     const account = await prisma.zaloAccount.findUnique({
       where: { id: msg.accountId },
-      select: { orgId: true, ownerUserId: true },
+      // 2026-06-03 — fix M11 writer: thêm displayName + owner.fullName để
+      // set Source Badge "👤 Sale CRM · {tên} 🔄" cho tin sync từ Zalo Real.
+      select: {
+        orgId: true,
+        ownerUserId: true,
+        displayName: true,
+        owner: { select: { fullName: true } },
+      },
     });
     if (!account) return null;
 
@@ -252,41 +302,75 @@ export async function handleIncomingMessage(
       // For text: match by content. For attachments (image/video/file): match by contentType only —
       // CRM persists with our MinIO URL while Zalo echo carries Zalo CDN URL, so content strings differ.
       const isAttachment = msg.contentType && ['image', 'video', 'file'].includes(msg.contentType);
-      const dupeWhere: any = {
-        conversationId: conversation.id,
-        senderType: 'self',
-        sentAt: { gte: new Date(Date.now() - 30_000) },
-      };
+      const dupNum = /^\d+$/.test(msg.msgId) ? BigInt(msg.msgId) : null;
+
       if (isAttachment) {
-        dupeWhere.contentType = msg.contentType;
-        dupeWhere.zaloMsgId = null;
+        // FIX 2026-06-12 (album drop): echo ảnh album về N tin riêng (mỗi sibling 1 zaloMsgId).
+        // CRM gửi album chỉ tạo 1 placeholder (zaloMsgId=null). Bộ lọc cũ findFirst→update
+        // KHÔNG nguyên tử: nhiều echo cùng khớp 1 placeholder null (race) → bỏ nhầm sibling.
+        // Sửa: CLAIM placeholder NGUYÊN TỬ bằng updateMany (compare-and-swap trên zaloMsgId=null).
+        //   • Đúng 1 echo claim được (count=1) → suppress (đó là tin đã hiện sẵn cho sale).
+        //   • Các sibling còn lại claim trượt (count=0) → CHO QUA, insert như tin album bình thường.
+        const claimed = await prisma.message.updateMany({
+          where: {
+            conversationId: conversation.id,
+            senderType: 'self',
+            contentType: msg.contentType,
+            zaloMsgId: null,
+            sentAt: { gte: new Date(Date.now() - 30_000) },
+          },
+          data: {
+            zaloMsgId: msg.msgId,
+            zaloMsgIdNum: dupNum,
+            ...(msg.cliMsgId ? { zaloCliMsgId: msg.cliMsgId } : {}),
+            // Backfill album metadata vào placeholder (lần claim đầu) để row tổng có albumKey thật.
+            ...(msg.albumKey ? { albumKey: msg.albumKey, albumIndex: msg.albumIndex ?? 0, albumTotal: msg.albumTotal ?? null } : {}),
+          },
+        });
+        if (claimed.count > 0) {
+          // 2026-06-19 Cầu Telegram: echo media OUTBOUND từ CRM → mirror sang Telegram (lấy
+          // id row vừa claim theo zaloMsgId).
+          const claimedRow = await prisma.message
+            .findFirst({ where: { conversationId: conversation.id, zaloMsgId: msg.msgId }, select: { id: true } })
+            .catch(() => null);
+          if (claimedRow) publishMessagePersisted({ messageId: claimedRow.id, conversationId: conversation.id });
+          logger.debug(`[message-handler] Skipping self echo: claimed placeholder (album=${msg.albumKey ?? 'none'} idx=${msg.albumIndex})`);
+          return null;
+        }
+        // Không claim được placeholder nào → đây là sibling album (hoặc tin thật) → để insert tiếp.
       } else {
-        dupeWhere.content = msg.content || '';
-      }
-      const recentDupe = await prisma.message.findFirst({
-        where: dupeWhere,
-        orderBy: { sentAt: 'desc' },
-        select: { id: true, zaloMsgId: true },
-      });
-      if (recentDupe) {
-        if (!recentDupe.zaloMsgId && msg.msgId) {
-          // Update cả zaloMsgIdNum để row CRM-sent giờ có numeric Snowflake → sort đúng
-          const dupNum = /^\d+$/.test(msg.msgId) ? BigInt(msg.msgId) : null;
-          await prisma.message.update({
-            where: { id: recentDupe.id },
-            data: { zaloMsgId: msg.msgId, zaloMsgIdNum: dupNum },
-          }).catch(() => {});
+        // Text: match theo content (giữ logic cũ — text không có album).
+        const recentDupe = await prisma.message.findFirst({
+          where: {
+            conversationId: conversation.id,
+            senderType: 'self',
+            content: msg.content || '',
+            sentAt: { gte: new Date(Date.now() - 30_000) },
+          },
+          orderBy: { sentAt: 'desc' },
+          select: { id: true, zaloMsgId: true },
+        });
+        if (recentDupe) {
+          if (!recentDupe.zaloMsgId && msg.msgId) {
+            await prisma.message.update({
+              where: { id: recentDupe.id },
+              data: { zaloMsgId: msg.msgId, zaloMsgIdNum: dupNum },
+            }).catch(() => {});
+          }
+          if (msg.cliMsgId) {
+            await prisma.message.update({
+              where: { id: recentDupe.id },
+              data: { zaloCliMsgId: msg.cliMsgId },
+            }).catch(() => {});
+          }
+          // 2026-06-19 Cầu Telegram: đây là echo của tin OUTBOUND gửi từ CRM (sale web /
+          // automation / hệ thống / bridge). Đường này return TRƯỚC nhánh create nên phải bắn
+          // publishMessagePersisted Ở ĐÂY để cầu mirror sang Telegram. Tin sentVia='bridge'
+          // (gốc Telegram) sẽ bị forwarder bỏ qua (chống lặp).
+          publishMessagePersisted({ messageId: recentDupe.id, conversationId: conversation.id });
+          logger.debug('[message-handler] Skipping self echo: content match within 30s');
+          return null;
         }
-        // FIX 2026-05-21: row CRM-sent insert TRƯỚC khi nhận echo nên thiếu cliMsgId.
-        // Echo về có cliMsgId → backfill vào row dupe để undo hoạt động.
-        if (msg.cliMsgId) {
-          await prisma.message.update({
-            where: { id: recentDupe.id },
-            data: { zaloCliMsgId: msg.cliMsgId },
-          }).catch(() => {});
-        }
-        logger.debug(`[message-handler] Skipping self echo: ${isAttachment ? 'attachment' : 'content'} match within 30s`);
-        return null;
       }
     }
 
@@ -295,7 +379,25 @@ export async function handleIncomingMessage(
       // zaloMsgIdNum = numeric form của Snowflake — primary sort key match Zalo Web.
       // Parse fail → null (CRM-sent in-flight messages chưa có msgId).
       const zaloMsgIdNum = msg.msgId && /^\d+$/.test(msg.msgId) ? BigInt(msg.msgId) : null;
+      // v3.3 mirror Zalo CDN → object storage (image/video/voice/file/gif)
       const storedContent = await mirrorInboundMediaContent(msg);
+      // ── M11 Source Badge writer (Anh chốt 2026-06-02) ──
+      // Tin sale gõ trên app Zalo (mobile/web) → SDK echo về CRM ở đây.
+      // Set sentVia='user_native' + metadata.sender.syncedFromNative=true
+      // để FE MessageSourceBadge.vue hiển thị "👤 Sale CRM · {tên} 🔄".
+      // Tên sale = owner.fullName (chủ nick), fallback displayName của nick.
+      // Tin từ KH (msg.isSelf=false) KHÔNG set sender — badge chỉ áp tin outbound.
+      const m11SenderMeta = msg.isSelf
+        ? {
+            kind: 'user_native' as const,
+            name:
+              account.owner?.fullName ||
+              account.displayName ||
+              msg.senderName ||
+              'Sale',
+            syncedFromNative: true,
+          }
+        : undefined;
       message = await prisma.message.create({
         data: {
           id: randomUUID(),
@@ -315,6 +417,18 @@ export async function handleIncomingMessage(
           albumIndex: msg.albumIndex ?? null,
           albumTotal: msg.albumTotal ?? null,
           sentAt,
+          // M11 writer (Anh chốt 2026-06-02): sentVia='user_native' cho tin
+          // sale gõ trên Zalo Real sync về. Mặc định sentVia='user' (legacy),
+          // KH inbound KHÔNG cần set vì FE badge chỉ render tin outbound.
+          ...(msg.isSelf && {
+            sentVia: 'user_native',
+            metadata: { sender: m11SenderMeta },
+          }),
+          // Anh chốt 2026-06-03: lưu mentions để FE render theo pos+len thay
+          // vì đoán regex. SDK chỉ trả mentions cho group; user 1-1 null.
+          ...(msg.mentions && msg.mentions.length > 0 && {
+            mentions: msg.mentions,
+          }),
         },
       });
     } catch (err: any) {
@@ -328,6 +442,16 @@ export async function handleIncomingMessage(
             data: { zaloCliMsgId: msg.cliMsgId },
           }).catch(() => {});
         }
+        // 2026-06-19 Cầu Telegram: tin OUTBOUND gửi từ CRM (sale web / automation / hệ thống /
+        // bridge) tạo row TRƯỚC → echo selfListen hit P2002 ở đây. Bắn publishMessagePersisted
+        // (tin SELF) để cầu mirror các tin đó sang Telegram. CHỈ self → tránh re-forward tin KH
+        // khi Zalo gửi trùng. Tin sentVia='bridge' (gốc Telegram) sẽ bị forwarder bỏ qua.
+        if (msg.isSelf && msg.msgId) {
+          const existing = await prisma.message
+            .findFirst({ where: { conversationId: conversation.id, zaloMsgId: msg.msgId }, select: { id: true } })
+            .catch(() => null);
+          if (existing) publishMessagePersisted({ messageId: existing.id, conversationId: conversation.id });
+        }
         logger.debug(`[message-handler] Skipping duplicate zaloMsgId=${msg.msgId} (cliMsgId backfill attempted)`);
         return null;
       }
@@ -335,6 +459,10 @@ export async function handleIncomingMessage(
     }
 
     await updateConversationAfterMessage(conversation.id, sentAt, msg.isSelf);
+
+    // 2026-06-18 — Cầu Telegram (Phase 0): phát sự kiện hậu-commit để bridge mirror sang
+    // Telegram. Fire-and-forget; subscriber (Phase 1) tự lọc nick bắc cầu + chống lặp theo msgId.
+    publishMessagePersisted({ messageId: message.id, conversationId: conversation.id });
 
     // Update Contact aggregate fields (last*, total*) — fire-and-forget,
     // best-effort. Skipped for group threads inside the helper.
@@ -503,7 +631,7 @@ export async function handleIncomingMessage(
         : null;
       const conversationDetails = await prisma.conversation.findUnique({
         where: { id: conversation.id },
-        select: { id: true, unreadCount: true, externalThreadId: true, threadType: true, zaloAccountId: true },
+        select: { id: true, unreadCount: true, externalThreadId: true, threadType: true, zaloAccountId: true, contactId: true },
       });
 
       void runAutomationRules({
@@ -523,12 +651,48 @@ export async function handleIncomingMessage(
         message: { id: message.id, content: message.content, contentType: message.contentType, senderType: message.senderType },
       });
 
+      // Wave 3 Event Log — customer_reply (KH trả lời, Mục tiêu dừng chuỗi).
+      // Hook sau runAutomationRules để KHÔNG block phase chính. Filter 1-1 theo memory
+      // feedback_crm_filter_1to1_not_group — bỏ qua group threads.
+      //
+      // BUG FIX 2026-06-08: dùng contactId CỦA CONVERSATION (nơi tin thật sự lưu), KHÔNG
+      // dùng contactId từ upsertContact. Lý do: cùng 1 người Zalo có thể bị trùng thành
+      // nhiều Contact (per-account UID / global_id lệch — xem memory reference_zalo_per_account_uid).
+      // upsertContact resolve theo global_id → ra Contact A; nhưng findOrCreateConversation tìm
+      // theo (nick, externalThreadId) → trả conversation cũ gắn Contact B, và tin nhắn lưu vào B.
+      // CareSession gắn theo Contact của conversation (B). Nếu listener dùng A → tìm phiên cho A
+      // → found=0 → không báo. Phải khớp với Contact mà tin nhắn + phiên thật sự thuộc về.
+      const careContactId = conversationDetails?.contactId ?? contactId;
+      if (
+        careContactId &&
+        conversationDetails?.threadType === 'user' &&
+        message.contentType === 'text'
+      ) {
+        // Open-core: customer-reply care-session reaction is extension logic.
+        // Core just emits the event; the automation engine reacts (no-op in Community).
+        automationEventBus.emit({
+          type: 'customer_reply',
+          orgId: account.orgId,
+          occurredAt: new Date(),
+          contactId: careContactId,
+          payload: {
+            nickId: msg.accountId,
+            externalThreadId: conversationDetails?.externalThreadId ?? null,
+            conversationId: conversation.id,
+            messageId: message.id,
+            content: message.content ?? '',
+            contact: contact
+              ? { crmName: contact.crmName ?? null, fullName: contact.fullName ?? null, phone: contact.phone ?? null }
+              : null,
+          },
+        });
+      }
+
       // Phase 7 — emit AutomationEvent for engine triggers.
       // Detect first_message_received (contact has 0 prior inbound msgs from this nick)
       // and emit text-content payload so keyword_match triggers can filter.
       void (async () => {
         try {
-          const { automationEventBus } = await import('../automation/engine/event-bus.js');
           // Count prior inbound messages from this contact to determine "first message"
           const priorInbound = contactId
             ? await prisma.message.count({
@@ -585,8 +749,52 @@ export async function handleIncomingMessage(
       })();
     }
 
+    // ── Fix 2026-06-03 (Anh báo): socket realtime thiếu senderResolved ──
+    // Trước fix: socket emit chỉ có message raw (senderName, senderUid) →
+    // FE pill tím KHÔNG render → đợi reload page mới gọi GET /messages có
+    // resolver mới có pill. Giờ resolve ngay khi handle inbound message.
+    // Chỉ resolve cho tin INBOUND (contact). Self-messages không cần pill.
+    let senderResolved: any = null;
+    if (!msg.isSelf && msg.senderUid) {
+      try {
+        const [internalNick, contactByUid, friend] = await Promise.all([
+          prisma.zaloAccount.findFirst({
+            where: { orgId: account.orgId, zaloUid: msg.senderUid },
+            select: {
+              displayName: true,
+              ownerUserId: true,
+              owner: { select: { id: true, fullName: true } },
+            },
+          }),
+          prisma.contact.findFirst({
+            where: { orgId: account.orgId, zaloUid: msg.senderUid },
+            select: { crmName: true, fullName: true },
+          }),
+          prisma.friend.findFirst({
+            where: { orgId: account.orgId, zaloUidInNick: msg.senderUid },
+            select: { aliasInNick: true, zaloDisplayName: true },
+          }),
+        ]);
+        const crmName = contactByUid?.crmName ?? friend?.aliasInNick ?? null;
+        const zaloName = msg.senderName ?? friend?.zaloDisplayName ?? contactByUid?.fullName ?? null;
+        const displayName = crmName ?? zaloName ?? 'Người lạ';
+        senderResolved = {
+          senderDisplayName: displayName,
+          senderCrmName: crmName,
+          senderZaloName: zaloName,
+          senderIsInternalNick: !!internalNick,
+          senderInternalNickLabel: internalNick?.displayName ?? null,
+          senderInternalNickOwner: internalNick?.owner?.fullName ?? null,
+          senderInternalNickOwnerId: internalNick?.owner?.id ?? internalNick?.ownerUserId ?? null,
+          senderCase: internalNick ? 'B' : 'A',
+        };
+      } catch (resolveErr) {
+        logger.warn('[message-handler] senderResolved lookup failed:', resolveErr);
+      }
+    }
+
     return {
-      message,
+      message: { ...message, senderResolved } as any,
       conversationId: conversation.id,
       orgId: account.orgId,
       contactId,
@@ -637,6 +845,51 @@ async function upsertContact(msg: IncomingMessage, orgId: string): Promise<strin
   const globalId = msg.contactGlobalId || '';
   const username = msg.contactUsername || '';
 
+  // 2026-06-21 (Lớp 2 — CHẶN ĐẺ HỒ SƠ TRÙNG ở nguồn): nếu (nick, uid) ĐÃ có Friend row thì tin
+  // này thuộc đúng contact của Friend đó (thường là contact import có SĐT = "A"). Hàm chuẩn
+  // resolveOrCreateContact đã Friend-first; upsertContact trước đây globalId-first nên đẻ "Contact B"
+  // trùng (chỉ tên Zalo, no SĐT) → hội thoại lệch phiên/hồ sơ. Chèn Friend-lookup ở ĐẦU, ưu tiên
+  // hơn globalId/uid. CỐ Ý không swap cả hàm sang resolveOrCreateContact để TRÁNH kéo
+  // enrichViaGetUserInfo (gọi Zalo getUserInfo) vào hot-path mỗi tin. Cờ lùi nhanh:
+  // đặt env CONTACT_RESOLVE_FRIEND_FIRST=off để tắt. friends(zaloAccountId,zaloUidInNick) unique → rẻ.
+  if (process.env.CONTACT_RESOLVE_FRIEND_FIRST !== 'off' && contactUid && msg.accountId) {
+    const friend = await prisma.friend.findFirst({
+      where: { orgId, zaloAccountId: msg.accountId, zaloUidInNick: contactUid },
+      select: {
+        contact: {
+          select: { id: true, mergedInto: true, zaloGlobalId: true, zaloUsername: true, fullName: true, zaloUid: true },
+        },
+      },
+    });
+    if (friend?.contact) {
+      const fc = friend.contact;
+      // Nếu contact đã được gộp → theo mergedInto về gốc, bỏ qua backfill (ca hiếm).
+      if (fc.mergedInto) {
+        const canonical = await followMergedInto(fc.id);
+        return canonical.id;
+      }
+      // GIỮ backfill như nhánh else phía dưới — Friend-first KHÔNG được làm MẤT việc cập nhật
+      // danh tính (globalId/username/fullName từ 'Unknown') qua tin nhắn cho contact đã có Friend.
+      const patch: { zaloGlobalId?: string; zaloUsername?: string; fullName?: string; zaloUid?: string } = {};
+      if (globalId && fc.zaloGlobalId !== globalId) patch.zaloGlobalId = globalId;
+      if (username && fc.zaloUsername !== username) patch.zaloUsername = username;
+      if (!fc.zaloUid && contactUid) patch.zaloUid = contactUid;
+      if (contactName && fc.fullName === 'Unknown') patch.fullName = contactName;
+      if (Object.keys(patch).length > 0) {
+        // BEST-EFFORT: backfill KHÔNG được làm hỏng xử lý tin nhắn. Khi globalId/username thuộc
+        // HỒ SƠ TRÙNG khác (Contact B) → P2002 unique (org_id, zalo_global_id). Đây là vùng dedup,
+        // KHÔNG phải việc của upsertContact → nuốt lỗi để tin nhắn vẫn được lưu.
+        // (2026-06-21 hotfix: trước đó throw → handleIncomingMessage catch → DROP tin nhắn KH trùng.)
+        try {
+          await prisma.contact.update({ where: { id: fc.id }, data: patch });
+        } catch (e) {
+          logger.warn(`[upsertContact] friend-first backfill bỏ qua contact=${fc.id}: ${(e as { code?: string })?.code ?? String(e)}`);
+        }
+      }
+      return fc.id;
+    }
+  }
+
   // Lookup chain (theo policy hard-match anh chốt: globalId / username / phone / uid):
   //  1. By zaloGlobalId — silver bullet, identical across viewer accounts
   //  2. By zaloUsername — Zalo handle (t_xxx) cũng toàn cục
@@ -663,7 +916,9 @@ async function upsertContact(msg: IncomingMessage, orgId: string): Promise<strin
   }
 
   if (!contact) {
-    const created = await prisma.contact.create({
+    // Phòng thủ race P2002 (org_id, zalo_global_id): worker khác vừa chèn hồ sơ cùng globalId
+    // giữa lúc findFirst↑ và create → dùng lại hồ sơ đó thay vì văng (rớt tin nhắn).
+    const created = await safeContactCreate({
       data: {
         id: randomUUID(),
         orgId,
@@ -673,7 +928,7 @@ async function upsertContact(msg: IncomingMessage, orgId: string): Promise<strin
         fullName: contactName || 'Unknown',
       },
       select: { id: true, fullName: true, zaloGlobalId: true, zaloUid: true },
-    });
+    }, 'message-upsert') as { id: string; fullName: string | null; zaloGlobalId: string | null; zaloUid: string | null };
     contact = created;
     emitWebhook(orgId, 'contact.created', { contactId: contact.id, fullName: contact.fullName });
   } else {
@@ -689,8 +944,33 @@ async function upsertContact(msg: IncomingMessage, orgId: string): Promise<strin
       patch.fullName = contactName;
     }
     if (Object.keys(patch).length > 0) {
-      await prisma.contact.update({ where: { id: contact.id }, data: patch });
+      // Phòng thủ P2002: globalId/username vừa resolve có thể đã thuộc hồ sơ trùng khác →
+      // ghi phần an toàn, bỏ field trùng, KHÔNG văng (trước đây throw → DROP tin nhắn KH trùng).
+      await safeContactUpdate(contact.id, patch, 'message-upsert');
     }
+  }
+
+  // Đợt 1 (message-handler): capture gender/ngày sinh/SĐT công khai từ getUserInfo (listener đã
+  // fetch + cache) — upsertContact bỏ các field này. Additive, best-effort, fill-không-đè + diff.
+  // Gate: chỉ chạy khi getUserInfo trả demographic/SĐT → tránh tải hot-path khi không có gì mới.
+  if (contactUid && (msg.contactGender != null || msg.contactSdob || msg.contactPhone
+      || msg.contactStatus != null || msg.contactCover != null || msg.contactLastActionTime != null || msg.contactIsExtension != null)) {
+    void captureZaloProfile({
+      uid: contactUid,
+      zaloName: msg.contactZaloDisplayName ?? null,
+      avatar: msg.contactZaloAvatarUrl ?? null,
+      globalId: globalId || null,
+      username: username || null,
+      gender: msg.contactGender ?? null,
+      sdob: msg.contactSdob ?? null,
+      dob: null,
+      phoneNumber: msg.contactPhone ?? null,
+      // Đợt 2b — status/cover (chuỗi), isExtensionAccount + lastActionTime (raw, captureZaloProfile coerce).
+      status: msg.contactStatus ? String(msg.contactStatus) : null,
+      cover: msg.contactCover ? String(msg.contactCover) : null,
+      isExtensionAccount: msg.contactIsExtension,
+      lastActionTime: msg.contactLastActionTime,
+    }, { orgId, contactId: contact.id, nickId: msg.accountId });
   }
 
   return contact.id;
@@ -714,7 +994,15 @@ async function findOrCreateConversation(
     if (msg.threadType === 'group') {
       const updates: { groupName?: string; groupAvatarUrl?: string; groupMembersCount?: number } = {};
       if (msg.groupName && msg.groupName !== existing.groupName) updates.groupName = msg.groupName;
-      if (msg.groupAvatarUrl && msg.groupAvatarUrl !== existing.groupAvatarUrl) updates.groupAvatarUrl = msg.groupAvatarUrl;
+      // Không ghi đè URL nội bộ (đã mirror lên S3 bởi group-info-sync-cron) bằng URL CDN
+      // thô từ tin nhắn — cron sở hữu avatar đã cache, tránh flip-flop CDN↔S3 mỗi tin mới.
+      if (
+        msg.groupAvatarUrl &&
+        msg.groupAvatarUrl !== existing.groupAvatarUrl &&
+        !isLocalStorageUrl(existing.groupAvatarUrl ?? '')
+      ) {
+        updates.groupAvatarUrl = msg.groupAvatarUrl;
+      }
       if (msg.groupMembersCount != null && msg.groupMembersCount !== existing.groupMembersCount) {
         updates.groupMembersCount = msg.groupMembersCount;
       }
@@ -723,6 +1011,16 @@ async function findOrCreateConversation(
       }
     }
     return { id: existing.id };
+  }
+
+  // CHỐNG XÉ globalId-aware (anh chốt 2026-06-22): NGAY lúc tạo, check globalId + UID per-nick →
+  // 1 KH × 1 nick = 1 hội thoại, KHÔNG BAO GIỜ đẻ hội thoại thứ 2 (kể cả UID drift / contact chưa
+  // merge). Group giữ nguyên (externalThreadId nhóm ổn định, không drift).
+  if (msg.threadType === 'user') {
+    const existingId = await findExistingUserConversation({
+      orgId, nickId: msg.accountId, externalThreadId, contactId, globalId: msg.contactGlobalId,
+    });
+    if (existingId) return { id: existingId };
   }
 
   return prisma.conversation.create({

@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <div
     class="smax-av"
@@ -11,6 +13,8 @@
       :src="src"
       :alt="name || 'avatar'"
       class="av-img"
+      loading="lazy"
+      decoding="async"
       @error="imgError = true"
     />
     <span v-else class="av-initials" :style="initialsStyle">{{ initials }}</span>

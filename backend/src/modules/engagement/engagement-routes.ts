@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * engagement-routes.ts — Phase 8 API endpoints
  *
@@ -16,6 +18,7 @@ import { logger } from '../../shared/utils/logger.js';
 import { authMiddleware } from '../auth/auth-middleware.js';
 import { recomputeContactEngagement } from './engagement-service.js';
 import { runBackfill } from './engagement-backfill.js';
+import { assertContactVisible } from '../contacts/contact-scope.js';
 
 export async function registerEngagementRoutes(app: FastifyInstance): Promise<void> {
   // GET /api/v1/contacts/:id/engagement-timeline
@@ -25,6 +28,12 @@ export async function registerEngagementRoutes(app: FastifyInstance): Promise<vo
 
     const { id } = request.params as { id: string };
     const days = Math.min(84, Math.max(7, Number((request.query as any).days) || 28));
+
+    // Phase Marketing+Analytics Scope 2026-05-27
+    const visible = await assertContactVisible({
+      userId: user.id, orgId: user.orgId, legacyRole: user.role, contactId: id,
+    });
+    if (!visible) return reply.status(404).send({ error: 'contact not found' });
 
     const contact = await prisma.contact.findFirst({
       where: { id, orgId: user.orgId },
@@ -178,7 +187,12 @@ export async function registerEngagementRoutes(app: FastifyInstance): Promise<vo
       }
     }
 
-    return reply.send({ ok: true, updated, total: contacts.length });
+    // /office-hours 2026-06-06 — sync Auto Engagement tag sau khi re-classify (tuần tự).
+    // Phase 1a: scope theo org của admin (trước đây syncEngagementTagsAll quét MỌI org).
+    const { syncEngagementTagForOrg } = await import('./engagement-tag-service.js');
+    const tagSync = await syncEngagementTagForOrg(user.orgId);
+
+    return reply.send({ ok: true, updated, total: contacts.length, engagementTagsSynced: tagSync.synced });
   });
 
   // POST /api/v1/admin/engagement/backfill — one-time backfill from Message history

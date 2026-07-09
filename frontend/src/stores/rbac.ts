@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * stores/rbac.ts — Pinia store cho RBAC (Department + PermissionGroup + Users).
  *
@@ -36,9 +38,29 @@ export interface PermissionGroupNode {
   children: PermissionGroupNode[];
 }
 
+// 2026-06-09 (Anh chốt): gỡ 'internal_contact' khỏi onboarding (còn 3 bước).
+export type OnboardingStepKey = 'change_password' | 'connect_nick' | 'pin';
+
+export interface OnboardingSummary {
+  userId: string;
+  completedCount: number;
+  totalCount: number;
+  percent: number;
+  pendingSteps: OnboardingStepKey[];
+  changePassword: boolean;
+  connectNick: boolean;
+  pin: boolean;
+  pinSkipped: boolean;
+  dismissed: boolean;
+}
+
 export interface RbacUser {
   id: string;
-  email: string;
+  email: string | null;
+  // UI refactor 2026-05-27 — phone hiển thị cột chính, email ẩn theo toggle
+  phone: string | null;
+  // Avatar Zalo lưu lúc create-with-zalo (findUser response)
+  avatarUrl: string | null;
   fullName: string;
   role: string;
   permissionGroupId: string | null;
@@ -48,7 +70,41 @@ export interface RbacUser {
     deptRole: 'leader' | 'deputy' | 'member';
     department: { id: string; name: string; path: string };
   } | null;
+  // UI refactor 2026-05-27 — "Liên lạc nội bộ" column hiển thị:
+  //   internalContactNick (nick CRM)  → "Số điện thoại của nick CRM"
+  //   internalContactPhone (Zalo cá nhân ngoài CRM) → "SĐT + tag 'Zalo ngoài'"
+  internalContactMethod: 'crm_nick' | 'personal_phone' | null;
+  internalContactPhone: string | null;
+  internalContactZaloAccountId: string | null;
+  internalContactNick: { id: string; displayName: string | null; avatarUrl: string | null; phone: string | null; zaloUid: string | null; status: string } | null;
+  // UI 2026-05-27 — handshake status từ SystemNotifyRecipient row mới nhất
+  //   ready                     → handshake đã verify
+  //   pending_friend_request    → đã gửi friend request, chờ accept
+  //   pending_user_confirm      → đã accept, chờ sale gõ mã 4 số
+  //   invalid / missing_internal_contact → chưa setup hoặc lỗi
+  recipientStatus: 'ready' | 'pending_friend_request' | 'pending_user_confirm' | 'invalid' | 'missing_internal_contact' | string | null;
+  recipientError: string | null;
+  maxPrivacyNicks?: number;
+  // Phase status 4-state 2026-05-27 — FE compute status từ 3 field này:
+  //   - isActive=false → Vô hiệu
+  //   - isActive=true && passwordChangedAt=null → Chưa kích hoạt (sale chưa từng login + đổi pw)
+  //   - isActive=true && passwordChangedAt!=null && lastLoginAt > now-3d → Hoạt động
+  //   - else → Im lặng
+  passwordChangedAt: string | null;
+  lastLoginAt: string | null;
   isActive: boolean;
+  onboarding?: OnboardingSummary | null;
+}
+
+// Tìm node nhóm quyền theo id trong cây (đệ quy children) — dùng để cập nhật grants
+// tại chỗ sau khi PATCH, tránh reload toàn bộ cây.
+function findGroupNode(nodes: PermissionGroupNode[], id: string): PermissionGroupNode | null {
+  for (const n of nodes) {
+    if (n.id === id) return n;
+    const found = findGroupNode(n.children ?? [], id);
+    if (found) return found;
+  }
+  return null;
 }
 
 export const useRbacStore = defineStore('rbac', {
@@ -121,7 +177,11 @@ export const useRbacStore = defineStore('rbac', {
     },
     async updateGroupGrants(id: string, grants: Record<string, Record<string, boolean>>) {
       await api.patch(`/permission-groups/${id}`, { grants });
-      await this.loadPermissionGroups();
+      // Fix 2026-06-20: cập nhật grants TẠI CHỖ thay vì loadPermissionGroups().
+      // Reload cả cây làm màn Phân quyền re-render → nhảy về đầu trang + khóa tick
+      // liên tục. Grants đổi không ảnh hưởng cấu trúc cây/memberCount nên update node là đủ.
+      const node = findGroupNode(this.permissionGroups, id);
+      if (node) node.grants = JSON.parse(JSON.stringify(grants));
     },
     async setUserPermissionGroup(userId: string, permissionGroupId: string | null) {
       await api.patch(`/rbac/users/${userId}/permission-group`, { permissionGroupId });

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * Zalo Accounts Dashboard routes — KPI stats, enriched list, bulk actions, uptime sparklines.
  *
@@ -12,14 +14,16 @@
  */
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { authMiddleware } from '../auth/auth-middleware.js';
-import { requireRole } from '../auth/role-middleware.js';
-import { prisma } from '../../shared/database/prisma-client.js';
+import { requireGrant } from '../rbac/rbac-middleware.js';
+import { prisma, tenantTransaction } from '../../shared/database/prisma-client.js';
 import { zaloPool } from './zalo-pool.js';
 import { logger } from '../../shared/utils/logger.js';
-import { getZaloScope, canManageAccount } from './zalo-scope.js';
+import { getZaloScope, canManageAccount, requireAccountVisible } from './zalo-scope.js';
 import { uptimeWindowBatch } from './status-log-service.js';
-import { revokeAllSessions } from '../privacy/pin-service.js';
+import { revokeAllSessions } from '../privacy/session-service.js';
 import { getNickDayMetricsBatch, type NickDayMetrics } from './nick-metrics-service.js';
+import { ALL_CATEGORIES, DEFAULT_SDK_LIMITS, invalidateLimitCache } from './sdk-limit-service.js';
+import { zaloRateLimiter } from './zalo-rate-limiter.js';
 
 const DAILY_QUOTA = 500; // per-nick soft cap shown in UI (msg today X / 500)
 
@@ -58,8 +62,10 @@ export async function zaloDashboardRoutes(app: FastifyInstance): Promise<void> {
     // RBAC scope 2026-05-22: stats chỉ tính trên nicks user được thấy.
     const scope = await getZaloScope(userId, user.orgId, user.role);
 
+    // 2026-06-10 FIX: KPI không đếm nick đã xóa mềm (archivedAt) — đồng bộ enriched/list.
     const accounts = await prisma.zaloAccount.findMany({
-      where: { orgId: user.orgId, id: { in: scope.accessibleIds } },
+      // FIX: bỏ nick đã xoá mềm khỏi KPI (total/active/re-login) — đồng bộ enriched/list.
+      where: { orgId: user.orgId, id: { in: scope.accessibleIds }, archivedAt: null },
       select: { id: true, status: true, lastConnectedAt: true },
     });
     const accountIds = accounts.map((a) => a.id);
@@ -146,8 +152,17 @@ export async function zaloDashboardRoutes(app: FastifyInstance): Promise<void> {
     // RBAC scope 2026-05-22: chỉ trả nicks user được phép xem.
     const scope = await getZaloScope(userId, user.orgId, user.role);
 
+    // FIX: endpoint enriched (grid card) ẩn nick đã xoá mềm như GET /zalo-accounts.
+    // Bug cũ: enriched thiếu archivedAt:null → xoá nick xong vẫn hiện (tab Đơn giản/Nâng cao)
+    // + zombie qr_pending. ?includeArchived=true để admin xem lại nick đã xoá (khôi phục).
+    const includeArchived = (request.query as Record<string, string>)?.includeArchived === 'true';
+
     const accounts = await prisma.zaloAccount.findMany({
-      where: { orgId: user.orgId, id: { in: scope.accessibleIds } },
+      where: {
+        orgId: user.orgId,
+        id: { in: scope.accessibleIds },
+        ...(includeArchived ? {} : { archivedAt: null }),
+      },
       select: {
         id: true,
         zaloUid: true,
@@ -159,7 +174,11 @@ export async function zaloDashboardRoutes(app: FastifyInstance): Promise<void> {
         privacyMode: true,
         proxyUrl: true,
         lastConnectedAt: true,
+        disconnectedAt: true,      // 2026-06-16: mốc mất kết nối (FE đếm/hiển thị)
+        disconnectReason: true,    // 'manual' | 'passive' | null
         createdAt: true,
+        // 2026-06-06 — cap tin gửi người lạ (Msg today so với cap này, KHÔNG phải 500 cũ).
+        dailyStrangerMessageCap: true,
         // Phase 4 redesign 2026-05-22: include owner's department để FE hiển thị
         // cột Department + cascade visibility filter chip "Phòng ban".
         // Phase Privacy v2 2026-05-23: include reverse "internalContactForUsers" để show
@@ -212,12 +231,24 @@ export async function zaloDashboardRoutes(app: FastifyInstance): Promise<void> {
       lastMsgRows.map((r) => [r.account_id, r.last_at]),
     );
 
+    // 2026-06-06 — SDK counts per-nick (Redis rate-limiter) cho bảng ma trận:
+    // tổng lượt SDK + từng category + số lần đồng bộ danh bạ.
+    const sdkCountsMap = new Map<string, Record<string, number>>();
+    const contactSyncMap = new Map<string, number>();
+    await Promise.all(ids.map(async (nid) => {
+      const counts = await zaloRateLimiter.getAllDailyCounts(nid);
+      sdkCountsMap.set(nid, counts);
+      contactSyncMap.set(nid, await zaloRateLimiter.getOperationCount(nid, 'contact_sync'));
+    }));
+
     return accounts.map((a) => {
       const live = zaloPool.getStatus(a.id) ?? a.status;
       const u = uptimeMap.get(a.id);
       const uptime7d = u?.uptimePct ?? 0;
       const todayMetrics: NickDayMetrics | undefined = metricsToday.get(a.id);
-      const msgToday = (todayMetrics?.msgSentTotal ?? 0) + (todayMetrics?.msgReceivedTotal ?? 0);
+      // 2026-06-06 (Anh chốt) — "Msg today" CHỈ đếm tin GỬI ĐI cho NGƯỜI LẠ (bị cap).
+      // Bạn bè + tin nhận KHÔNG tính. So với dailyStrangerMessageCap của nick.
+      const msgToday = todayMetrics?.msgSentToStrangers ?? 0;
       const lastActivity = lastActivityMap.get(a.id) ?? a.lastConnectedAt;
       // Owner's department — FE dùng cho cột Department + filter chip Phòng ban.
       const ownerDept = a.owner?.departmentMember?.department ?? null;
@@ -232,6 +263,8 @@ export async function zaloDashboardRoutes(app: FastifyInstance): Promise<void> {
         liveStatus: live,
         hasProxy: !!a.proxyUrl,
         lastConnectedAt: a.lastConnectedAt,
+        disconnectedAt: a.disconnectedAt,        // mốc mất kết nối (FE đếm passive / hiện manual)
+        disconnectReason: a.disconnectReason,    // 'manual' | 'passive' | null
         createdAt: a.createdAt,
         owner: a.owner ? { id: a.owner.id, fullName: a.owner.fullName, email: a.owner.email } : null,
         ownerUserId: a.ownerUserId,
@@ -252,9 +285,9 @@ export async function zaloDashboardRoutes(app: FastifyInstance): Promise<void> {
           user: ac.user,
         })),
         crewCount: a.access.length,
-        // Metrics
+        // Metrics — 2026-06-06: msgToday = gửi-người-lạ, quota = cap người lạ của nick.
         msgToday,
-        quota: DAILY_QUOTA,
+        quota: a.dailyStrangerMessageCap ?? 300,
         uptime7d,
         lastActivityAt: lastActivity,
         // Phase metrics layer 2026-05-22: breakdown chi tiết per nick today.
@@ -264,6 +297,8 @@ export async function zaloDashboardRoutes(app: FastifyInstance): Promise<void> {
           msgReceivedFromStrangers: todayMetrics.msgReceivedFromStrangers,
           msgSentByUser: todayMetrics.msgSentByUser,
           msgSentByBot: todayMetrics.msgSentByBot,
+          msgSentToStrangers: todayMetrics.msgSentToStrangers,
+          msgSentToFriends: todayMetrics.msgSentToFriends,
           friendReqSent: todayMetrics.friendReqSent,
           friendReqAccepted: todayMetrics.friendReqAccepted,
           friendReqRejected: todayMetrics.friendReqRejected,
@@ -271,6 +306,11 @@ export async function zaloDashboardRoutes(app: FastifyInstance): Promise<void> {
           phoneSearchFoundZalo: todayMetrics.phoneSearchFoundZalo,
           phoneSearchNoZalo: todayMetrics.phoneSearchNoZalo,
         } : null,
+        // 2026-06-06 — SDK counts/ngày cho bảng ma trận (Redis rate-limiter).
+        // sdkCounts: { friend_read, friend_action, message, ... } · sdkTotal: tổng gộp.
+        sdkCounts: sdkCountsMap.get(a.id) ?? {},
+        sdkTotal: Object.values(sdkCountsMap.get(a.id) ?? {}).reduce((s, n) => s + n, 0),
+        contactSyncToday: contactSyncMap.get(a.id) ?? 0,
         // E3: health alert badge when uptime under 80% in the 7-day window
         healthAlert: uptime7d < 80,
       };
@@ -302,12 +342,13 @@ export async function zaloDashboardRoutes(app: FastifyInstance): Promise<void> {
       });
       if (!account) return reply.status(404).send({ error: 'Account not found' });
 
-      // Permission gate: org admin/owner OR current owner.
-      const isAdmin = ['owner', 'admin'].includes(user.role);
-      const isCurrentOwner = account.ownerUserId === userId;
-      if (!isAdmin && !isCurrentOwner) {
+      // Permission gate (Anh siết 2026-06-11): CHỈ chủ tổ chức (role='owner') được chuyển
+      // giao nick. Trước cho admin + chính-chủ-nick → nay siết để chống lạm quyền + đúng
+      // luồng "giao số A→B do chủ tổ chức quyết". Chi tiết: 3 fix quét/trùng nick Zalo.
+      if (user.role !== 'owner') {
         return reply.status(403).send({
-          error: 'Chỉ org admin/owner hoặc chính chủ nick mới được re-assign owner',
+          error: 'Chỉ chủ tổ chức mới được chuyển giao (re-assign) nick',
+          code: 'only_org_owner',
         });
       }
 
@@ -327,11 +368,21 @@ export async function zaloDashboardRoutes(app: FastifyInstance): Promise<void> {
 
       const oldOwnerId = account.ownerUserId;
 
-      await prisma.$transaction(async (tx) => {
+      await tenantTransaction(async (tx) => {
         await tx.zaloAccount.update({
           where: { id },
           data: { ownerUserId: newOwnerUserId },
         });
+        // 2026-06-11: cấp quyền admin cho chủ MỚI trong ACL + gỡ chủ cũ — để chủ mới quản
+        // được nick ngay (nhất quán với POST /zalo-accounts auto-insert access cho owner).
+        await tx.zaloAccountAccess.upsert({
+          where: { zaloAccountId_userId: { zaloAccountId: id, userId: newOwnerUserId } },
+          create: { zaloAccountId: id, userId: newOwnerUserId, permission: 'admin' },
+          update: { permission: 'admin' },
+        });
+        if (oldOwnerId) {
+          await tx.zaloAccountAccess.deleteMany({ where: { zaloAccountId: id, userId: oldOwnerId } });
+        }
         // Phase Privacy v2 2026-05-23: cascade clear internalContactZaloAccountId của owner cũ
         // nếu trỏ tới nick này — sale cũ không còn own → phải re-pick.
         await tx.user.updateMany({
@@ -375,11 +426,9 @@ export async function zaloDashboardRoutes(app: FastifyInstance): Promise<void> {
       const range = request.query.range ?? '7d';
       const n = range === '24h' ? 1 : range === '30d' ? 30 : 7;
 
-      const account = await prisma.zaloAccount.findFirst({
-        where: { id, orgId: user.orgId },
-        select: { id: true },
-      });
-      if (!account) return reply.status(404).send({ error: 'Account not found' });
+      // Phase Zalo Account Mutation Gate 2026-05-27: read scope (trưởng phòng OK qua dept cascade)
+      const gate = await requireAccountVisible(request, reply, id);
+      if (!gate) return reply;
 
       const { start, days } = lastNDays(n);
       const today = startOfDay(new Date());
@@ -420,7 +469,7 @@ export async function zaloDashboardRoutes(app: FastifyInstance): Promise<void> {
   // ───────────────────────────────────────────────────────────────────
   app.post<{ Body: { ids: string[]; action: string } }>(
     '/api/v1/zalo-accounts/bulk-action',
-    { preHandler: requireRole('owner', 'admin') },
+    { preHandler: requireGrant('zalo_account', 'edit') },
     async (request, reply) => {
       const user = request.user!;
       const { ids, action } = request.body ?? { ids: [], action: '' };
@@ -456,10 +505,13 @@ export async function zaloDashboardRoutes(app: FastifyInstance): Promise<void> {
             // route from FE in parallel. Here we no-op success so FE can fan out.
             results.push({ id: a.id, ok: true });
           } else if (action === 'disable') {
+            // NGẮT THỦ CÔNG (2026-06-16): set reason='manual' + mốc ngắt → cron/autoReconnect
+            // BỎ QUA nick này (ngắt là ngắt thật, KHÔNG tự nối lại). GIỮ session để "Kết nối lại"
+            // (sale sẽ quét QR lại — Anh chốt). disconnectedAt = mốc cố định FE hiện "Đã ngắt lúc…".
             zaloPool.disconnect(a.id);
             await prisma.zaloAccount.update({
               where: { id: a.id },
-              data: { status: 'disconnected' },
+              data: { status: 'disconnected', disconnectReason: 'manual', disconnectedAt: new Date() },
             });
             results.push({ id: a.id, ok: true });
           }
@@ -480,6 +532,143 @@ export async function zaloDashboardRoutes(app: FastifyInstance): Promise<void> {
         failed: results.filter((r) => !r.ok).length,
         results,
       };
+    },
+  );
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // TRẦN SDK ZALO (2026-06-06 Anh chốt) — org default + per-nick override.
+  // ═══════════════════════════════════════════════════════════════════════
+
+  // GET /api/v1/zalo-accounts/sdk-limits — trần org default + danh sách nick override.
+  // GET để MỞ (read-only): cột "SDK/Giới hạn hôm nay" ở trang Zalo dùng nó hiện usage/limit cho
+  // sale. Chỉ CHẶN sửa: PUT/DELETE dưới gate 'settings:edit' (2026-06-18) → sale ko đổi được trần.
+  app.get('/api/v1/zalo-accounts/sdk-limits', async (request) => {
+    const user = request.user!;
+    const rows = await prisma.sdkLimit.findMany({
+      where: { orgId: user.orgId },
+      select: { zaloAccountId: true, category: true, dailyLimit: true, burstLimit: true, burstWindowMs: true },
+    });
+    // org default: ưu tiên hàng DB; thiếu category nào → fallback hằng số.
+    const orgDefault: Record<string, { daily: number; burst: number; burstWindowMs: number }> = {};
+    for (const cat of ALL_CATEGORIES) {
+      const row = rows.find((r) => r.zaloAccountId === null && r.category === cat);
+      orgDefault[cat] = row
+        ? { daily: row.dailyLimit, burst: row.burstLimit, burstWindowMs: row.burstWindowMs }
+        : { daily: DEFAULT_SDK_LIMITS[cat].daily, burst: DEFAULT_SDK_LIMITS[cat].burst, burstWindowMs: DEFAULT_SDK_LIMITS[cat].burstWindowMs };
+    }
+    // per-nick override: gom theo nick → { category: {...} }
+    const nickOverrides: Record<string, Record<string, { daily: number; burst: number; burstWindowMs: number }>> = {};
+    for (const r of rows) {
+      if (!r.zaloAccountId) continue;
+      (nickOverrides[r.zaloAccountId] ??= {})[r.category] = {
+        daily: r.dailyLimit, burst: r.burstLimit, burstWindowMs: r.burstWindowMs,
+      };
+    }
+    // 2026-06-18: kèm danh sách nick (id + tên) để trang Cài đặt "Trần SDK" đổ vào tab "Theo nick"
+    // mà KHÔNG phải gọi /zalo-accounts (tách phụ thuộc quyền zalo_account).
+    const nicks = await prisma.zaloAccount.findMany({
+      where: { orgId: user.orgId, archivedAt: null },
+      select: { id: true, displayName: true },
+      orderBy: { displayName: 'asc' },
+    });
+    return { categories: ALL_CATEGORIES, orgDefault, nickOverrides, nicks };
+  });
+
+  // PUT /api/v1/zalo-accounts/sdk-limits/org — owner/admin lưu trần org default.
+  // Body: { limits: { [category]: { daily, burst, burstWindowMs? } } }
+  app.put(
+    '/api/v1/zalo-accounts/sdk-limits/org',
+    { preHandler: requireGrant('settings', 'edit') }, // 2026-06-18: chỉ admin Cài đặt (sale ko đổi trần)
+    async (request, reply) => {
+      const user = request.user!;
+      const body = (request.body ?? {}) as { limits?: Record<string, { daily?: number; burst?: number; burstWindowMs?: number }> };
+      const limits = body.limits ?? {};
+      // Validate + resolve existing rows OUTSIDE tx (early-return cho validation, NULL không
+      // dùng được composite upsert nên findFirst + update/create).
+      const actions: Array<{ existingId: string | null; cat: string; daily: number; burst: number; win: number }> = [];
+      for (const cat of ALL_CATEGORIES) {
+        const v = limits[cat];
+        if (!v) continue;
+        const daily = Number(v.daily);
+        const burst = Number(v.burst);
+        const win = Number(v.burstWindowMs ?? DEFAULT_SDK_LIMITS[cat].burstWindowMs);
+        if (!Number.isFinite(daily) || daily < 0 || daily > 100000)
+          return reply.status(400).send({ error: `${cat}_daily_invalid`, hint: 'daily 0..100000' });
+        if (!Number.isFinite(burst) || burst < 0 || burst > 1000)
+          return reply.status(400).send({ error: `${cat}_burst_invalid`, hint: 'burst 0..1000' });
+        const existing = await prisma.sdkLimit.findFirst({
+          where: { orgId: user.orgId, zaloAccountId: null, category: cat },
+          select: { id: true },
+        });
+        actions.push({ existingId: existing?.id ?? null, cat, daily, burst, win });
+      }
+      await tenantTransaction(async (tx) => {
+        for (const a of actions) {
+          if (a.existingId) {
+            await tx.sdkLimit.update({ where: { id: a.existingId }, data: { dailyLimit: a.daily, burstLimit: a.burst, burstWindowMs: a.win } });
+          } else {
+            await tx.sdkLimit.create({ data: { orgId: user.orgId, zaloAccountId: null, category: a.cat, dailyLimit: a.daily, burstLimit: a.burst, burstWindowMs: a.win } });
+          }
+        }
+      });
+      invalidateLimitCache(user.orgId);
+      logger.info(`[sdk-limits] org default updated by ${user.email}`);
+      return { ok: true };
+    },
+  );
+
+  // PUT /api/v1/zalo-accounts/:id/sdk-limits — ghi đè trần cho 1 nick.
+  // Body: { limits: { [category]: { daily, burst, burstWindowMs? } | null } } (null = xoá override category đó)
+  app.put(
+    '/api/v1/zalo-accounts/:id/sdk-limits',
+    { preHandler: requireGrant('settings', 'edit') }, // 2026-06-18: chỉ admin Cài đặt (sale ko đổi trần)
+    async (request, reply) => {
+      const user = request.user!;
+      const { id } = request.params as { id: string };
+      const nick = await prisma.zaloAccount.findFirst({ where: { id, orgId: user.orgId }, select: { id: true } });
+      if (!nick) return reply.status(404).send({ error: 'nick_not_found' });
+      const body = (request.body ?? {}) as { limits?: Record<string, { daily?: number; burst?: number; burstWindowMs?: number } | null> };
+      const limits = body.limits ?? {};
+      for (const cat of ALL_CATEGORIES) {
+        if (!(cat in limits)) continue;
+        const v = limits[cat];
+        const existing = await prisma.sdkLimit.findFirst({
+          where: { orgId: user.orgId, zaloAccountId: id, category: cat }, select: { id: true },
+        });
+        if (v === null) {
+          // xoá override → nick quay về org default
+          if (existing) await prisma.sdkLimit.delete({ where: { id: existing.id } });
+          continue;
+        }
+        const daily = Number(v.daily);
+        const burst = Number(v.burst);
+        const win = Number(v.burstWindowMs ?? DEFAULT_SDK_LIMITS[cat].burstWindowMs);
+        if (!Number.isFinite(daily) || daily < 0 || daily > 100000)
+          return reply.status(400).send({ error: `${cat}_daily_invalid` });
+        if (!Number.isFinite(burst) || burst < 0 || burst > 1000)
+          return reply.status(400).send({ error: `${cat}_burst_invalid` });
+        if (existing) {
+          await prisma.sdkLimit.update({ where: { id: existing.id }, data: { dailyLimit: daily, burstLimit: burst, burstWindowMs: win } });
+        } else {
+          await prisma.sdkLimit.create({ data: { orgId: user.orgId, zaloAccountId: id, category: cat, dailyLimit: daily, burstLimit: burst, burstWindowMs: win } });
+        }
+      }
+      invalidateLimitCache(user.orgId);
+      logger.info(`[sdk-limits] nick ${id} override updated by ${user.email}`);
+      return { ok: true };
+    },
+  );
+
+  // DELETE /api/v1/zalo-accounts/:id/sdk-limits — xoá HẾT override của nick (về org default).
+  app.delete(
+    '/api/v1/zalo-accounts/:id/sdk-limits',
+    { preHandler: requireGrant('settings', 'edit') }, // 2026-06-18: chỉ admin Cài đặt (sale ko đổi trần)
+    async (request, reply) => {
+      const user = request.user!;
+      const { id } = request.params as { id: string };
+      await prisma.sdkLimit.deleteMany({ where: { orgId: user.orgId, zaloAccountId: id } });
+      invalidateLimitCache(user.orgId);
+      return { ok: true };
     },
   );
 }

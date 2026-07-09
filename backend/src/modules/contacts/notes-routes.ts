@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * notes-routes.ts — CRM-style notes thread on a Contact.
  *
@@ -13,6 +15,7 @@ import { prisma } from '../../shared/database/prisma-client.js';
 import { authMiddleware } from '../auth/auth-middleware.js';
 import { logger } from '../../shared/utils/logger.js';
 import { parseAppointmentFromText } from '../ai/ai-service.js';
+import { assertContactVisible } from './contact-scope.js';
 
 const NOTE_INCLUDE = {
   author:    { select: { id: true, fullName: true, email: true } },
@@ -33,6 +36,11 @@ export async function notesRoutes(app: FastifyInstance): Promise<void> {
       const user = request.user!;
       const { contactId } = request.params;
 
+      // Phase Contact Scope Hybrid 2026-05-27: scope gate
+      const visible = await assertContactVisible({
+        userId: user.id, orgId: user.orgId, legacyRole: user.role, contactId,
+      });
+      if (!visible) return reply.status(404).send({ error: 'Contact not found' });
       const contact = await prisma.contact.findFirst({ where: { id: contactId, orgId: user.orgId }, select: { id: true } });
       if (!contact) return reply.status(404).send({ error: 'Contact not found' });
 
@@ -71,6 +79,11 @@ export async function notesRoutes(app: FastifyInstance): Promise<void> {
       if (!body) return reply.status(400).send({ error: 'Note body is required' });
       if (body.length > 5000) return reply.status(400).send({ error: 'Note body exceeds 5000 chars' });
 
+      // Phase Contact Scope Hybrid 2026-05-27: scope gate
+      const visible = await assertContactVisible({
+        userId: user.id, orgId: user.orgId, legacyRole: user.role, contactId,
+      });
+      if (!visible) return reply.status(404).send({ error: 'Contact not found' });
       const contact = await prisma.contact.findFirst({ where: { id: contactId, orgId: user.orgId }, select: { id: true } });
       if (!contact) return reply.status(404).send({ error: 'Contact not found' });
 

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * zalo-listener-factory.ts — sets up zca-js listener events for one Zalo account.
  * Handles message routing, user-info caching, group detection, and undo events.
@@ -10,7 +12,10 @@ import { prisma } from '../../shared/database/prisma-client.js';
 import { handleIncomingMessage, handleMessageUndo } from '../chat/message-handler.js';
 import { detectContentType, extractAlbumInfo, updateContactAvatar } from './zalo-message-helpers.js';
 import { handleFriendEvent } from './friend-event-handler.js';
+import { refreshGroupInfoNow } from './group-info-refresh.js';
 import { consumeIfExpected as consumeReactionEcho } from '../chat/reaction-echo-cache.js';
+import { emitChatMessage } from '../../shared/realtime/emit-chat.js';
+import { notifyNewInboundMessage } from '../push/push-service.js';
 
 // Map Zalo Reactions enum code → display emoji (cùng map với chat-operations-routes)
 const ZALO_REACTION_DISPLAY: Record<string, string> = {
@@ -42,19 +47,35 @@ async function handleZaloReaction(accountId: string, io: Server | null, reaction
     // Tìm conversation theo externalThreadId + accountId
     const conversation = await prisma.conversation.findFirst({
       where: { zaloAccountId: accountId, externalThreadId: threadId },
-      select: { id: true, contactId: true, orgId: true },
+      select: {
+        id: true, contactId: true, orgId: true, threadType: true,
+        // PRIVACY 2026-06-11: cần privacyMode để strip danh tính KH khi nick main.
+        zaloAccount: { select: { privacyMode: true, ownerUserId: true } },
+      },
     });
     if (!conversation) return;
 
     // Tìm Message theo zaloMsgId
     const message = await prisma.message.findFirst({
       where: { conversationId: conversation.id, zaloMsgId: targetZaloMsgId },
-      select: { id: true, senderType: true },
+      select: { id: true, senderType: true, zaloMsgId: true, seenAt: true, createdAt: true },
     });
     if (!message) return;
 
     const displayEmoji = ZALO_REACTION_DISPLAY[rawIcon] || rawIcon || '👍';
-    const reactorName = String(data.dName || '');
+    // 2026-06-20 (anh báo popup cảm xúc nhóm chỉ hiện "Người dùng" + thiếu avatar): Zalo event
+    // không kèm tên/avatar người thả (data.dName rỗng) → tra Friend của nick để có tên + AVATAR
+    // thật rồi lưu + emit (tin LIVE hiện đúng tên + avatar, khỏi đợi reload).
+    let reactorName = String(data.dName || '');
+    let reactorAvatar: string | null = null;
+    {
+      const fr = await prisma.friend.findFirst({
+        where: { zaloAccountId: accountId, zaloUidInNick: reactorZaloUid },
+        select: { aliasInNick: true, zaloDisplayName: true, zaloAvatarUrl: true },
+      });
+      if (!reactorName) reactorName = fr?.aliasInNick || fr?.zaloDisplayName || '';
+      reactorAvatar = fr?.zaloAvatarUrl || null;
+    }
 
     // Phase A v3 (2026-05-21) — selective self-echo guard via reaction-echo-cache.
     // BAD fix cũ: skip tất cả reactorUid === ownNickUid → SAI vì cũng skip genuine
@@ -93,6 +114,19 @@ async function handleZaloReaction(accountId: string, io: Server | null, reaction
       });
     }
 
+    // Lead-notify Nhịp 1 (2026-06-25) — sale thả cảm xúc vào TIN BÁO LEAD = xác nhận đã nhận
+    // → dừng vòng nhắc-lại. EE seam: dynamic-import + try/catch nuốt lỗi (bản CE không có
+    // _ee/ → skip vô hại). Service tự khớp zaloMsgId + chỉ tính reaction ADD.
+    try {
+      // Path qua biến `string` để tsc KHÔNG resolve tĩnh — bản CE strip _ee/ vẫn typecheck sạch
+      // (cùng convention loader ở app.ts). Runtime: EE import được, CE import lỗi → catch bỏ qua.
+      const spec: string = '../../_ee/automation/lead-notify/lead-notify-ack-service.js';
+      const mod = await import(spec);
+      await mod.ackLeadNotifyByReaction?.(conversation.orgId, targetZaloMsgId, reactorZaloUid, rawIcon, rType);
+    } catch {
+      /* không có module EE (CE) hoặc lỗi → bỏ qua */
+    }
+
     // ANTI-DRIFT FIX 2026-05-22: emit authoritative totalCount từ DB sau upsert/delete.
     // Trước fix: Zalo gửi 10 reaction events liên tiếp → 10 socket emits với action='add'
     // → FE increment +1 mỗi event → count=10 realtime. Refresh page → REST trả 1 (DB chỉ
@@ -103,13 +137,18 @@ async function handleZaloReaction(accountId: string, io: Server | null, reaction
       where: { messageId: message.id, emoji: displayEmoji },
     });
 
-    io?.emit('chat:reactions', {
+    // PRIVACY 2026-06-11: scope org (chặn cross-tenant) + với nick main thì KHÔNG
+    // lộ danh tính người thả (userId=UID KH, userName=tên KH) ra room org — chỉ giữ
+    // totalCount (metadata). Chính chủ vẫn thấy đủ qua REST đã gate.
+    const reactIsMain = conversation.zaloAccount?.privacyMode === 'main';
+    io?.to(`org:${conversation.orgId}`).emit('chat:reactions', {
       conversationId: conversation.id,
       messageId: message.id,
       msgId: message.id,
       reactions: [{
-        userId: reactorZaloUid,
-        userName: reactorName,
+        userId: reactIsMain ? null : reactorZaloUid,
+        userName: reactIsMain ? null : reactorName,
+        avatar: reactIsMain ? null : reactorAvatar,
         reaction: displayEmoji,
         action: (!rawIcon || rType < 0) ? 'remove' : 'add',
         source: 'zalo',
@@ -133,6 +172,76 @@ async function handleZaloReaction(accountId: string, io: Server | null, reaction
           // silent — engagement best-effort
         }
       })();
+
+      // ── I5 FIX 2026-06-03 — Nối reaction vào automation luồng bám đuổi ──
+      // Trước fix: handleZaloReaction chỉ lưu emoji + engagement, KHÔNG gọi
+      // onCustomerReaction (hàm mồ côi) → KH thả 😡 vào tin sequence vẫn bị gửi tin
+      // tiếp (không pause 48h), không trừ điểm, không báo nội bộ. Anh chốt 2026-06-03:
+      // tích cực báo dạng tích cực, tiêu cực báo dạng tiêu cực.
+      //
+      // handleZaloReaction KHÔNG có sẵn triggerId → tra Mục tiêu đang chạy của contact
+      // qua FriendRequestOutbox (pattern friend-event-handler.ts:470). Nếu KH không
+      // thuộc Mục tiêu nào → skip (reaction chat thường, không phải signal automation).
+      void (async () => {
+        try {
+          const outbox = await prisma.friendRequestOutbox.findFirst({
+            where: { contactId: conversation.contactId!, nickId: accountId, kind: 'FRIEND_REQUEST' },
+            select: { triggerId: true },
+            orderBy: { createdAt: 'desc' },
+          });
+          if (!outbox?.triggerId) return; // KH không thuộc Mục tiêu — bỏ qua signal
+          const { onCustomerReaction } = await import('../../shared/ee-registry/automation.js');
+          await onCustomerReaction({
+            orgId: conversation.orgId,
+            triggerId: outbox.triggerId,
+            contactId: conversation.contactId!,
+            nickId: accountId,
+            emoji: displayEmoji,
+            messageId: message.id,
+          });
+        } catch (err) {
+          logger.warn(`[zalo:${accountId}] onCustomerReaction hook failed:`, err);
+        }
+      })();
+    }
+
+    // Phase v3 2026-05-29 (anh chốt sau workflow audit): KH thả tim self message → đã đọc.
+    // SWEEP-TO-MSGID: KH react msg N → KH đã đọc CẢ msg ≤ N (Zalo native behavior).
+    // Guard seenAt:null + createdAt ≤ message.createdAt chống ghi đè timestamp cũ + chỉ
+    // sweep msg trước đó trong cùng conv.
+    if (isAddAction
+        && message.senderType === 'self'
+        && conversation.threadType === 'user'
+        && !message.seenAt
+    ) {
+      const seenAt = new Date();
+      const seenUpdate = await prisma.message.updateMany({
+        where: {
+          conversationId: conversation.id,
+          senderType: 'self',
+          seenAt: null,
+          createdAt: { lte: message.createdAt },
+        },
+        data: { seenAt, deliveredAt: seenAt },
+      });
+      if (seenUpdate.count > 0) {
+        const rows = await prisma.message.findMany({
+          where: { conversationId: conversation.id, senderType: 'self', seenAt },
+          select: { id: true, conversationId: true, zaloMsgId: true, deliveredAt: true, seenAt: true },
+        });
+        logger.info(`[zalo:${accountId}] 💚 REACTION→SEEN swept ${seenUpdate.count} msg(s) ≤ anchor=${message.id} (KH ${reactorZaloUid} react ${displayEmoji})`);
+        for (const r of rows) {
+          // PRIVACY 2026-06-11: scope org (metadata seen/delivered, không cross-tenant).
+          io?.to(`org:${conversation.orgId}`).emit('zalo:message-status', {
+            accountId,
+            conversationId: r.conversationId,
+            messageId: r.id,
+            zaloMsgId: r.zaloMsgId,
+            deliveredAt: r.deliveredAt,
+            seenAt: r.seenAt,
+          });
+        }
+      }
     }
   } catch (err) {
     logger.warn(`[zalo:${accountId}] reaction handler error:`, err);
@@ -146,6 +255,10 @@ export interface UserInfoCacheEntry {
   phone?: string;
   globalId: string;   // Zalo toàn cục, không đổi giữa các viewer account — khóa dedup chính
   username: string;   // Zalo handle (t_xxx) — cũng toàn cục, debug-friendly
+  gender?: unknown;   // raw 0/1 (Đợt 1 capture — message-handler lưu về Contact)
+  sdob?: unknown;     // ngày sinh chuỗi (DD/MM/YYYY | YYYY-MM-DD)
+  // Đợt 2b — status/cover/lastActionTime/isExtensionAccount (chỉ getUserInfo trả).
+  status?: unknown; cover?: unknown; lastActionTime?: unknown; isExtensionAccount?: unknown;
   cachedAt: number;
 }
 
@@ -156,10 +269,10 @@ async function resolveZaloName(
   api: any,
   uid: string,
   cache: Map<string, UserInfoCacheEntry>,
-): Promise<{ zaloName: string; avatar: string; globalId: string; username: string }> {
+): Promise<{ zaloName: string; avatar: string; globalId: string; username: string; phone: string; gender: unknown; sdob: unknown; status: unknown; cover: unknown; lastActionTime: unknown; isExtensionAccount: unknown }> {
   const cached = cache.get(uid);
   if (cached && Date.now() - cached.cachedAt < USER_INFO_CACHE_TTL_MS) {
-    return { zaloName: cached.zaloName, avatar: cached.avatar, globalId: cached.globalId, username: cached.username };
+    return { zaloName: cached.zaloName, avatar: cached.avatar, globalId: cached.globalId, username: cached.username, phone: cached.phone ?? '', gender: cached.gender ?? null, sdob: cached.sdob ?? null, status: cached.status ?? null, cover: cached.cover ?? null, lastActionTime: cached.lastActionTime ?? null, isExtensionAccount: cached.isExtensionAccount ?? null };
   }
 
   try {
@@ -178,15 +291,21 @@ async function resolveZaloName(
         phone: profile.phoneNumber || '',
         globalId: String(profile.globalId || ''),
         username: String(profile.username || ''),
+        gender: profile.gender ?? null,
+        sdob: profile.sdob ?? null,
+        status: profile.status ?? null,
+        cover: profile.cover ?? null,
+        lastActionTime: profile.lastActionTime ?? null,
+        isExtensionAccount: profile.isExtensionAccount ?? null,
         cachedAt: Date.now(),
       };
       cache.set(uid, entry);
-      return { zaloName: entry.zaloName, avatar: entry.avatar, globalId: entry.globalId, username: entry.username };
+      return { zaloName: entry.zaloName, avatar: entry.avatar, globalId: entry.globalId, username: entry.username, phone: entry.phone ?? '', gender: entry.gender ?? null, sdob: entry.sdob ?? null, status: entry.status ?? null, cover: entry.cover ?? null, lastActionTime: entry.lastActionTime ?? null, isExtensionAccount: entry.isExtensionAccount ?? null };
     }
   } catch (err) {
     logger.warn(`[zalo] getUserInfo failed for ${uid}:`, err);
   }
-  return { zaloName: '', avatar: '', globalId: '', username: '' };
+  return { zaloName: '', avatar: '', globalId: '', username: '', phone: '', gender: null, sdob: null, status: null, cover: null, lastActionTime: null, isExtensionAccount: null };
 }
 
 interface ResolvedGroup {
@@ -212,6 +331,51 @@ async function resolveGroupInfo(api: any, groupId: string): Promise<ResolvedGrou
   }
 }
 
+/**
+ * Extract Zalo mentions từ message.data (Anh chốt 2026-06-03).
+ *
+ * SDK trả mention metadata qua 2 kênh — em thử cả 2:
+ *   #1 message.data.mentions — TGroupMessage trực tiếp (group only),
+ *      shape sẵn [{uid, pos, len, type}]
+ *   #2 message.data.propertyExt.ext — JSON stringified bởi server Zalo,
+ *      shape {"mentions":[{uid, pos, len, type}]}. Đây là nơi server đóng
+ *      gói thực sự (xem audit workflow). Có thể bị propertyExt là object
+ *      sẵn (đã parse) hoặc string.
+ *
+ * Trả undefined nếu không có mentions (user 1-1, hoặc tin không tag ai).
+ */
+function extractZaloMentions(
+  messageData: any,
+): Array<{ uid: string; pos: number; len: number; type: 0 | 1 }> | undefined {
+  // Kênh #1: direct array trên TGroupMessage
+  const direct = messageData?.mentions;
+  if (Array.isArray(direct) && direct.length > 0) {
+    return direct.map((m: any) => ({
+      uid: String(m.uid ?? ''),
+      pos: Number(m.pos ?? 0),
+      len: Number(m.len ?? 0),
+      type: (m.type === 1 ? 1 : 0) as 0 | 1,
+    })).filter((m) => m.uid && m.len > 0);
+  }
+  // Kênh #2: propertyExt.ext có thể là object hoặc stringified
+  try {
+    let ext = messageData?.propertyExt?.ext;
+    if (typeof ext === 'string') ext = JSON.parse(ext);
+    const ms = ext?.mentions;
+    if (Array.isArray(ms) && ms.length > 0) {
+      return ms.map((m: any) => ({
+        uid: String(m.uid ?? ''),
+        pos: Number(m.pos ?? 0),
+        len: Number(m.len ?? 0),
+        type: (m.type === 1 ? 1 : 0) as 0 | 1,
+      })).filter((m) => m.uid && m.len > 0);
+    }
+  } catch {
+    // ignore parse error
+  }
+  return undefined;
+}
+
 export interface ListenerContext {
   accountId: string;
   api: any;
@@ -227,6 +391,26 @@ export interface ListenerContext {
 export function attachZaloListener(ctx: ListenerContext): void {
   const { accountId, api, io, userInfoCache, onDisconnected } = ctx;
   const listener = api.listener;
+
+  // PRIVACY 2026-06-11: orgId của nick (cache 1 lần) để scope MỌI socket event theo
+  // room org → chặn rò cross-tenant. Account thuộc đúng 1 org nên cache an toàn.
+  let cachedOrgId: string | null = null;
+  async function resolveOrgId(): Promise<string | null> {
+    if (cachedOrgId) return cachedOrgId;
+    const acc = await prisma.zaloAccount.findUnique({
+      where: { id: accountId },
+      select: { orgId: true },
+    });
+    cachedOrgId = acc?.orgId ?? null;
+    return cachedOrgId;
+  }
+  /** Emit 1 event metadata theo room org (fallback bare nếu chưa resolve được orgId). */
+  async function emitOrg(event: string, payload: any): Promise<void> {
+    if (!io) return;
+    const orgId = await resolveOrgId();
+    if (orgId) io.to(`org:${orgId}`).emit(event, payload);
+    else io.emit(event, payload); // fallback hiếm: chưa biết org → giữ hành vi cũ
+  }
 
   listener.on('connected', () => {
     logger.info(`[zalo:${accountId}] Listener connected`);
@@ -252,14 +436,14 @@ export function attachZaloListener(ctx: ListenerContext): void {
 
   // KH đang gõ tin nhắn (chỉ user threads, không group). Auto-clear FE sau 5s
   // không có event mới. SDK fire mỗi ~2s khi KH còn gõ.
-  listener.on('typing', (typing: any) => {
+  listener.on('typing', async (typing: any) => {
     try {
       // DEBUG 2026-05-22: log raw payload để verify SDK fire event đúng shape.
       // Anh đã test 2026-05-22 không thấy typing dots — cần xác minh event arrival.
       logger.info(`[zalo:${accountId}] 🔵 TYPING event:`, JSON.stringify({
         threadId: typing?.threadId, type: typing?.type, data: typing?.data, isSelf: typing?.isSelf,
       }));
-      io?.emit('zalo:typing', {
+      await emitOrg('zalo:typing', {
         accountId,
         threadId: typing?.threadId || '',
         threadType: typing?.type === 1 ? 'group' : 'user',
@@ -271,46 +455,61 @@ export function attachZaloListener(ctx: ListenerContext): void {
   });
 
   // KH đã đọc tin → set seen_at + emit socket bubble update.
-  // Payload: SeenMessage[] — mỗi item {msgId, idTo, ...} cho user threads.
+  // Payload: SeenMessage[] — mỗi item {msgId, idTo} cho user threads (verified zca-js 2.1.2).
   // KH đọc tới msg N → tất cả msg ≤ N của ta đều được đánh dấu seen (Zalo behavior).
+  // v3 2026-05-29 (workflow audit anh chốt): SWEEP-TO-MSGID — Zalo CHỈ fire seen_messages
+  // cho msg cuối cùng KH đọc tới (anchor). BE phải tự sweep các msg cũ hơn trong cùng conv.
   listener.on('seen_messages', async (messages: any[]) => {
     try {
-      // DEBUG 2026-05-22: log raw payload
       logger.info(`[zalo:${accountId}] 🟢 SEEN_MESSAGES event:`, JSON.stringify(
         (messages || []).slice(0, 3).map(m => ({ threadId: m?.threadId, type: m?.type, data: m?.data })),
       ));
-      const seenIds: string[] = [];
-      for (const m of messages || []) {
-        const msgId = String(m?.data?.msgId || '');
-        if (msgId) seenIds.push(msgId);
-      }
-      if (!seenIds.length) return;
+      if (!messages?.length) return;
       const now = new Date();
-      // Update tất cả msg ≤ msgId này → seen. Đơn giản: update các msg có zaloMsgId in list.
-      // (Sweep-to-msgId logic phức tạp, để wave sau nếu cần.)
-      const updated = await prisma.message.updateMany({
-        where: {
-          zaloMsgId: { in: seenIds },
-          senderType: 'self',
-          seenAt: null,
-        },
-        data: { seenAt: now, deliveredAt: now }, // seen implies delivered
-      });
-      if (updated.count > 0) {
-        // Emit để FE update bubble — gửi danh sách msgId được flip
-        const rows = await prisma.message.findMany({
-          where: { zaloMsgId: { in: seenIds }, senderType: 'self' },
-          select: { id: true, conversationId: true, zaloMsgId: true, deliveredAt: true, seenAt: true },
+      // Sweep per anchor msg — resolve conversation từ anchor → mark all self msg ≤ anchor.createdAt
+      for (const m of messages) {
+        const anchorMsgId = String(m?.data?.msgId || '');
+        if (!anchorMsgId) continue;
+        const anchor = await prisma.message.findFirst({
+          where: { zaloMsgId: anchorMsgId, senderType: 'self' },
+          select: { id: true, conversationId: true, createdAt: true },
         });
-        for (const r of rows) {
-          io?.emit('zalo:message-status', {
-            accountId,
-            conversationId: r.conversationId,
-            messageId: r.id,
-            zaloMsgId: r.zaloMsgId,
-            deliveredAt: r.deliveredAt,
-            seenAt: r.seenAt,
+        if (!anchor) {
+          logger.info(`[zalo:${accountId}] 🟢 SEEN anchor not found msgId=${anchorMsgId} threadId=${m?.threadId}`);
+          continue;
+        }
+        const updated = await prisma.message.updateMany({
+          where: {
+            conversationId: anchor.conversationId,
+            senderType: 'self',
+            seenAt: null,
+            createdAt: { lte: anchor.createdAt },
+          },
+          data: { seenAt: now, deliveredAt: now },
+        });
+        if (updated.count > 0) {
+          // Lấy chính xác các msg vừa được sweep (filter seenAt=now để khớp atomic update)
+          const rows = await prisma.message.findMany({
+            where: {
+              conversationId: anchor.conversationId,
+              senderType: 'self',
+              seenAt: now,
+            },
+            select: { id: true, conversationId: true, zaloMsgId: true, deliveredAt: true, seenAt: true },
           });
+          logger.info(`[zalo:${accountId}] 🟢 SEEN swept ${updated.count} msg(s) ≤ anchor=${anchorMsgId} conv=${anchor.conversationId}`);
+          for (const r of rows) {
+            await emitOrg('zalo:message-status', {
+              accountId,
+              conversationId: r.conversationId,
+              messageId: r.id,
+              zaloMsgId: r.zaloMsgId,
+              deliveredAt: r.deliveredAt,
+              seenAt: r.seenAt,
+            });
+          }
+        } else {
+          logger.info(`[zalo:${accountId}] 🟢 SEEN anchor=${anchorMsgId} updated=0 (already seen or stale)`);
         }
       }
     } catch (err) {
@@ -319,6 +518,9 @@ export function attachZaloListener(ctx: ListenerContext): void {
   });
 
   // KH device nhận packet (chưa đọc). Set delivered_at nếu chưa seen.
+  // 2026-05-29 v2 (anh báo case tin "123"): Zalo SDK đôi khi merge "delivered + seen"
+  // thành 1 event delivered_messages{seen=1, seenUids=[KH]} thay vì fire seen_messages riêng.
+  // → BE phải parse flag seen=1 trong delivered payload để set seenAt cho kịp.
   listener.on('delivered_messages', async (messages: any[]) => {
     try {
       // DEBUG 2026-05-22: log raw payload
@@ -326,35 +528,79 @@ export function attachZaloListener(ctx: ListenerContext): void {
         (messages || []).slice(0, 3).map(m => ({ threadId: m?.threadId, type: m?.type, data: m?.data })),
       ));
       const deliveredIds: string[] = [];
+      const seenIds: string[] = [];
       for (const m of messages || []) {
         const msgId = String(m?.data?.msgId || '');
-        if (msgId) deliveredIds.push(msgId);
+        if (!msgId) continue;
+        deliveredIds.push(msgId);
+        // Detect Zalo merged 'delivered + seen' event: data.seen=1 hoặc seenUids non-empty.
+        const hasSeenFlag = m?.data?.seen === 1
+          || m?.data?.seen === true
+          || (Array.isArray(m?.data?.seenUids) && m.data.seenUids.length > 0);
+        if (hasSeenFlag) seenIds.push(msgId);
       }
       if (!deliveredIds.length) return;
       const now = new Date();
-      const updated = await prisma.message.updateMany({
-        where: {
-          zaloMsgId: { in: deliveredIds },
-          senderType: 'self',
-          deliveredAt: null,
-          seenAt: null, // chỉ set delivered nếu chưa seen (seen > delivered)
-        },
-        data: { deliveredAt: now },
-      });
-      if (updated.count > 0) {
-        const rows = await prisma.message.findMany({
-          where: { zaloMsgId: { in: deliveredIds }, senderType: 'self' },
-          select: { id: true, conversationId: true, zaloMsgId: true, deliveredAt: true, seenAt: true },
-        });
-        for (const r of rows) {
-          io?.emit('zalo:message-status', {
-            accountId,
-            conversationId: r.conversationId,
-            messageId: r.id,
-            zaloMsgId: r.zaloMsgId,
-            deliveredAt: r.deliveredAt,
-            seenAt: r.seenAt,
+      // Nhánh 1: nếu payload có seen=1 → set seenAt + deliveredAt + SWEEP các msg cũ.
+      // v3 2026-05-29: workflow audit confirm field 'seen' + 'seenUids' có thật nhưng raw log
+      // 4/4 sample đều seen=0/seenUids=[] → nhánh này hiếm khi trigger, nhưng vẫn xử lý đúng.
+      if (seenIds.length > 0) {
+        for (const anchorMsgId of seenIds) {
+          const anchor = await prisma.message.findFirst({
+            where: { zaloMsgId: anchorMsgId, senderType: 'self' },
+            select: { id: true, conversationId: true, createdAt: true },
           });
+          if (!anchor) continue;
+          const updatedSeen = await prisma.message.updateMany({
+            where: {
+              conversationId: anchor.conversationId,
+              senderType: 'self',
+              seenAt: null,
+              createdAt: { lte: anchor.createdAt },
+            },
+            data: { seenAt: now, deliveredAt: now },
+          });
+          if (updatedSeen.count > 0) {
+            const rows = await prisma.message.findMany({
+              where: { conversationId: anchor.conversationId, senderType: 'self', seenAt: now },
+              select: { id: true, conversationId: true, zaloMsgId: true, deliveredAt: true, seenAt: true },
+            });
+            logger.info(`[zalo:${accountId}] 🟢 DELIVERED→SEEN merged swept ${updatedSeen.count} ≤ anchor=${anchorMsgId}`);
+            for (const r of rows) {
+              await emitOrg('zalo:message-status', {
+                accountId, conversationId: r.conversationId, messageId: r.id,
+                zaloMsgId: r.zaloMsgId, deliveredAt: r.deliveredAt, seenAt: r.seenAt,
+              });
+            }
+          }
+        }
+      }
+      // Nhánh 2: msgId chưa seen (hoặc seen=0) → chỉ set deliveredAt.
+      const deliveryOnlyIds = deliveredIds.filter((id) => !seenIds.includes(id));
+      if (deliveryOnlyIds.length > 0) {
+        const updated = await prisma.message.updateMany({
+          where: {
+            zaloMsgId: { in: deliveryOnlyIds },
+            senderType: 'self',
+            deliveredAt: null,
+            seenAt: null,
+          },
+          data: { deliveredAt: now },
+        });
+        if (updated.count > 0) {
+          const rows = await prisma.message.findMany({
+            where: { zaloMsgId: { in: deliveryOnlyIds }, senderType: 'self' },
+            select: { id: true, conversationId: true, zaloMsgId: true, deliveredAt: true, seenAt: true },
+          });
+          logger.info(`[zalo:${accountId}] 🟡 DELIVERED → updated=${updated.count}, emit ${rows.length} row(s), io=${!!io}`);
+          for (const r of rows) {
+            await emitOrg('zalo:message-status', {
+              accountId, conversationId: r.conversationId, messageId: r.id,
+              zaloMsgId: r.zaloMsgId, deliveredAt: r.deliveredAt, seenAt: r.seenAt,
+            });
+          }
+        } else if (seenIds.length === 0) {
+          logger.info(`[zalo:${accountId}] 🟡 DELIVERED → updateMany count=0 (ids=${deliveryOnlyIds.join(',')})`);
         }
       }
     } catch (err) {
@@ -366,7 +612,7 @@ export function attachZaloListener(ctx: ListenerContext): void {
   // Nếu cần buffer outgoing messages giữa disconnected → reconnected, mở rộng ở đây.
   listener.on('disconnected', (code: number, reason: string) => {
     logger.warn(`[zalo:${accountId}] Listener disconnected (early): ${code} ${reason}`);
-    io?.emit('zalo:disconnected', { accountId, code, reason, phase: 'early' });
+    void emitOrg('zalo:disconnected', { accountId, code, reason, phase: 'early' });
   });
 
   listener.on('message', async (message: any) => {
@@ -386,6 +632,15 @@ export function attachZaloListener(ctx: ListenerContext): void {
       // Snapshot tên + avatar Zalo của KH nhìn từ nick này (lưu vào Friend.zaloDisplayName/AvatarUrl)
       let contactZaloDisplayName: string = '';
       let contactZaloAvatarUrl: string = '';
+      // Đợt 1 capture: getUserInfo đã trả gender/sdob/SĐT công khai — đưa về Contact (trước rớt).
+      let contactGender: unknown = null;
+      let contactSdob: unknown = null;
+      let contactPhone: string = '';
+      // Đợt 2b: status/cover/lastActionTime/isExtensionAccount (chỉ getUserInfo trả).
+      let contactStatus: unknown = null;
+      let contactCover: unknown = null;
+      let contactLastActionTime: unknown = null;
+      let contactIsExtension: unknown = null;
       if (senderUid && api.getUserInfo) {
         const resolveUid = message.isSelf ? (message.threadId || '') : senderUid;
         if (resolveUid) {
@@ -394,6 +649,13 @@ export function attachZaloListener(ctx: ListenerContext): void {
           contactUsername = userInfo.username;
           contactZaloDisplayName = userInfo.zaloName;
           contactZaloAvatarUrl = userInfo.avatar;
+          contactGender = userInfo.gender;
+          contactSdob = userInfo.sdob;
+          contactPhone = userInfo.phone;
+          contactStatus = userInfo.status;
+          contactCover = userInfo.cover;
+          contactLastActionTime = userInfo.lastActionTime;
+          contactIsExtension = userInfo.isExtensionAccount;
           if (message.isSelf) {
             if (userInfo.zaloName) recipientName = userInfo.zaloName;
             if (userInfo.avatar && message.threadId) updateContactAvatar(message.threadId, userInfo.avatar);
@@ -440,6 +702,13 @@ export function attachZaloListener(ctx: ListenerContext): void {
         contactUsername: contactUsername || undefined,
         contactZaloDisplayName: contactZaloDisplayName || undefined,
         contactZaloAvatarUrl: contactZaloAvatarUrl || undefined,
+        contactGender: contactGender ?? undefined,
+        contactSdob: contactSdob ?? undefined,
+        contactPhone: contactPhone || undefined,
+        contactStatus: contactStatus ?? undefined,
+        contactCover: contactCover ?? undefined,
+        contactLastActionTime: contactLastActionTime ?? undefined,
+        contactIsExtension: contactIsExtension ?? undefined,
         groupName,
         groupAvatarUrl,
         groupMembersCount,
@@ -448,23 +717,47 @@ export function attachZaloListener(ctx: ListenerContext): void {
         albumKey: album.albumKey,
         albumIndex: album.albumIndex,
         albumTotal: album.albumTotal,
+        // Anh chốt 2026-06-03 — capture mentions từ TGroupMessage qua 2 kênh:
+        //   #1 message.data.mentions (TGroupMessage trực tiếp, group only)
+        //   #2 message.data.propertyExt.ext JSON stringified (server Zalo
+        //      đóng gói tại đây, fallback nếu kênh #1 rỗng)
+        // SDK: type TMention = { uid, pos, len, type }
+        // (zca-js/dist/models/Message.d.ts:65-70)
+        mentions: extractZaloMentions(message.data),
       });
 
       if (result) {
-        // PRIVACY 2026-05-22: kèm _privacyMeta để FE non-owner blur ngay realtime
+        // PRIVACY 2026-06-11: redact server-side per-recipient + scope org (emit-chat).
+        // Nick main → room org nhận bản mờ, chính chủ đã unlock nhận bản thật.
         const accInfo = await prisma.zaloAccount.findUnique({
           where: { id: accountId },
           select: { privacyMode: true, ownerUserId: true },
         });
-        io?.emit('chat:message', {
+        await emitChatMessage({
+          io,
+          orgId: result.orgId,
           accountId,
-          message: result.message,
           conversationId: result.conversationId,
-          _privacyMeta: accInfo ? {
-            privacyMode: accInfo.privacyMode,
-            ownerUserId: accInfo.ownerUserId,
-          } : undefined,
+          message: result.message,
+          privacyMode: accInfo?.privacyMode ?? 'sub',
+          ownerUserId: accInfo?.ownerUserId ?? null,
         });
+
+        // Push mobile (FCM/APNs) — CHỈ tin KHÁCH gửi đến (inbound). Tin tự gửi/self bỏ qua.
+        // Fire-and-forget: push fail KHÔNG được ảnh hưởng nhận/lưu/emit tin.
+        if (!message.isSelf) {
+          void notifyNewInboundMessage({
+            orgId: result.orgId,
+            conversationId: result.conversationId,
+            zaloAccountId: accountId,
+            privacyMode: accInfo?.privacyMode ?? 'sub',
+            ownerUserId: accInfo?.ownerUserId ?? null,
+            message: result.message,
+            senderName,
+          }).catch((err) =>
+            logger.error(`[zalo:${accountId}] push notify error:`, err),
+          );
+        }
       }
     } catch (err) {
       logger.error(`[zalo:${accountId}] Message handler error:`, err);
@@ -492,7 +785,7 @@ export function attachZaloListener(ctx: ListenerContext): void {
     // FE composable matches by zaloMsgId/messageId → update isDeleted live ở cột 3.
     const zaloMsgIdStr = globalMsgId ? String(globalMsgId) : (cliMsgIdNum ? String(cliMsgIdNum) : null);
     for (const messageId of updatedIds) {
-      io?.emit('chat:deleted', {
+      await emitOrg('chat:deleted', {
         accountId,
         messageId,
         zaloMsgId: zaloMsgIdStr,
@@ -500,7 +793,7 @@ export function attachZaloListener(ctx: ListenerContext): void {
     }
     // Fallback emit bằng zaloMsgId nếu không update được row nào (FE tự match ở cache).
     if (updatedIds.length === 0 && zaloMsgIdStr) {
-      io?.emit('chat:deleted', { accountId, zaloMsgId: zaloMsgIdStr });
+      await emitOrg('chat:deleted', { accountId, zaloMsgId: zaloMsgIdStr });
     }
   });
 
@@ -522,7 +815,8 @@ export function attachZaloListener(ctx: ListenerContext): void {
     try {
       await handleFriendEvent(accountId, event);
       // Coarse event (giữ backward-compat — không ai mới subscribe nhưng cũ có thể vẫn dùng)
-      io?.emit('friend:event', { accountId, type: event.type, threadId: event.threadId });
+      // PRIVACY 2026-06-11: scope org (chặn cross-tenant).
+      await emitOrg('friend:event', { accountId, type: event.type, threadId: event.threadId });
 
       // Granular patch event cho FE composable use-friend-socket.ts → live update
       // FriendsView + ContactsView child row mà không cần refetch.
@@ -638,13 +932,25 @@ export function attachZaloListener(ctx: ListenerContext): void {
           albumIndex: album.albumIndex,
           albumTotal: album.albumTotal,
           isBackfill: true,
+          // Anh chốt 2026-06-03 — mentions cho old_messages backfill
+          mentions: extractZaloMentions(message.data),
         });
 
         if (result) {
-          io?.emit('chat:message', {
+          // PRIVACY 2026-06-11: backfill cũng qua emit-chat (redact + scope org).
+          // Trước đây emit raw + THIẾU cả _privacyMeta → non-owner thấy thẳng nội dung.
+          const accInfo = await prisma.zaloAccount.findUnique({
+            where: { id: accountId },
+            select: { privacyMode: true, ownerUserId: true },
+          });
+          await emitChatMessage({
+            io,
+            orgId: result.orgId,
             accountId,
-            message: result.message,
             conversationId: result.conversationId,
+            message: result.message,
+            privacyMode: accInfo?.privacyMode ?? 'sub',
+            ownerUserId: accInfo?.ownerUserId ?? null,
           });
         }
       } catch (err) {
@@ -655,11 +961,24 @@ export function attachZaloListener(ctx: ListenerContext): void {
 
   // Group system events: member join/leave/kick, name change, etc.
   listener.on('group_event', (event: any) => {
-    logger.info(`[zalo:${accountId}] Group event: type=${event?.type ?? 'unknown'}`, {
+    const eventType = event?.type ?? 'unknown';
+    logger.info(`[zalo:${accountId}] Group event: type=${eventType}`, {
       groupId: event?.groupId,
       actorId: event?.actorId,
       members: event?.members,
     });
+    // PATH TỨC THÌ — avatar/tên/cấu hình nhóm đổi → refresh NGAY nhóm đó (mirror avatar mới
+    // + emit live cho client đang mở), bỏ độ trễ ≤6h của cron. update_avatar=đổi ảnh,
+    // update/update_setting=đổi tên/cấu hình. Cron 6h vẫn là lưới an toàn cho lúc offline.
+    if ((eventType === 'update_avatar' || eventType === 'update' || eventType === 'update_setting') && event?.groupId) {
+      void (async () => {
+        const orgId = await resolveOrgId();
+        if (!orgId) return;
+        await refreshGroupInfoNow(accountId, orgId, String(event.groupId), io).catch((err) =>
+          logger.warn(`[zalo:${accountId}] group_event refresh failed:`, err),
+        );
+      })();
+    }
     // Future: store as system message in the group conversation
   });
 
@@ -669,7 +988,7 @@ export function attachZaloListener(ctx: ListenerContext): void {
   listener.on('closed', (code: number, reason: string) => {
     logger.warn(`[zalo:${accountId}] Listener closed: ${code} ${reason}`);
     onDisconnected(accountId);
-    io?.emit('zalo:disconnected', { accountId, code, reason });
+    void emitOrg('zalo:disconnected', { accountId, code, reason });
   });
 
   listener.on('error', (err: any) => {

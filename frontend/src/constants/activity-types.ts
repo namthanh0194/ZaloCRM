@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * activity-types.ts — UI mapping cho ActivityLog (icon, label tiếng Việt,
  * default visibility trong compact timeline).
@@ -106,6 +108,13 @@ export const ACTION_META: Record<string, ActionMeta> = {
   bot_score_calc:     { label: 'Bot tính điểm' },
   bot_status_suggest: { label: 'Bot suggest status' },
   auto_tag_change:    { label: 'Cập nhật auto-tag', icon: '🤖' },
+
+  // Lead Pool 2026-05-29 (Phase v2.D timeline logging)
+  lead_pool_assign:        { label: 'Nhận lead từ Pool', icon: '🎁' },
+  lead_pool_manual_return: { label: 'Trả lại lead về Pool', icon: '↩️' },
+  lead_pool_auto_return:   { label: 'Lead tự trả về Pool', icon: '⏱️' },
+  lead_pool_bonus_grant:   { label: 'Cấp thêm Lead bonus', icon: '🎯' },
+  lead_pool_zalo_lookup:   { label: 'Tìm Zalo qua SĐT', icon: '🔍' },
 };
 
 export function categoryOf(action: string, fallback: ActivityCategory = 'system'): ActivityCategory {
@@ -131,6 +140,12 @@ export function categoryOf(action: string, fallback: ActivityCategory = 'system'
     contact_split: 'system', data_import: 'system', data_export: 'system',
     bot_tag_auto: 'automation', bot_score_calc: 'automation', bot_status_suggest: 'automation',
     auto_tag_change: 'automation',
+    // Lead Pool 2026-05-29
+    lead_pool_assign: 'customer_info',
+    lead_pool_manual_return: 'customer_info',
+    lead_pool_auto_return: 'system',
+    lead_pool_bonus_grant: 'system',
+    lead_pool_zalo_lookup: 'system',
   };
   return map[action] || fallback;
 }

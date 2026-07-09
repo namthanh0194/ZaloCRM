@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <section class="timeline-section">
     <!-- Header: title + count + today badge + filter chip + ⚙ settings -->
@@ -12,19 +14,22 @@
           @click="goToFullPage"
         >🕐 {{ todayCount }} hôm nay</button>
       </div>
+      <!-- Segmented (con trượt trắng) + cog vuông 38px tách riêng — hs-chat .cx-tl-seg / .cx-tl-cog (2026-06-06) -->
       <div class="tl-controls">
-        <div class="filter-chips">
+        <div class="tl-seg">
           <button
             v-for="opt in FILTER_OPTIONS"
             :key="opt.value"
-            class="chip"
-            :class="{ active: filter === opt.value }"
+            class="tl-seg-tab"
+            :class="{ on: filter === opt.value }"
             @click="setFilter(opt.value as 'all' | 'notes' | 'activity')"
           >{{ opt.label }}</button>
         </div>
         <v-menu :close-on-content-click="false" location="bottom end">
           <template #activator="{ props: actProps }">
-            <button v-bind="actProps" class="settings-btn" title="Cài đặt categories hiển thị">⚙</button>
+            <button v-bind="actProps" class="tl-cog" title="Cài đặt categories hiển thị">
+              <Settings2 :size="16" :stroke-width="1.9" />
+            </button>
           </template>
           <div class="settings-dropdown">
             <div class="sd-title">Hiển thị loại hoạt động</div>
@@ -188,6 +193,7 @@ import { useToast } from '@/composables/use-toast';
 import { startOfOrgDay } from '@/composables/use-org-timezone';
 import NoteRow from './NoteRow.vue';
 import ActivityItem from './ActivityItem.vue';
+import { Settings2 } from 'lucide-vue-next';
 import AppointmentEditor from '@/components/appointments/AppointmentEditor.vue';
 import {
   CATEGORY_META,
@@ -552,41 +558,50 @@ defineExpose({ rootCount: rootNoteCount });
   align-items: center;
   gap: 6px;
 }
-.filter-chips {
-  display: inline-flex;
-  background: var(--smax-grey-100, #f5f6fa);
+/* Segmented (con trượt trắng + shadow) — hs-chat .cx-tl-seg (2026-06-06) */
+.tl-seg {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  background: var(--smax-grey-100, #f1f4f9);
   border-radius: 8px;
-  padding: 2px;
-  gap: 1px;
+  padding: 3px;
 }
-.chip {
+.tl-seg-tab {
   background: transparent;
   border: none;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  padding: 4px 10px;
+  padding: 7px 4px;
   border-radius: 6px;
   cursor: pointer;
   color: var(--smax-grey-700);
-  transition: all 0.1s;
+  white-space: nowrap;
+  transition: background 0.14s, color 0.14s, box-shadow 0.14s;
 }
-.chip:hover { color: var(--smax-primary); }
-.chip.active {
+.tl-seg-tab:hover { color: var(--smax-text); }
+.tl-seg-tab.on {
   background: #fff;
-  color: var(--smax-primary, #2962ff);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  color: var(--smax-primary, #1786be);
+  box-shadow: 0 1px 2px rgba(20,26,36,.05);
 }
-.settings-btn {
-  background: var(--smax-grey-100);
-  border: none;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
+/* Settings cog — button vuông 38px tách riêng — hs-chat .cx-tl-cog */
+.tl-cog {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--smax-grey-200, #e7eaf0);
+  background: #fff;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 13px;
   color: var(--smax-grey-700);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.14s, color 0.14s, border-color 0.14s;
 }
-.settings-btn:hover { background: var(--smax-primary-soft); color: var(--smax-primary); }
+.tl-cog:hover { background: var(--smax-primary-soft); color: var(--smax-primary); border-color: var(--smax-primary-soft); }
 
 .settings-dropdown {
   background: #fff;

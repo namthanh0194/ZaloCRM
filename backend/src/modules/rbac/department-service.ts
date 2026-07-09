@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * department-service.ts — RBAC Phase Phân Quyền 2026-05-21
  *
@@ -14,7 +16,7 @@
  * - Anti-cycle move (trigger raise nếu new parent nằm trong subtree)
  */
 import { randomUUID } from 'node:crypto';
-import { prisma } from '../../shared/database/prisma-client.js';
+import { prisma, tenantTransaction } from '../../shared/database/prisma-client.js';
 
 export type DeptRole = 'leader' | 'deputy' | 'member';
 
@@ -119,7 +121,7 @@ export async function createDepartment(input: {
   if (input.name.length > 100) throw new Error('Tên phòng ban quá dài (>100 ký tự)');
 
   // FIX codex review #4: parent read + create cùng tx (atomic, không race).
-  return await prisma.$transaction(async (tx) => {
+  return await tenantTransaction(async (tx) => {
     const newId = randomUUID();
     let path = '/' + newId + '/';
     let depth = 0;
@@ -171,7 +173,7 @@ export async function updateDepartment(input: {
 
   // FIX 2026-05-21: trigger Postgres bị Prisma db push drop. Logic recompute
   // path + cascade vào TS tx (transaction atomic, all-or-nothing).
-  return await prisma.$transaction(async (tx) => {
+  return await tenantTransaction(async (tx) => {
     const existing = await tx.department.findFirst({
       where: { id: input.id, orgId: input.orgId, archivedAt: null },
       select: { id: true, parentId: true, path: true, depth: true },
@@ -246,7 +248,7 @@ export async function updateDepartment(input: {
 
 export async function archiveDepartment(orgId: string, id: string): Promise<void> {
   // FIX codex review #7: wrap count + archive trong 1 tx, lock dept row → tránh race.
-  await prisma.$transaction(async (tx) => {
+  await tenantTransaction(async (tx) => {
     const rows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
       `SELECT id FROM departments
        WHERE id = $1 AND org_id = $2 AND archived_at IS NULL FOR UPDATE`,
@@ -384,4 +386,45 @@ export async function getUserDepartment(userId: string): Promise<{
     select: { departmentId: true, deptRole: true },
   });
   return m ? { departmentId: m.departmentId, deptRole: m.deptRole as DeptRole } : null;
+}
+
+/**
+ * Resolve "quản lý trực tiếp" của 1 user theo sơ đồ tổ chức (CareSession notify
+ * manager — 2026-06-07). Dùng cho thông báo "để biết" tới cấp trên.
+ *
+ * Quy tắc (cha xem con):
+ *   - User là member/deputy của dept D → manager = leader của D.
+ *   - User là leader của dept D → manager = leader của dept CHA của D (lên 1 cấp).
+ *   - Không có cha hoặc cha không có leader → null (không gửi manager).
+ *
+ * @returns userId của manager, hoặc null.
+ */
+export async function getManagerOfUser(userId: string): Promise<string | null> {
+  const m = await prisma.departmentMember.findUnique({
+    where: { userId },
+    select: { departmentId: true, deptRole: true },
+  });
+  if (!m) return null;
+
+  // member/deputy → leader của chính dept này.
+  if (m.deptRole !== 'leader') {
+    const leader = await prisma.departmentMember.findFirst({
+      where: { departmentId: m.departmentId, deptRole: 'leader' },
+      select: { userId: true },
+    });
+    if (leader && leader.userId !== userId) return leader.userId;
+  }
+
+  // leader (hoặc dept không có leader khác) → lên dept cha.
+  const dept = await prisma.department.findUnique({
+    where: { id: m.departmentId },
+    select: { parentId: true },
+  });
+  if (!dept?.parentId) return null;
+
+  const parentLeader = await prisma.departmentMember.findFirst({
+    where: { departmentId: dept.parentId, deptRole: 'leader' },
+    select: { userId: true },
+  });
+  return parentLeader && parentLeader.userId !== userId ? parentLeader.userId : null;
 }

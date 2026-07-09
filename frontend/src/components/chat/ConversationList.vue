@@ -1,20 +1,55 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <div class="conv-list">
     <!-- ════════ Header: search + label chip + tabs ════════ -->
     <div class="cl-header">
       <div class="cl-search-row">
-        <input
-          class="cl-search"
-          name="conv-list-search"
-          autocomplete="off"
-          :value="search"
-          placeholder="Tìm theo tên, SĐT, nội dung tin nhắn…"
-          @input="onSearchInput"
-        />
-        <button class="cl-new-msg" title="Bắt đầu cuộc trò chuyện mới" @click="newMsgOpen = true">
+        <div class="cl-search-box">
+          <input
+            class="cl-search"
+            name="conv-list-search"
+            ref="searchInputEl"
+            autocomplete="off"
+            :value="search"
+            :class="{ 'cl-search--flash': searchFlash, 'has-text': !!search }"
+            placeholder="Tìm theo tên, SĐT, nội dung tin nhắn…"
+            @input="onSearchInput"
+            @keydown.esc="clearSearch"
+            @keydown.enter.prevent="onSearchEnter"
+            @animationend="searchFlash = false"
+          />
+          <!-- 2026-06-12 — nút X mờ hiện khi có text → click xóa kết quả tìm + focus lại
+               (anh báo: search dính mãi tới khi xóa thủ công/reload). Esc cũng xóa. -->
+          <button
+            v-if="search"
+            type="button"
+            class="cl-search-clear"
+            title="Xóa tìm kiếm (Esc)"
+            @click="clearSearch"
+          ><XIcon :size="14" :stroke-width="2.5" /></button>
+        </div>
+        <button
+          class="cl-new-msg"
+          ref="newMsgBtnEl"
+          data-nick-picker-trigger
+          title="Bắt đầu cuộc trò chuyện mới"
+          @click="onClickNewMessage"
+        >
           <v-icon size="18">mdi-message-plus</v-icon>
           <span>Tin nhắn mới</span>
+          <span v-if="newMsgPickerOpen" class="cl-new-msg-caret"><ChevronUpIcon :size="14" :stroke-width="2" /></span>
         </button>
+
+        <!-- Wedge A 2026-05-28: NickPickerPopup xổ từ nút Tin nhắn mới
+             Chỉ mở khi search có SĐT (>= 9 digits) -->
+        <NickPickerPopup
+          v-model="newMsgPickerOpen"
+          :accounts="composeAccounts as any"
+          :trigger-el="newMsgBtnEl"
+          title="Chọn nick gửi tin nhắn"
+          @pick="onPickNickForNewMsg"
+        />
       </div>
 
       <!-- Label chip bar (filter theo tag CRM) — SINGLE-SELECT.
@@ -34,7 +69,7 @@
           class="clear-tags"
           @click="filters.tags = []"
           title="Bỏ lọc tag · hiển thị lại tất cả"
-        >×</button>
+        ><XIcon :size="13" :stroke-width="2" /></button>
       </div>
 
       <!-- Phase 6+ Inbox Triage Filter Bar (Pills + 4 tabs + Mini counter) -->
@@ -60,28 +95,63 @@
           active: conv.id === selectedId,
           unread: conv.unreadCount > 0 && conv.id !== selectedId,
           'is-group': conv.threadType === 'group',
+          'is-virtual': conv.isVirtual,
         }"
         @click="$emit('select', conv.id)"
         @contextmenu.prevent="openContextMenu($event, conv)"
       >
-        <Avatar
-          :src="avatarSrcOf(conv)"
-          :name="displayName(conv)"
-          :size="41"
-          :is-group="conv.threadType === 'group'"
-          :platform="conv.threadType === 'user' ? 'zalo' : null"
-          :gradient-seed="conv.id"
-        />
+        <div class="ci-avatar-wrap">
+          <Avatar
+            :src="avatarSrcOf(conv)"
+            :name="displayName(conv)"
+            :size="41"
+            :is-group="conv.threadType === 'group'"
+            :platform="conv.threadType === 'user' ? 'zalo' : null"
+            :gradient-seed="conv.id"
+          />
+          <!-- Mini nick avatar — góc dưới-trái cho biết conv thuộc nick Zalo nào.
+               Anh chốt 2026-05-28: tránh phải click vào conv mới biết nick. -->
+          <img
+            v-if="conv.zaloAccount?.avatarUrl"
+            :src="conv.zaloAccount.avatarUrl"
+            :alt="conv.zaloAccount.displayName || ''"
+            :title="conv.zaloAccount.displayName ? `Nick: ${conv.zaloAccount.displayName}` : 'Nick Zalo'"
+            class="ci-nick-mini"
+          />
+          <span
+            v-else-if="conv.zaloAccount?.displayName"
+            class="ci-nick-mini ci-nick-mini--initial"
+            :title="`Nick: ${conv.zaloAccount.displayName}`"
+          >{{ (conv.zaloAccount.displayName || '?').charAt(0).toUpperCase() }}</span>
+
+          <!-- M55 2026-05-30: Badge cùng chăm — góc trên-phải avatar KH.
+               Chỉ hiện khi có >=2 sale chăm KH này (avoid noise khi chỉ 1 sale).
+               Tooltip = list collaborators. Click conv để vào panel chi tiết. -->
+          <span
+            v-if="cungChamCount(conv) >= 2"
+            class="ci-cung-cham-badge"
+            :title="cungChamTooltip(conv)"
+          >🤝 {{ cungChamCount(conv) }}</span>
+        </div>
 
 
         <div class="ci-body">
           <div class="ci-name-row">
             <div class="ci-name">
               <span v-if="conv.threadType === 'group'" class="group-icon">👥</span>
+              <span v-if="conv.isVirtual" class="virtual-chip" title="Chat nội bộ — KH chưa có Zalo, tin nhắn KHÔNG gửi đi">🔒</span>
               {{ displayName(conv) }}
+              <!-- Theo dõi (anh chốt 2026-06-15): khách đang trong "theo dõi" → chuông ngay sau tên.
+                   Icon hệ thống mdi (đồng bộ), không emoji. -->
+              <v-icon
+                v-if="isFollowingConv(conv)"
+                size="13"
+                class="ci-follow-bell"
+                title="Đang theo dõi khách hàng này"
+              >mdi-bell-ring-outline</v-icon>
             </div>
             <div class="ci-meta-right">
-              <div class="ci-time">{{ formatTime(conv.lastMessageAt) }}</div>
+              <div class="ci-time"><ConvTime :at="conv.lastMessageAt" /></div>
               <div
                 v-if="conv.unreadCount > 0 && conv.id !== selectedId"
                 class="ci-unread-count"
@@ -111,17 +181,17 @@
                Show 3 tag đầu + "+N" chip click xem rest qua v-menu. -->
           <div class="ci-tag-row">
             <span
-              v-for="tag in mergedTags(conv).slice(0, 3)"
-              :key="tag"
+              v-for="tag in displayTags(conv).slice(0, 3)"
+              :key="tag.key"
               class="tag-mini"
-              :class="{ 'tag-zalo': isZaloManaged(tag), 'tag-crm': !isZaloManaged(tag) }"
-              :style="{ '--tag-color': tagColor(tag) }"
+              :class="{ 'tag-zalo': tag.isZalo, 'tag-crm': !tag.isZalo, 'tag-auto': tag.isAuto }"
+              :style="{ '--tag-color': tag.color }"
             >
-              <ZaloBrandIcon v-if="isZaloManaged(tag)" :size="11" />{{ cleanTagName(tag) }}
+              <ZaloBrandIcon v-if="tag.isZalo" :size="11" /><span v-else-if="tag.emoji" class="tag-mini-emoji">{{ tag.emoji }}</span>{{ tag.name }}
             </span>
 
             <v-menu
-              v-if="mergedTags(conv).length > 3"
+              v-if="displayTags(conv).length > 3"
               :close-on-content-click="false"
               location="top start"
               open-on-hover
@@ -130,19 +200,19 @@
                 <span
                   v-bind="actProps"
                   class="tag-overflow"
-                  :title="`Còn ${mergedTags(conv).length - 3} tag khác`"
+                  :title="`Còn ${displayTags(conv).length - 3} tag khác`"
                   @click.stop
-                >+{{ mergedTags(conv).length - 3 }}</span>
+                >+{{ displayTags(conv).length - 3 }}</span>
               </template>
               <div class="tag-overflow-popup">
                 <span
-                  v-for="tag in mergedTags(conv).slice(3)"
-                  :key="tag"
+                  v-for="tag in displayTags(conv).slice(3)"
+                  :key="tag.key"
                   class="tag-popup-pill"
-                  :class="{ 'tag-zalo': isZaloManaged(tag), 'tag-crm': !isZaloManaged(tag) }"
-                  :style="{ '--tag-color': tagColor(tag) }"
+                  :class="{ 'tag-zalo': tag.isZalo, 'tag-crm': !tag.isZalo, 'tag-auto': tag.isAuto }"
+                  :style="{ '--tag-color': tag.color }"
                 >
-                  <ZaloBrandIcon v-if="isZaloManaged(tag)" :size="11" />{{ cleanTagName(tag) }}
+                  <ZaloBrandIcon v-if="tag.isZalo" :size="11" /><span v-else-if="tag.emoji" class="tag-mini-emoji">{{ tag.emoji }}</span>{{ tag.name }}
                 </span>
               </div>
             </v-menu>
@@ -162,31 +232,50 @@
       </div>
     </div>
 
-    <!-- Context menu (right-click) -->
-    <v-menu v-model="contextMenu.show" :target="[contextMenu.x, contextMenu.y]" location="end">
-      <v-list density="compact">
-        <v-list-item
-          v-if="activeTab === 'main'"
-          prepend-icon="mdi-archive-arrow-down-outline"
-          @click="moveConversation(contextMenu.convId, 'other')"
-        >
-          <v-list-item-title>Chuyển sang tab Khác</v-list-item-title>
-        </v-list-item>
-        <v-list-item
-          v-else
-          prepend-icon="mdi-archive-arrow-up-outline"
-          @click="moveConversation(contextMenu.convId, 'main')"
-        >
-          <v-list-item-title>Chuyển sang tab Chính</v-list-item-title>
-        </v-list-item>
-      </v-list>
-    </v-menu>
+    <!-- Context menu cột 2 (right-click) — clone giao diện + responsive cột 3 -->
+    <ConversationContextMenu
+      v-model="contextMenu.show"
+      :position="{ x: contextMenu.x, y: contextMenu.y }"
+      :active-tab="activeTabKey || activeTab"
+      :is-following="contextMenu.isFollowing"
+      :follow-busy="contextMenu.followBusy"
+      :can-follow="!!(contextMenu.contactId && contextMenu.nickId)"
+      @move-other="moveConversation(contextMenu.convId, 'other')"
+      @move-main="moveConversation(contextMenu.convId, 'main')"
+      @toggle-follow="toggleFollowFromMenu"
+      @delete="askDeleteConversation"
+    />
 
-    <!-- Compose new message dialog -->
+    <!-- Hộp xác nhận Xóa đoạn hội thoại (UI đẹp, Enter = Xóa) -->
+    <Teleport to="body">
+      <div v-if="deleteDialog.show" class="del-overlay" @click.self="closeDeleteDialog">
+        <div class="del-card" role="dialog" aria-modal="true" @keydown.enter.prevent="confirmDeleteConversation" @keydown.esc="closeDeleteDialog">
+          <div class="del-icon">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+            </svg>
+          </div>
+          <div class="del-title">Xóa đoạn hội thoại?</div>
+          <div class="del-desc">
+            Hội thoại sẽ được ẩn khỏi danh sách. Tin nhắn vẫn được giữ lại và có thể khôi phục sau.
+          </div>
+          <div class="del-actions">
+            <button class="del-btn del-btn--ghost" @click="closeDeleteDialog">Hủy</button>
+            <button ref="delConfirmBtn" class="del-btn del-btn--danger" :disabled="deleteDialog.busy" @click="confirmDeleteConversation">
+              {{ deleteDialog.busy ? 'Đang xóa…' : 'Xóa' }}
+            </button>
+          </div>
+          <div class="del-hint">Nhấn <kbd>Enter</kbd> để xóa · <kbd>Esc</kbd> để hủy</div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Compose new message dialog — chỉ mở SAU khi chọn nick từ NickPickerPopup -->
     <NewMessageDialog
       v-model="newMsgOpen"
       :accounts="composeAccounts"
       :default-account-id="composeDefaultAccountId"
+      :initial-query="newMsgInitialQuery"
       @opened="onComposeOpened"
     />
 
@@ -215,12 +304,18 @@
 import { ref, reactive, watch, onMounted, computed, nextTick } from 'vue';
 import type { Conversation, AiSentiment } from '@/composables/use-chat';
 import { api } from '@/api/index';
+// Icon chrome — Lucide line (anh chốt 2026-06-08, bỏ ký tự thô).
+import { ChevronUp as ChevronUpIcon, X as XIcon } from 'lucide-vue-next';
 import AiSentimentBadge from '@/components/ai/ai-sentiment-badge.vue';
 import Avatar from '@/components/ui/Avatar.vue';
 import NewMessageDialog from '@/components/chat/NewMessageDialog.vue';
+import ConversationContextMenu from '@/components/chat/conversation-context-menu.vue';
+import ConvTime from '@/components/chat/ConvTime.vue';
+import NickPickerPopup from '@/components/zalo-accounts/NickPickerPopup.vue';
 import ZaloBrandIcon from '@/components/icons/ZaloBrandIcon.vue';
 import { loadTagDefs, isZaloManaged, cleanTagName, tagColor } from '@/composables/use-crm-tag-defs';
-import { getOrgParts } from '@/composables/use-org-timezone';
+import { loadTagTaxonomy, findTagBySlug, useTagTaxonomy } from '@/composables/use-tag-taxonomy';
+import { getAutoTagDef } from '@/constants/auto-tags';
 import PrivateBlur from '@/components/privacy/PrivateBlur.vue';
 import { usePrivacyVisibility } from '@/composables/use-privacy-visibility';
 
@@ -231,13 +326,28 @@ const props = defineProps<{
   selectedId: string | null;
   loading: boolean;
   search: string;
-  accounts?: { id: string; displayName: string | null }[];
+  accounts?: Array<{
+    id: string;
+    displayName: string | null;
+    avatarUrl?: string | null;
+    ownerUserId?: string | null;
+    privacyMode?: string | null;
+    isOwnedByMe?: boolean;
+    owner?: { id: string; fullName: string | null } | null;
+    zaloUid?: string | null;
+  }>;
   selectedAccountIds?: string[];
   /** Phase A perf (2026-05-21) — tab key (personal/group/main/other). Dùng làm
    *  :key cho TransitionGroup → tab switch tạo instance MỚI → bỏ qua FLIP
    *  animation cross-tab. Reorder trong cùng tab (tin mới đến) vẫn animate.
    *  Không bắt buộc; nếu missing thì TransitionGroup hoạt động như trước. */
   activeTabKey?: string;
+  /** Phase 2026-05-30 — SĐT từ lead Facebook (/chat?compose=SĐT). Khi có giá trị →
+   *  tự mở "Tin nhắn mới" + điền sẵn SĐT để dialog lookup Zalo + tạo hội thoại. */
+  autoComposePhone?: string;
+  /** Theo dõi (anh chốt 2026-06-15) — Set các cặp "contactId|nickId" ĐANG theo dõi.
+   *  Row khớp → hiện chuông sau tên. ChatView fetch /care-sessions/listening-pairs. */
+  followingPairs?: Set<string>;
 }>();
 
 const emit = defineEmits<{
@@ -247,27 +357,107 @@ const emit = defineEmits<{
   'update:filters': [params: Record<string, string>];
   'tab-changed': [tab: string];
   'conversation-moved': [id: string, tab: string];
+  'conversation-deleted': [id: string];
   'compose-opened': [conversationId: string];
+  /** Theo dõi (anh chốt 2026-06-15) — toggle follow từ menu → cập nhật chuông cột 2 ngay. */
+  'follow-changed': [contactId: string, nickId: string, following: boolean];
 }>();
 
 // ── Compose new message ─────────────────────────────────────────────────────
+// Wedge A 2026-05-28 (anh chốt): nút "Tin nhắn mới" hành xử theo 2 state.
+//  - Search empty → flash đỏ cam viền search + focus, KHÔNG mở dialog.
+//  - Search có nội dung → mở NickPickerPopup xổ từ nút này (Teleport + anchored).
+//  - Pick nick từ popup → đóng popup + mở NewMessageDialog với
+//    defaultAccountId + initialQuery=search box.
 const newMsgOpen = ref(false);
+const newMsgPickerOpen = ref(false);
+const newMsgBtnEl = ref<HTMLElement | null>(null);
+const searchInputEl = ref<HTMLInputElement | null>(null);
+const searchFlash = ref(false);
+const newMsgInitialQuery = ref('');
+const newMsgPickedAccountId = ref<string | null>(null);
+
 const composeAccounts = computed(() => props.accounts || []);
 const composeDefaultAccountId = computed<string | null>(() => {
+  // Sau khi chọn nick từ popup → ưu tiên dùng cái đó
+  if (newMsgPickedAccountId.value) return newMsgPickedAccountId.value;
   const ids = props.selectedAccountIds || [];
   if (ids.length === 1) return ids[0];
   if (composeAccounts.value.length === 1) return composeAccounts.value[0].id;
   return null;
 });
-function onComposeOpened(conversationId: string) {
-  emit('compose-opened', conversationId);
+
+function onClickNewMessage() {
+  const q = (props.search || '').trim();
+  if (!q) {
+    // State A: hint sale nhập SĐT vào search trước
+    searchFlash.value = true;
+    nextTick(() => searchInputEl.value?.focus());
+    return;
+  }
+  // State B: mở NickPickerPopup xổ từ button "Tin nhắn mới"
+  newMsgPickerOpen.value = !newMsgPickerOpen.value;
 }
+
+// 2026-06-20 (anh báo: nhập SĐT vào ô tìm kiếm + Enter phải mở "Tin nhắn mới", đỡ phải click):
+// Enter trong ô search → mở picker "Tin nhắn mới" (giống bấm nút) khi có nội dung. Enter LUÔN
+// mở (không toggle như click) để bấm Enter không vô tình đóng lại.
+function onSearchEnter() {
+  const q = (props.search || '').trim();
+  if (!q) return; // rỗng → không làm gì (khỏi flash phiền khi Enter)
+  newMsgPickerOpen.value = true;
+}
+
+function onPickNickForNewMsg(nick: { id: string }) {
+  newMsgPickedAccountId.value = nick.id;
+  newMsgInitialQuery.value = (props.search || '').trim();
+  newMsgPickerOpen.value = false;
+  newMsgOpen.value = true;
+}
+
+function onComposeOpened(conversationId: string) {
+  // M55.3 2026-05-30: đóng dialog NewMessageDialog NGAY khi opened — defensive,
+  // tránh sale phải bấm X thủ công nếu child dialog quên emit update:modelValue.
+  newMsgOpen.value = false;
+  emit('compose-opened', conversationId);
+  // Reset picked state sau khi dialog đã open + emit (dùng cho lần next)
+  newMsgPickedAccountId.value = null;
+  // Wedge A 2026-05-28 anh chốt: clear search SĐT sau khi mở chat thành công.
+  // Trước fix: sale gõ SĐT vào search → chọn nick → mở chat → conv mở nhưng
+  // conv list vẫn filter SĐT → conv mới biến mất → phải xoá search thủ công.
+  emit('update:search', '');
+}
+
+// Phase 2026-05-30 — Mở chat từ lead Facebook: khi có autoComposePhone → tự mở
+// "Tin nhắn mới" + điền sẵn SĐT. Dialog tự lookup Zalo + tạo hội thoại.
+function triggerAutoCompose(phone: string) {
+  if (!phone) return;
+  newMsgInitialQuery.value = phone.trim();
+  newMsgPickedAccountId.value = null; // sale chọn nick trong dialog
+  newMsgOpen.value = true;
+}
+watch(() => props.autoComposePhone, (p) => { if (p) triggerAutoCompose(p); });
+onMounted(() => { if (props.autoComposePhone) triggerAutoCompose(props.autoComposePhone); });
 
 // ── Tab state ──────────────────────────────────────────────────────────────
 const activeTab = ref<'main' | 'other'>('main');
 
+// ── Thời gian tương đối: chuyển sang component con ConvTime + ticker CHUNG ───
+// (2026-06-11 perf) — trước đây ref `now` 30s truyền vào formatTime mọi hàng → đổi
+// `now` re-render CẢ 100 hàng → giật chu kỳ. Giờ ConvTime tự cập nhật, chỉ phần giờ
+// re-render. formatTime() bên dưới giữ lại cho code cũ tham chiếu (nếu có), không
+// còn dùng trong template.
+
 // ── Context menu state ─────────────────────────────────────────────────────
-const contextMenu = reactive({ show: false, x: 0, y: 0, convId: '' });
+const contextMenu = reactive({
+  show: false, x: 0, y: 0, convId: '',
+  // 2026-06-11 — phục vụ item "Theo dõi" (reuse care-session) + "Xóa hội thoại".
+  contactId: '', nickId: '', isFollowing: false, followBusy: false,
+});
+
+// Hộp xác nhận xóa hội thoại
+const deleteDialog = reactive({ show: false, convId: '', busy: false });
+const delConfirmBtn = ref<HTMLButtonElement | null>(null);
 
 // ── Filter state ────────────────────────────────────────────────────────────
 const filters = reactive({
@@ -280,6 +470,13 @@ const availableTags = ref<string[]>([]);
 // ── Helpers ────────────────────────────────────────────────────────────────
 function onSearchInput(e: Event) {
   emit('update:search', (e.target as HTMLInputElement).value);
+}
+
+// 2026-06-12 — xóa ô tìm kiếm (nút X / phím Esc) + focus lại để gõ tiếp ngay.
+function clearSearch() {
+  if (!props.search) return;
+  emit('update:search', '');
+  nextTick(() => searchInputEl.value?.focus());
 }
 
 // Single-select: click tag → set ONLY tag đó. Click tag đang active → clear.
@@ -317,17 +514,81 @@ function buildFilterParams(): Record<string, string> {
 
 /* Merge Contact.tags + Friend.crmTagsPerNick (Zalo-mirrored "🔵 X").
  * Dedup, Zalo tags hiển thị đầu (priority cho per-pair context). */
-function mergedTags(conv: Conversation): string[] {
+// 2026-06-06 (Anh chốt) — Tag Zalo Real ở cột 2 lấy từ Friend.zaloLabels (object {name,color}
+// màu CHUẨN = zalo_labels.color, đồng bộ TagCrmBar + header) thay vì string '🔵 X' + crm_tags legacy.
+// Tag khác (manual/auto) giữ đường cũ. Trả object {name, color, isZalo} thống nhất.
+interface DisplayTag { name: string; color: string; emoji?: string | null; isZalo: boolean; isAuto?: boolean; key: string }
+
+// Reactive trigger — displayTags đọc taxonomyVersion.value để Vue re-render khi
+// taxonomy load xong (slug→name). Không có dòng này thì tag hiện slug tới lần render sau.
+const { taxonomyVersion } = useTagTaxonomy();
+
+// Resolve 1 slug CRM/manual → def taxonomy (name/color/emoji). Fallback slug thô nếu
+// không tìm thấy (free-text tag chưa migrate / taxonomy chưa load).
+function resolveCrmTag(slug: string): DisplayTag {
+  const def = findTagBySlug(slug);
+  if (def) {
+    return { name: def.name, color: def.color || '#6B7280', emoji: def.emoji, isZalo: false, key: 'c:' + slug };
+  }
+  // Fallback: tag legacy lưu NAME (CrmTag table) hoặc free-text → dùng đường cũ.
+  return { name: cleanTagName(slug), color: tagColor(slug) || '#6B7280', isZalo: false, key: 'c:' + slug };
+}
+
+// 2026-06-11 (perf) — memoize: displayTags gọi 3 lần/hàng × 100 hàng. Cache theo conv,
+// invalidate khi tags (zaloLabels/autoTags/crmTagsPerNick) hoặc taxonomyVersion đổi.
+const _tagsCache = new WeakMap<Conversation, { sig: string; result: DisplayTag[] }>();
+function displayTags(conv: Conversation): DisplayTag[] {
+  const tv = taxonomyVersion.value; // reactive dep — re-eval khi taxonomy load/refresh
+  const f = conv.friendship as { zaloLabels?: unknown[]; autoTags?: unknown[]; crmTagsPerNick?: unknown[] } | null | undefined;
+  const ct = Array.isArray(conv.contact?.tags) ? conv.contact!.tags as unknown[] : [];
+  const sig = `${tv}|${(f?.zaloLabels?.length ?? 0)}|${(f?.autoTags?.length ?? 0)}|${(f?.crmTagsPerNick?.length ?? 0)}|${ct.length}`;
+  const hit = _tagsCache.get(conv);
+  if (hit && hit.sig === sig) return hit.result;
+  const result = computeDisplayTags(conv);
+  _tagsCache.set(conv, { sig, result });
+  return result;
+}
+function computeDisplayTags(conv: Conversation): DisplayTag[] {
+  const seen = new Set<string>();
+  const out: DisplayTag[] = [];
+  // 1. Tag Zalo Real từ zaloLabels (màu chuẩn) — ƯU TIÊN đầu.
+  const zalo = (conv.friendship as { zaloLabels?: Array<{ id?: number; name?: string; color?: string }> } | null | undefined)?.zaloLabels;
+  if (Array.isArray(zalo)) {
+    for (const z of zalo) {
+      if (!z?.name || seen.has('z:' + z.name)) continue;
+      seen.add('z:' + z.name);
+      out.push({ name: z.name, color: z.color || '#0068FF', isZalo: true, key: 'z:' + (z.id ?? z.name) });
+    }
+  }
+  // 2. Auto-tags (Friend.autoTags) — slug cố định. Nhóm Detect (active/cold/ready/…)
+  //    dùng AUTO_TAG_DISPLAY (nhãn Việt + icon). Nhóm Engagement (engagement-hot/…) là
+  //    Tag v2 thật → resolve qua taxonomy. Ưu tiên taxonomy, fallback AUTO_TAG_DISPLAY.
+  const autoTagsRaw = (conv.friendship as { autoTags?: string[] } | null | undefined)?.autoTags;
+  if (Array.isArray(autoTagsRaw)) {
+    for (const key of autoTagsRaw) {
+      if (!key || seen.has('a:' + key)) continue;
+      seen.add('a:' + key);
+      const taxDef = findTagBySlug(key);
+      if (taxDef) {
+        out.push({ name: taxDef.name, color: taxDef.color || '#9CA3AF', emoji: taxDef.emoji, isZalo: false, isAuto: true, key: 'a:' + key });
+      } else {
+        const def = getAutoTagDef(key);
+        out.push({ name: def.label, color: def.color, emoji: def.icon, isZalo: false, isAuto: true, key: 'a:' + key });
+      }
+    }
+  }
+  // 3. Tag CRM khác (manual/crm) — Contact.tags + crmTagsPerNick lưu SLUG tag v2.
+  //    KHÔNG có prefix 🔵 (Zalo đã lấy ở trên). Resolve slug→name/màu qua taxonomy.
   const contactTags = Array.isArray(conv.contact?.tags) ? (conv.contact!.tags as string[]) : [];
   const friendTagsRaw = (conv.friendship as { crmTagsPerNick?: string[] } | null | undefined)?.crmTagsPerNick;
   const friendTags = Array.isArray(friendTagsRaw) ? friendTagsRaw : [];
-  // Dedup, Zalo-managed (🔵 prefix) lên trước
-  const seen = new Set<string>();
-  const result: string[] = [];
-  for (const t of friendTags) if (t.startsWith('🔵 ') && !seen.has(t)) { seen.add(t); result.push(t); }
-  for (const t of friendTags) if (!t.startsWith('🔵 ') && !seen.has(t)) { seen.add(t); result.push(t); }
-  for (const t of contactTags) if (!seen.has(t)) { seen.add(t); result.push(t); }
-  return result;
+  for (const t of [...friendTags, ...contactTags]) {
+    if (t.startsWith('🔵 ')) continue; // tag Zalo mirror → đã lấy từ zaloLabels
+    if (seen.has('c:' + t)) continue;
+    seen.add('c:' + t);
+    out.push(resolveCrmTag(t));
+  }
+  return out;
 }
 
 // ── Conversation display ───────────────────────────────────────────────────
@@ -337,12 +598,59 @@ function mergedTags(conv: Conversation): string[] {
 function isUsableName(s: string | null | undefined): s is string {
   return !!s && s.trim().length > 0 && s.trim().toLowerCase() !== 'unknown';
 }
+// M55 2026-05-30 — Cùng chăm counter cho ConversationList badge.
+// 2026-06-20 (anh báo lệch cache vs detail): dùng _count CHÍNH XÁC (không bị cap take:5),
+// fallback length mảng nếu thiếu _count → badge khớp số thật + sau reload.
+function cungChamCount(conv: Conversation): number {
+  const c = conv.contact as { contactAccess?: unknown[]; _count?: { contactAccess?: number } } | null | undefined;
+  return c?._count?.contactAccess ?? c?.contactAccess?.length ?? 0;
+}
+function cungChamTooltip(conv: Conversation): string {
+  const c = conv.contact as { contactAccess?: Array<{
+    role: string;
+    user: { fullName: string | null; email: string | null } | null;
+  }>; _count?: { contactAccess?: number } } | null | undefined;
+  const list = c?.contactAccess ?? [];
+  const total = c?._count?.contactAccess ?? list.length;
+  if (!total) return '';
+  const names = list.map((a) => {
+    const n = a.user?.fullName || a.user?.email || 'Sale';
+    return a.role === 'primary' ? `⭐ ${n} (chính)` : `🤝 ${n}`;
+  });
+  const more = total - list.length;
+  if (more > 0) names.push(`… và ${more} người khác`);
+  return `${total} sale đang/đã chăm KH này:\n${names.join('\n')}`;
+}
+
+// Theo dõi (anh chốt 2026-06-15) — khách đang trong "theo dõi" → hiện chuông sau tên.
+// Khớp cặp (contactId, nickId) với Set followingPairs từ /care-sessions/listening-pairs.
+function isFollowingConv(conv: Conversation): boolean {
+  const pairs = props.followingPairs;
+  if (!pairs || pairs.size === 0) return false;
+  const nickId = conv.zaloAccount?.id;
+  if (!nickId) return false;
+  // 2026-06-21 dual-key: ưu tiên khớp theo THREAD Zalo (nick+externalThreadId) — đúng kể cả khi
+  // hội thoại trỏ hồ sơ trùng khác phiên. Fallback theo contactId cho phiên thread-NULL + cũ.
+  const threadId = conv.externalThreadId;
+  if (threadId && pairs.has(`t|${nickId}|${threadId}`)) return true;
+  const contactId = conv.contact?.id;
+  if (contactId && pairs.has(`c|${nickId}|${contactId}`)) return true;
+  return false;
+}
+
 function displayName(conv: Conversation): string {
   if (conv.threadType === 'group') {
     const groupName = (conv as Conversation & { groupName?: string }).groupName;
     if (isUsableName(groupName)) return groupName!;
     if (isUsableName(conv.contact?.fullName)) return conv.contact!.fullName!;
     return 'Nhóm Zalo';
+  }
+  // 2026-06-11 (anh chốt) — Trên nick RIÊNG TƯ, CHÍNH CHỦ nick xem thấy TÊN ZALO THẬT
+  // của khách (Contact.fullName) thay vì "tên gợi nhớ" (alias sale tự đặt). Người ngoài
+  // (cấp trên/admin) KHÔNG đổi → vẫn ưu tiên alias như cũ. (TÊN không phải nội dung tin
+  // nhắn nên không vi phạm privacy — chỉ tin nhắn mới blur; xem use-privacy-visibility.)
+  if (privacyVisibility.isOwnerOfPrivateNick(conv)) {
+    if (isUsableName(conv.contact?.fullName)) return conv.contact!.fullName!;
   }
   // Ưu tiên Tên gợi nhớ Zalo (Friend.aliasInNick) — sync 2-way với Zalo Real.
   // Fallback fullName (tên Zalo gốc). KHÔNG dùng Contact.crmName để UI khớp Zalo Real.
@@ -377,7 +685,13 @@ function openContextMenu(event: MouseEvent, conv: Conversation) {
   contextMenu.x = event.clientX;
   contextMenu.y = event.clientY;
   contextMenu.convId = conv.id;
+  contextMenu.contactId = conv.contact?.id ?? '';
+  contextMenu.nickId = conv.zaloAccount?.id ?? '';
+  contextMenu.isFollowing = false;
+  contextMenu.followBusy = false;
   contextMenu.show = true;
+  // Lấy trạng thái theo dõi hiện tại (nếu đủ contact+nick) để hiện đúng nhãn.
+  void fetchListenStatusForMenu();
 }
 
 async function moveConversation(convId: string, targetTab: string) {
@@ -387,6 +701,86 @@ async function moveConversation(convId: string, targetTab: string) {
     emit('conversation-moved', convId, targetTab);
   } catch (err) {
     console.error('Failed to move conversation:', err);
+  }
+}
+
+// ── Theo dõi (reuse care-session manual listen — KHÔNG tạo logic mới) ─────────
+// Endpoint + payload giống AutomationCardList.vue (contactId + nickId).
+async function fetchListenStatusForMenu() {
+  if (!contextMenu.contactId || !contextMenu.nickId) {
+    contextMenu.isFollowing = false;
+    return;
+  }
+  try {
+    const res = await api.get<{ listening: boolean }>(
+      '/automation/care-sessions/listen-status',
+      { params: { contactId: contextMenu.contactId, nickId: contextMenu.nickId } },
+    );
+    contextMenu.isFollowing = res.data.listening === true;
+  } catch (err) {
+    console.error('[care-listen] status failed', err);
+  }
+}
+
+async function toggleFollowFromMenu() {
+  if (contextMenu.followBusy || !contextMenu.contactId || !contextMenu.nickId) return;
+  contextMenu.followBusy = true;
+  try {
+    if (contextMenu.isFollowing) {
+      // DELETE chỉ đóng phiên GẮN TAY (BE lọc sequence_manual). KH đang theo dõi qua LUỒNG
+      // TỰ ĐỘNG → closed=0 (không có phiên tay) → giữ chuông + báo, KHÔNG tắt (luồng tự chạy).
+      const res = await api.delete<{ ok: boolean; closed: number }>('/automation/care-sessions/listen', {
+        data: { contactId: contextMenu.contactId, nickId: contextMenu.nickId },
+      });
+      if ((res.data?.closed ?? 0) === 0) {
+        window.alert('Khách đang trong luồng bám đuổi tự động — dừng/tạm dừng ở thẻ luồng (tab Theo dõi), không bỏ theo dõi ở đây.');
+        // giữ nguyên isFollowing + chuông (phiên auto vẫn mở)
+      } else {
+        contextMenu.isFollowing = false;
+        // Cập nhật chuông cột 2 NGAY (không đợi refetch) — anh chốt 2026-06-15.
+        emit('follow-changed', contextMenu.contactId, contextMenu.nickId, false);
+      }
+    } else {
+      await api.post('/automation/care-sessions/listen', {
+        contactId: contextMenu.contactId, nickId: contextMenu.nickId,
+      });
+      contextMenu.isFollowing = true;
+      emit('follow-changed', contextMenu.contactId, contextMenu.nickId, true);
+    }
+  } catch (err) {
+    console.error('[care-listen] toggle failed', err);
+    window.alert('Lỗi cập nhật theo dõi — thử lại sau');
+  } finally {
+    contextMenu.followBusy = false;
+  }
+}
+
+// ── Xóa đoạn hội thoại (xóa mềm) ─────────────────────────────────────────────
+function askDeleteConversation() {
+  // mở hộp xác nhận; convId đã có trong contextMenu
+  deleteDialog.convId = contextMenu.convId;
+  deleteDialog.busy = false;
+  deleteDialog.show = true;
+  contextMenu.show = false;
+  nextTick(() => delConfirmBtn.value?.focus());
+}
+function closeDeleteDialog() {
+  deleteDialog.show = false;
+  deleteDialog.convId = '';
+  deleteDialog.busy = false;
+}
+async function confirmDeleteConversation() {
+  if (deleteDialog.busy || !deleteDialog.convId) return;
+  deleteDialog.busy = true;
+  const convId = deleteDialog.convId;
+  try {
+    await api.delete(`/conversations/${convId}`);
+    emit('conversation-deleted', convId);
+    closeDeleteDialog();
+  } catch (err) {
+    console.error('Failed to delete conversation:', err);
+    window.alert('Lỗi xóa hội thoại — thử lại sau');
+    deleteDialog.busy = false;
   }
 }
 
@@ -405,24 +799,30 @@ async function fetchCounts() {
 
 async function fetchAvailableTags() {
   try {
-    const res = await api.get('/contacts', { params: { limit: '200', fields: 'tags' } });
-    const contacts: Array<{ tags?: string[] }> = Array.isArray(res.data) ? res.data : res.data.contacts || [];
-    const tagSet = new Set<string>();
-    for (const c of contacts) {
-      (c.tags || []).forEach(t => tagSet.add(t));
-    }
+    // 2026-06-17 — Nguồn chip bar chuyển từ Contact.tags (v1 legacy, anh đã migrate HẾT
+    // qua v2) sang GET /conversations/sidebar-tags: crmTags = Friend.crmTagsPerNick (mirror
+    // tag v2 manual) + zaloTags (nhãn Zalo). Khớp đúng cả 3 nguồn mà backend filter `tags`
+    // match (Contact.tags OR crmTagsPerNick OR zaloLabels) → cột 2 nhất quán với cột 1/3.
+    // 2026-06-20 (anh báo): tag chip chỉ lấy theo PHẠM VI XEM (nick đang chọn ở cột 1).
+    // Rỗng = không giới hạn (mọi nick accessible — hành vi cũ).
+    const scopeIds = props.selectedAccountIds || [];
+    const { data } = await api.get('/conversations/sidebar-tags', {
+      params: scopeIds.length > 0 ? { accountIds: scopeIds.join(',') } : {},
+    });
+    const crm: string[] = Array.isArray(data.crmTags) ? data.crmTags : [];
+    const zalo: string[] = (Array.isArray(data.zaloTags) ? data.zaloTags : [])
+      .map((z: { name?: string }) => (z?.name ?? '').toString());
     // Whitelist: bỏ tag system mặc định (Tag N), prefix auto:, độ dài < 2, hoặc rỗng.
-    // Sale chỉ thấy tag có nghĩa.
     const SYSTEM_TAG_RE = /^(Tag\s*\d+|tag\d+)$/i;
-    availableTags.value = Array.from(tagSet)
-      .filter(t => {
-        const trimmed = t.trim();
-        if (trimmed.length < 2) return false;
-        if (SYSTEM_TAG_RE.test(trimmed)) return false;
-        if (trimmed.startsWith('auto:')) return false;
-        return true;
-      })
-      .sort();
+    const set = new Set<string>();
+    for (const raw of [...zalo, ...crm]) {
+      const trimmed = (raw || '').trim();
+      if (trimmed.length < 2) continue;
+      if (SYSTEM_TAG_RE.test(trimmed)) continue;
+      if (trimmed.startsWith('auto:')) continue;
+      set.add(trimmed);
+    }
+    availableTags.value = Array.from(set).sort((a, b) => a.localeCompare(b, 'vi'));
   } catch {
     /* non-critical */
   }
@@ -434,10 +834,13 @@ watch(activeTab, () => {
   emit('update:filters', buildFilterParams());
   fetchCounts();
 });
+// 2026-06-20 (anh báo): đổi PHẠM VI XEM (nick cột 1) → load lại chip tag theo nick mới.
+watch(() => props.selectedAccountIds, () => { void fetchAvailableTags(); }, { deep: true });
 
 onMounted(async () => {
   // Load CrmTag defs (color + managedBy) cho TagIcon render — share cache toàn app
-  await Promise.all([fetchCounts(), fetchAvailableTags(), loadTagDefs()]);
+  // loadTagTaxonomy: slug→{name,color,emoji} cho tag v2 (crmTagsPerNick/contact.tags lưu slug).
+  await Promise.all([fetchCounts(), fetchAvailableTags(), loadTagDefs(), loadTagTaxonomy()]);
 });
 
 /* ── Auto-scroll selected row vào viewport ──────────────────────────────────
@@ -485,7 +888,23 @@ function fmtDuration(sec: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
+// 2026-06-11 (perf) — memoize: lastMessagePreviewResult được gọi 2 lần/hàng (preview +
+// tone) × 100 hàng × mỗi render → nặng (JSON.parse). Cache theo conv object (WeakMap),
+// invalidate khi tin nhắn đầu đổi (id) hoặc thu hồi. Wrapper giữ API cũ.
+const _previewCache = new WeakMap<Conversation, { sig: string; result: PreviewResult }>();
 function lastMessagePreviewResult(conv: Conversation): PreviewResult {
+  const msg = conv.messages?.[0];
+  // 2026-06-12 — chữ ký dùng CHÍNH content + editedAt (không phải content.length): tin
+  // SỬA cùng độ dài (vd "ok" → "oke" thì khác, nhưng "abc" → "xyz" cùng 3 ký tự) trước
+  // đây không invalidate. Fix object-mới ở socket đã che, đây là lớp 2 cho memoize tự đúng.
+  const sig = msg ? `${msg.id}|${msg.isDeleted ? 1 : 0}|${msg.content ?? ''}|${msg.editedAt ?? ''}` : 'none';
+  const hit = _previewCache.get(conv);
+  if (hit && hit.sig === sig) return hit.result;
+  const result = computeLastMessagePreview(conv);
+  _previewCache.set(conv, { sig, result });
+  return result;
+}
+function computeLastMessagePreview(conv: Conversation): PreviewResult {
   const msg = conv.messages?.[0];
   if (!msg) return { text: '' };
 
@@ -643,40 +1062,8 @@ function parseSentiment(conv: Conversation): AiSentiment | null {
   }
 }
 
-// Time format theo spec user (tăng độ rộng tên conv):
-//   < 1 phút     → "Vừa xong"
-//   < 60 phút    → "Xp"   (vd "5p")
-//   < 24h        → "HH:mm"
-//   = 1 ngày     → "Hôm qua"
-//   < 7 ngày     → "Xd"   (vd "3d")
-//   ≥ 7 ngày cùng năm → "DD/MM" (vd "12/05") — không hiện năm
-//   năm cũ (≠ năm nay) → "MM/YYYY" (vd "11/2025") — không hiện ngày
-function formatTime(dateStr: string | null): string {
-  if (!dateStr) return '';
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return 'Vừa xong';
-  if (diffMins < 60) return `${diffMins}p`;
-  const diffHours = Math.floor(diffMins / 60);
-  // 2026-05-21 Phase B-5: hour/date/year đọc theo org TZ thay vì browser local.
-  // diffMs/diffMins/diffHours/diffDays là delta UTC → TZ-agnostic, OK giữ nguyên.
-  const p = getOrgParts(date);
-  const nowP = getOrgParts(now);
-  if (!p || !nowP) return '';
-  if (diffHours < 24) {
-    return `${String(p.hour).padStart(2, '0')}:${String(p.minute).padStart(2, '0')}`;
-  }
-  const diffDays = Math.floor(diffHours / 24);
-  if (diffDays === 1) return 'Hôm qua';
-  if (diffDays < 7) return `${diffDays}d`;
-  // ≥ 7 ngày — phân biệt cùng năm vs năm cũ (so theo org TZ)
-  const dd = String(p.day).padStart(2, '0');
-  const mm = String(p.month).padStart(2, '0');
-  if (p.year === nowP.year) return `${dd}/${mm}`;
-  return `${mm}/${p.year}`;
-}
+// formatTime đã chuyển sang composable use-relative-time (formatConvTime) + render
+// qua component con ConvTime (2026-06-11 perf). Không còn định nghĩa ở đây.
 
 // ─── Phase 8 — Engagement pattern badge ──────────────────
 function patternIcon(pattern: string | null | undefined): string {
@@ -787,7 +1174,38 @@ function onPatternLeave() {
 }
 .cl-search-row {
   display: flex; gap: 6px; align-items: center;
+  position: relative; /* anchor cho NickPickerPopup */
 }
+/* 2026-06-12 — wrapper input + nút X (anchor cho nút clear absolute bên phải) */
+.cl-search-box {
+  flex: 1; min-width: 0;
+  position: relative;
+  display: flex;
+}
+.cl-search-box .cl-search { flex: 1; }
+/* Nút X xóa tìm kiếm — mờ nhẹ, đậm lên khi hover. Chỉ hiện khi có text (v-if). */
+.cl-search-clear {
+  position: absolute;
+  right: 7px; top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--smax-grey-400, #9CA3AF);
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.cl-search-clear:hover {
+  opacity: 1;
+  background: var(--smax-grey-200, #E5E7EB);
+  color: var(--smax-grey-700, #374151);
+}
+/* Khi có text, chừa chỗ bên phải cho nút X (đỡ đè chữ) */
+.cl-search.has-text { padding-right: 32px; }
 .cl-search {
   flex: 1; min-width: 0;
   padding: 9px 11px 9px 36px;
@@ -799,6 +1217,26 @@ function onPatternLeave() {
   font-family: inherit;
 }
 .cl-search:focus { border-color: var(--smax-primary); }
+
+/* Wedge A 2026-05-28: flash đỏ cam khi sale click "Tin nhắn mới" mà search trống */
+.cl-search--flash {
+  animation: cl-search-flash 1.1s ease-in-out 1;
+}
+@keyframes cl-search-flash {
+  0%   { border-color: #d97706; box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.55); background-color: #fffaf0; }
+  35%  { border-color: #ea580c; box-shadow: 0 0 0 6px rgba(217, 119, 6, 0.18); background-color: #fff5e6; }
+  70%  { border-color: #d97706; box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.0); background-color: #fffaf0; }
+  100% { border-color: var(--smax-grey-200); box-shadow: none; background-color: var(--smax-bg); }
+}
+
+.cl-new-msg-caret {
+  font-size: 11px;
+  margin-left: 2px;
+  line-height: 1;
+  display: inline-flex; align-items: center;
+}
+.cl-new-msg-caret svg, .clear-tags svg { display: block; }
+.clear-tags { display: inline-flex; align-items: center; justify-content: center; }
 .cl-new-msg {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 8px 10px;
@@ -937,6 +1375,55 @@ function onPatternLeave() {
 }
 /* Avatar dịch xuống nhẹ để canh giữa với name + preview (bỏ qua tag row) */
 .conv-item :deep(.smax-av) { margin-top: 2px; flex-shrink: 0; }
+
+/* Wrapper để position mini avatar nick Zalo overlay góc dưới-trái */
+.ci-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* M55 2026-05-30 — Cùng chăm badge góc trên-phải avatar KH */
+.ci-cung-cham-badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 9px;
+  border: 1.5px solid #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+  cursor: help;
+  z-index: 2;
+  line-height: 1.2;
+}
+.ci-nick-mini {
+  position: absolute;
+  bottom: -2px;
+  left: -2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: var(--smax-grey-100, #f3f4f6);
+  object-fit: cover;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  z-index: 1;
+}
+.ci-nick-mini--initial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #2962ff, #6366f1);
+}
+.conv-item.active .ci-nick-mini { border-color: var(--smax-primary-soft, #e3f2fd); }
 .conv-item:hover { background: var(--smax-grey-50); }
 .conv-item.unread .ci-name { font-weight: 700; }
 /* Active: nền xanh nhạt đồng nhất + bo góc + viền xanh nhẹ */
@@ -951,6 +1438,32 @@ function onPatternLeave() {
 .conv-item.active:hover,
 .conv-item.is-group.active:hover {
   background: var(--smax-primary-soft) !important;
+}
+
+/* M53 2026-05-30: Virtual conversation — nền cam nhạt + chip 🔒 */
+.conv-item.is-virtual {
+  background: #fff7ed;
+  border-left: 3px solid #fb923c;
+  padding-left: calc(var(--ci-padding-x, 9px) - 3px);
+}
+.conv-item.is-virtual:hover { background: #ffedd5; }
+.conv-item.is-virtual.active {
+  background: #ffedd5 !important;
+  box-shadow: inset 0 0 0 1.5px #f97316 !important;
+}
+.virtual-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffedd5;
+  color: #c2410c;
+  font-size: 10px;
+  padding: 0 5px;
+  border-radius: 8px;
+  font-weight: 700;
+  margin-right: 4px;
+  line-height: 16px;
+  height: 16px;
 }
 
 /* Unread count badge — pill xám mờ dưới timestamp */
@@ -1035,6 +1548,8 @@ function onPatternLeave() {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .group-icon { font-size: 11px; }
+/* Theo dõi (anh chốt 2026-06-15) — chuông sau tên cho khách đang theo dõi */
+.ci-follow-bell { color: #f59e0b; flex-shrink: 0; }
 /* Meta-right float ra góc phải, không nằm trong flex flow → badge không phá height */
 .ci-meta-right {
   position: absolute; top: 0; right: 0;
@@ -1100,6 +1615,12 @@ function onPatternLeave() {
   border-color: color-mix(in srgb, var(--tag-color) 60%, white);
   color: color-mix(in srgb, var(--tag-color) 80%, black);
 }
+/* Auto-tag (Friend.autoTags) — viền nét đứt để phân biệt với tag manual. */
+.tag-mini.tag-auto {
+  border-style: dashed;
+}
+/* Emoji prefix (auto-tag icon / tag v2 emoji) — căn line giống ZaloBrandIcon. */
+.tag-mini-emoji { font-size: 10px; line-height: 1; flex-shrink: 0; }
 /* Overflow "+N" chip — hover/click hiện popup các tag còn lại */
 .tag-overflow {
   display: inline-flex;
@@ -1193,6 +1714,94 @@ function onPatternLeave() {
 
 <!-- Unscoped style cho teleport tooltip (đặt body, không reach được scoped CSS) -->
 <style>
+/* Hộp xác nhận Xóa hội thoại — Teleport ra body nên CSS phải unscoped. */
+.del-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: del-fade 0.12s ease-out;
+}
+@keyframes del-fade { from { opacity: 0; } to { opacity: 1; } }
+.del-card {
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  background: #fff;
+  border-radius: 14px;
+  padding: 22px 22px 16px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.28);
+  text-align: center;
+  font-family: inherit;
+  animation: del-pop 0.14s ease-out;
+}
+@keyframes del-pop {
+  from { opacity: 0; transform: translateY(6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.del-icon {
+  width: 52px; height: 52px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  display: flex; align-items: center; justify-content: center;
+}
+.del-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 6px;
+}
+.del-desc {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #6b7280;
+  margin-bottom: 18px;
+}
+.del-actions {
+  display: flex;
+  gap: 10px;
+}
+.del-btn {
+  flex: 1;
+  height: 38px;
+  border-radius: 9px;
+  border: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color 0.12s ease, opacity 0.12s ease;
+}
+.del-btn--ghost {
+  background: #f3f4f6;
+  color: #374151;
+}
+.del-btn--ghost:hover { background: #e5e7eb; }
+.del-btn--danger {
+  background: #ef4444;
+  color: #fff;
+}
+.del-btn--danger:hover { background: #dc2626; }
+.del-btn--danger:disabled { opacity: 0.6; cursor: default; }
+.del-btn:focus-visible { outline: 2px solid #2962ff; outline-offset: 2px; }
+.del-hint {
+  margin-top: 12px;
+  font-size: 11px;
+  color: #9ca3af;
+}
+.del-hint kbd {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 10.5px;
+  font-family: inherit;
+}
+
 .engagement-pattern-tip-portal {
   position: fixed;
   background: #1F2D3D;

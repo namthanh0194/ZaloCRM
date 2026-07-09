@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * status-log-service.ts — Phase ZaloAccounts redesign 2026-05-22
  *
@@ -9,7 +11,7 @@
  *
  * Xem design doc: ~/.gstack/projects/zalocrm/EVO-THANH-private-hs-design-20260522-184345.md
  */
-import { prisma } from '../../shared/database/prisma-client.js';
+import { prisma, tenantTransaction } from '../../shared/database/prisma-client.js';
 import { logger } from '../../shared/utils/logger.js';
 
 export type ZaloStatus = 'connected' | 'disconnected' | 'auth_failed' | 'qr_pending' | 'expired';
@@ -40,7 +42,7 @@ export async function writeTransition(input: {
   const now = input.at ?? new Date();
 
   try {
-    await prisma.$transaction(async (tx) => {
+    await tenantTransaction(async (tx) => {
       const open = await tx.zaloAccountStatusLog.findFirst({
         where: { accountId: input.accountId, endedAt: null },
         select: { id: true, status: true, startedAt: true },

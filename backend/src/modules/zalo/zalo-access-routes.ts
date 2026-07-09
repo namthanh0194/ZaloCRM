@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * Zalo account access control routes — manage per-user permissions on Zalo accounts.
  * Permission levels: read (view messages), chat (send messages), admin (manage account).
@@ -6,12 +8,21 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { prisma } from '../../shared/database/prisma-client.js';
 import { authMiddleware } from '../auth/auth-middleware.js';
-import { requireRole } from '../auth/role-middleware.js';
 import { randomUUID } from 'node:crypto';
 import { logger } from '../../shared/utils/logger.js';
+import { getIo } from '../../shared/event-buffer.js';
 
 const VALID_PERMISSIONS = ['read', 'chat', 'admin'] as const;
 type Permission = (typeof VALID_PERMISSIONS)[number];
+
+/**
+ * Báo cho user bị ảnh hưởng (grant/đổi/gỡ quyền) qua socket → client tự refetch
+ * danh sách nick + rớt nick khỏi UI NGAY, không cần F5. Phát tới room `user:${userId}`.
+ * action: 'granted' | 'updated' | 'revoked'.
+ */
+function notifyAccessChanged(userId: string, zaloAccountId: string, action: string, permission: string | null): void {
+  getIo()?.to(`user:${userId}`).emit('zalo:access-changed', { zaloAccountId, action, permission });
+}
 
 export async function zaloAccessRoutes(app: FastifyInstance): Promise<void> {
   app.addHook('preHandler', authMiddleware);
@@ -77,6 +88,7 @@ export async function zaloAccessRoutes(app: FastifyInstance): Promise<void> {
           include: { user: { select: { id: true, fullName: true, email: true } } },
         });
         logger.info(`Zalo access granted: ${targetUser.email} → account ${id} (${permission}) by ${user.email}`);
+        notifyAccessChanged(userId, id, 'granted', permission);
         return reply.status(201).send(access);
       } catch {
         // Unique constraint violation — access already exists
@@ -126,6 +138,7 @@ export async function zaloAccessRoutes(app: FastifyInstance): Promise<void> {
           include: { user: { select: { id: true, fullName: true, email: true } } },
         });
         logger.info(`Zalo access updated: accessId ${accessId} → ${permission} by ${user.email}`);
+        notifyAccessChanged(access.userId, id, 'updated', permission);
         return access;
       } catch {
         return reply.status(404).send({ error: 'Access record not found' });
@@ -163,8 +176,9 @@ export async function zaloAccessRoutes(app: FastifyInstance): Promise<void> {
       if (!account) return reply.status(404).send({ error: 'Zalo account not found' });
 
       try {
-        await prisma.zaloAccountAccess.delete({ where: { id: accessId, zaloAccountId: id } });
+        const deleted = await prisma.zaloAccountAccess.delete({ where: { id: accessId, zaloAccountId: id } });
         logger.info(`Zalo access revoked: accessId ${accessId} by ${user.email}`);
+        notifyAccessChanged(deleted.userId, id, 'revoked', null);
         return reply.status(204).send();
       } catch {
         return reply.status(404).send({ error: 'Access record not found' });

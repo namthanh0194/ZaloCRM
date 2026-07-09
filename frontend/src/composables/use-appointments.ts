@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * Composable for appointment (lịch hẹn) management:
  * - List with filters (date range, status, contact)
@@ -30,6 +32,13 @@ export interface Appointment {
   // Audit: ai đổi status cuối + lúc nào (cron auto-flip không set)
   statusChangedAt: string | null;
   statusChangedBy: { id: string; fullName: string | null; email: string } | null;
+  // Người phụ trách lịch hẹn (BE trả qua APPOINTMENT_INCLUDE). Dùng cho màu/filter theo sale.
+  assignedUserId?: string | null;
+  assignedUser?: { id: string; fullName: string | null } | null;
+  // Alias cũ — code AppointmentEditor dùng assignedTo?.id (merge từ stash khi giải
+  // conflict 2026-06-11, giữ để không vỡ component). durationMin đã khai báo ở trên.
+  assignedToId?: string | null;
+  assignedTo?: { id: string; fullName: string | null; email: string } | null;
 }
 
 export interface AppointmentFilters {
@@ -76,6 +85,63 @@ export function statusChipColor(status: string): string {
 
 export function statusLabel(status: string): string {
   return APPOINTMENT_STATUS_OPTIONS.find(o => o.value === status)?.text ?? status;
+}
+
+// Deterministic sale color palette — mỗi sale luôn cùng 1 màu xuyên view
+const SALE_PALETTE = [
+  { bg: '#2f6ee5', soft: '#e8f0fe' }, // blue
+  { bg: '#16a34a', soft: '#dcfce7' }, // green
+  { bg: '#d97706', soft: '#fef3c7' }, // amber
+  { bg: '#7c3aed', soft: '#ede9fe' }, // purple
+  { bg: '#db2777', soft: '#fce7f3' }, // pink
+  { bg: '#0891b2', soft: '#cffafe' }, // cyan
+  { bg: '#dc2626', soft: '#fee2e2' }, // red
+  { bg: '#65a30d', soft: '#ecfccb' }, // lime
+];
+
+export function saleColor(userId: string | null | undefined): { bg: string; soft: string } {
+  if (!userId) return { bg: '#64748b', soft: '#f1f5f9' };
+  let h = 0;
+  for (let i = 0; i < userId.length; i++) h = (h * 31 + userId.charCodeAt(i)) >>> 0;
+  return SALE_PALETTE[h % SALE_PALETTE.length];
+}
+
+export function appointmentOwnerId(a: Appointment): string | null {
+  return a.assignedUserId || a.statusChangedBy?.id || null;
+}
+
+export function appointmentOwnerName(a: Appointment): string {
+  return a.assignedUser?.fullName || a.statusChangedBy?.fullName || a.statusChangedBy?.email || 'Chưa gán';
+}
+
+export function typeIcon(type: string): string {
+  switch (type) {
+    case 'consultation': return '💬';
+    case 'follow_up': return '🔁';
+    case 'new_visit': return '🆕';
+    default: return '📌';
+  }
+}
+
+export function typeLabel(type: string): string {
+  return APPOINTMENT_TYPE_OPTIONS.find(o => o.value === type)?.text ?? type;
+}
+
+export function initials(name: string | null | undefined): string {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[parts.length - 2][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+// Build a Date from `appointmentDate` (ISO) — luôn trust field này, KHÔNG dùng appointmentTime string
+export function appointmentStart(a: Appointment): Date {
+  return new Date(a.appointmentDate);
+}
+export function appointmentEnd(a: Appointment): Date {
+  const start = appointmentStart(a);
+  const dur = a.durationMin ?? 30;
+  return new Date(start.getTime() + dur * 60_000);
 }
 
 export function useAppointments() {

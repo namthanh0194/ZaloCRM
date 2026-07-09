@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * friend-sync-service.ts — Canonical Friend full-sync (Zalo SDK → CRM Friend table).
  *
@@ -27,9 +29,15 @@ import { randomUUID } from 'node:crypto';
 import { prisma } from '../../shared/database/prisma-client.js';
 import { logger } from '../../shared/utils/logger.js';
 import { zaloOps } from '../../shared/zalo-operations.js';
+import { withTenant } from '../../shared/tenant/tenant-context.js';
 import { logActivity } from '../activity/activity-logger.js';
 import { applyFriendTransition } from './friend-event-handler.js';
+import { resolveOrCreateContact } from '../contacts/resolve-contact.js';
+import { safeContactUpdate } from '../../shared/database/safe-contact-write.js';
 import { buildFriendUpdatedPayload } from '../../shared/friend-serializer.js';
+// getAllFriends() trả gender/dob/sdob cùng shape getUserInfo — tái dùng parse của cron.
+import { mapGender, parseBirthDate } from '../contacts/contact-profile-sync-cron.js';
+import { buildPhoneCapturePatch } from '../contacts/zalo-profile-capture.js';
 
 export type SyncTrigger = 'manual' | 'connect' | 'cron';
 
@@ -95,6 +103,12 @@ function computeDiff(existing: DiffSnapshot, incoming: DiffSnapshot): DiffSnapsh
 function extractFriendInfo(raw: Record<string, unknown>): {
   uid: string;
   snapshot: DiffSnapshot;
+  // Demographic Cha (Contact) — getAllFriends ĐÃ trả sẵn (User.gender/dob/sdob), không
+  // tốn thêm call SDK. Ghi null-only + !genderLocked ở processFriend (xem dưới).
+  gender: 'male' | 'female' | null;
+  birthDate: Date | null;
+  // SĐT công khai (chỉ có khi KH bật) — 2026-06-22 Đợt 1: trước đây rớt, nay capture.
+  phoneNumber: string | null;
 } | null {
   const uid = String((raw.userId ?? raw.uid ?? '') as string);
   if (!uid) return null;
@@ -106,6 +120,9 @@ function extractFriendInfo(raw: Record<string, unknown>): {
       zaloGlobalId: String((raw.globalId ?? '') as string) || null,
       zaloUsername: String((raw.username ?? '') as string) || null,
     },
+    gender: mapGender(raw.gender),
+    birthDate: parseBirthDate(raw.sdob, raw.dob),
+    phoneNumber: String((raw.phoneNumber ?? '') as string).trim() || null,
   };
 }
 
@@ -120,6 +137,16 @@ function extractFriendInfo(raw: Record<string, unknown>): {
  *  - Cooldown manual: trả {skipped:'cooldown'} nhanh (cron/connect bypass)
  */
 export async function syncFriendsForAccount(
+  accountId: string,
+  orgId: string,
+  opts: SyncFriendsOptions,
+): Promise<SyncFriendsResult> {
+  // Bọc toàn bộ org-scoped work trong tenant context (cron/connect chạy ngoài
+  // request HTTP; manual route đã có context — re-establish cùng org vô hại).
+  return withTenant(orgId, () => syncFriendsForAccountImpl(accountId, orgId, opts));
+}
+
+async function syncFriendsForAccountImpl(
   accountId: string,
   orgId: string,
   opts: SyncFriendsOptions,
@@ -213,6 +240,9 @@ export async function syncFriendsForAccount(
         orgId,
         uid: info.uid,
         snapshot: info.snapshot,
+        gender: info.gender,
+        birthDate: info.birthDate,
+        phoneNumber: info.phoneNumber,
         targetStatus: 'accepted',
         fallbackName: info.snapshot.zaloDisplayName,
         fallbackAvatar: info.snapshot.zaloAvatarUrl,
@@ -240,6 +270,9 @@ export async function syncFriendsForAccount(
         orgId,
         uid: info.uid,
         snapshot: info.snapshot,
+        gender: info.gender,
+        birthDate: info.birthDate,
+        phoneNumber: info.phoneNumber,
         targetStatus: 'pending_sent',
         fallbackName: info.snapshot.zaloDisplayName,
         fallbackAvatar: info.snapshot.zaloAvatarUrl,
@@ -271,6 +304,9 @@ interface ProcessFriendArgs {
   orgId: string;
   uid: string;
   snapshot: DiffSnapshot;
+  gender: 'male' | 'female' | null;
+  birthDate: Date | null;
+  phoneNumber: string | null;
   targetStatus: 'accepted' | 'pending_sent';
   fallbackName: string | null | undefined;
   fallbackAvatar: string | null | undefined;
@@ -290,89 +326,57 @@ interface ProcessFriendArgs {
 }
 
 async function processFriend(args: ProcessFriendArgs): Promise<void> {
-  // 1. Resolve or create Contact.
-  //    Memory anh: per-account zaloUid khác nhau cho cùng person → KHÔNG được dedup
-  //    theo zaloUid only (sẽ tạo duplicate Contact cho mỗi nick nhìn cùng KH).
-  //    Phải dedup theo zaloGlobalId (cross-nick canonical) khi có, fallback zaloUid.
-  //    Bug Codex flagged + memory: Phong Lam 2 Contacts vì cùng KH 2 nick → 2 zaloUid.
-  const globalId = args.snapshot.zaloGlobalId;
-  let contact: { id: string; fullName: string | null } | null = null;
+  // 1. Resolve or create Contact via central helper.
+  //    Helper handles globalId/username/phone dedup + Friend reverse-lookup + ON CONFLICT race-safe stub.
+  //    enrichViaGetUserInfo=false vì friend-sync ALREADY có full profile từ getAllFriends.
+  const resolved = await resolveOrCreateContact({
+    orgId: args.orgId,
+    zaloAccountId: args.accountId,
+    zaloUidInNick: args.uid,
+    zaloGlobalId: args.snapshot.zaloGlobalId,
+    zaloUsername: args.snapshot.zaloUsername,
+    fallbackFullName: args.snapshot.zaloDisplayName || args.fallbackName,
+    fallbackAvatarUrl: args.snapshot.zaloAvatarUrl || args.fallbackAvatar,
+    enrichViaGetUserInfo: false,
+  });
+  if (resolved.created) args.result.createdContacts++;
+  // Re-read fullName for downstream B8 backfill logic
+  const contactRow = await prisma.contact.findUnique({
+    where: { id: resolved.id },
+    select: { id: true, fullName: true, gender: true, genderLocked: true, birthDate: true,
+      phone: true, phone2: true, phone3: true, phonesExtra: true, metadata: true },
+  });
+  const contact = contactRow ?? { id: resolved.id, fullName: null, gender: null, genderLocked: false, birthDate: null,
+    phone: null, phone2: null, phone3: null, phonesExtra: [], metadata: {} };
 
-  // 1a. Dedup priority 1 — match zaloGlobalId (canonical, cross-nick).
-  // KHÔNG filter mergedInto:null vì @@unique([orgId, zaloGlobalId]) apply cả
-  // merged Contact → nếu skip merged sẽ Race: pre-check miss, create thì
-  // UniqueConstraint violation. Match cả merged để follow chain tới root.
-  if (globalId) {
-    const matched = await prisma.contact.findFirst({
-      where: { orgId: args.orgId, zaloGlobalId: globalId },
-      select: { id: true, fullName: true, mergedInto: true },
-    });
-    if (matched?.mergedInto) {
-      // Soft-merge target — redirect Friend về root contact thay vì merged stub
-      const root = await prisma.contact.findUnique({
-        where: { id: matched.mergedInto },
-        select: { id: true, fullName: true },
-      });
-      contact = root ?? { id: matched.id, fullName: matched.fullName };
-    } else if (matched) {
-      contact = { id: matched.id, fullName: matched.fullName };
-    }
-  }
-  // 1b. Fallback — match per-nick zaloUid (legacy data + khi globalId chưa pull về).
-  if (!contact) {
-    const matched = await prisma.contact.findFirst({
-      where: { orgId: args.orgId, zaloUid: args.uid },
-      select: { id: true, fullName: true, mergedInto: true },
-    });
-    if (matched?.mergedInto) {
-      const root = await prisma.contact.findUnique({
-        where: { id: matched.mergedInto },
-        select: { id: true, fullName: true },
-      });
-      contact = root ?? { id: matched.id, fullName: matched.fullName };
-    } else if (matched) {
-      contact = { id: matched.id, fullName: matched.fullName };
-    }
-  }
-  if (!contact) {
-    const newContact = await prisma.contact.create({
-      data: {
-        id: randomUUID(),
-        orgId: args.orgId,
-        zaloUid: args.uid,
-        zaloGlobalId: globalId || null,
-        zaloUsername: args.snapshot.zaloUsername || null,
-        fullName: args.fallbackName || 'Unknown',
-        avatarUrl: args.fallbackAvatar || null,
-        hasZalo: true,
-      },
-      select: { id: true, fullName: true },
-    });
-    contact = newContact;
-    args.result.createdContacts++;
-  }
-
-  // 1c. B8 — Backfill Contact.fullName khi Contact stub 'Unknown' mà Friend đã có
-  // zaloDisplayName từ SDK. Stub được tạo bởi resolveContact (friend-event-handler)
-  // khi event đến trước message → fullName='Unknown'. Sau khi sync pull zaloName
-  // về Friend, KH Cha vẫn stuck "Unknown" gây UI broken popup/chat.
-  // Chỉ ghi đè khi fullName = 'Unknown' literal — KHÔNG đụng nếu sale đã edit thủ công.
+  // 1c. Gộp các backfill Cha (Contact) vào 1 update để tránh N+1:
+  //   • B8 — fullName khi Contact stub 'Unknown' mà Friend đã có zaloDisplayName từ SDK.
+  //     (Stub tạo bởi resolveContact khi event đến trước message → fullName='Unknown', KH
+  //     Cha stuck "Unknown" gây UI broken.) CHỈ ghi đè 'Unknown' literal — không đụng sale sửa tay.
+  //   • Demographic 2026-06-18 — gender/birthDate Zalo TRẢ SẴN trong getAllFriends (0 call SDK
+  //     thêm). Điền khi đang TRỐNG; gender thêm !genderLocked (chống đè chỉnh tay). 1 lần đồng
+  //     bộ là fill hàng loạt thay vì chờ cron getUserInfo từng KH.
+  const cPatch: Record<string, unknown> = {};
   const newName = args.snapshot.zaloDisplayName || args.fallbackName;
   if (
     newName
     && newName !== 'Unknown'
-    && (contact.fullName === 'Unknown' || contact.fullName === null || contact.fullName === '')
+    && (contact.fullName === 'Unknown' || contact.fullName === null || contact.fullName === '' || contact.fullName === 'KH chưa rõ')
   ) {
-    await prisma.contact.update({
-      where: { id: contact.id },
-      data: {
-        fullName: newName,
-        // Cũng backfill globalId/username nếu Contact thiếu (matched bằng zaloUid fallback)
-        ...(globalId && !args.snapshot.zaloUsername ? { zaloGlobalId: globalId } : {}),
-        ...(args.snapshot.zaloUsername ? { zaloUsername: args.snapshot.zaloUsername } : {}),
-        ...(args.fallbackAvatar ? { avatarUrl: args.fallbackAvatar } : {}),
-      },
-    });
+    cPatch.fullName = newName;
+    if (args.snapshot.zaloGlobalId) cPatch.zaloGlobalId = args.snapshot.zaloGlobalId;
+    if (args.snapshot.zaloUsername) cPatch.zaloUsername = args.snapshot.zaloUsername;
+    if (args.fallbackAvatar) cPatch.avatarUrl = args.fallbackAvatar;
+  }
+  if (args.gender && contact.gender == null && !contact.genderLocked) cPatch.gender = args.gender;
+  if (args.birthDate && contact.birthDate == null) cPatch.birthDate = args.birthDate;
+  // SĐT công khai → phone/phone2/phone3/phonesExtra (helper chung, chống trùng, không đè số chính).
+  Object.assign(cPatch, buildPhoneCapturePatch(contact, args.phoneNumber));
+  if (Object.keys(cPatch).length) {
+    // Phòng thủ P2002: SĐT/globalId công khai có thể đã thuộc hồ sơ trùng khác (cùng người,
+    // 1 hồ sơ SĐT-import + 1 hồ sơ Zalo). Đụng trùng → ghi phần an toàn, bỏ field trùng, KHÔNG
+    // văng (trước đây throw → bỏ qua nguyên friend trong sync). Gộp là việc của tầng dedup globalId.
+    await safeContactUpdate(contact.id, cPatch, 'friend-sync');
   }
 
   // 2. Drive friendship state machine (handles upsert + counter delta + assignedUser).
@@ -451,6 +455,15 @@ export interface SyncAccountFullyResult {
  * (Cron loop ngoài vẫn sequential giữa accounts để tránh burst Zalo rate-limit.)
  */
 export async function syncAccountFully(
+  accountId: string,
+  orgId: string,
+  opts: SyncFriendsOptions,
+): Promise<SyncAccountFullyResult> {
+  // Bọc toàn bộ (friends + labels + B8 $executeRaw backfill) trong tenant context.
+  return withTenant(orgId, () => syncAccountFullyImpl(accountId, orgId, opts));
+}
+
+async function syncAccountFullyImpl(
   accountId: string,
   orgId: string,
   opts: SyncFriendsOptions,

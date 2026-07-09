@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * public-api-routes.ts — External REST API authenticated via API key (X-Api-Key header).
  * Provides read/write access to contacts, conversations, appointments, and message sending.
@@ -148,7 +150,7 @@ export async function publicApiRoutes(app: FastifyInstance): Promise<void> {
       const { limit = '20' } = request.query as Record<string, string>;
 
       const conversations = await prisma.conversation.findMany({
-        where: { orgId },
+        where: { orgId, deletedAt: null },
         select: {
           id: true, threadType: true, externalThreadId: true,
           lastMessageAt: true, unreadCount: true, isReplied: true,
@@ -263,9 +265,13 @@ export async function publicApiRoutes(app: FastifyInstance): Promise<void> {
       // Verify account belongs to org
       const account = await prisma.zaloAccount.findFirst({
         where: { id: body.zaloAccountId, orgId },
-        select: { id: true, status: true },
+        select: { id: true, status: true, archivedAt: true },
       });
       if (!account) return reply.status(404).send({ error: 'Zalo account not found' });
+      // T7b (YC2 2026-06-20): nick ĐÃ XÓA (archivedAt) → 409, trước check kết nối.
+      if (account.archivedAt) {
+        return reply.status(409).send({ error: 'Nick này đã bị xóa — không gửi được. Kết nối lại nick để tiếp tục.', code: 'NICK_ARCHIVED' });
+      }
       if (account.status !== 'connected') {
         return reply.status(422).send({ error: 'Zalo account is not connected' });
       }

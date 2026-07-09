@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * group-routes.ts — Group info, CRUD, and membership management.
  * Routes: /api/v1/zalo-accounts/:accountId/groups
@@ -19,7 +21,41 @@ export async function groupRoutes(app: FastifyInstance) {
     try {
       await resolveAccount(accountId, request.user!.orgId);
       if (!(await checkAccess(request, reply, accountId, 'read'))) return;
-      return { groups: await zaloOps.getAllGroups(accountId) };
+      // zca-js getAllGroups() trả OBJECT { gridVerMap:{id:ver}, gridInfoMap:{id:{...}} },
+      // KHÔNG phải mảng. Trước đây trả thẳng object này → FE (group-list.vue,
+      // chatbot listGroups) làm Array.isArray → false → danh sách nhóm luôn rỗng.
+      // Chuẩn hoá thành mảng [{id,name,totalMember}]: gridVerMap là nguồn ID đầy đủ.
+      type GInfo = { name?: string; groupName?: string; totalMember?: number; memberCount?: number; memVerList?: unknown[] };
+      const raw = (await zaloOps.getAllGroups(accountId)) as {
+        gridVerMap?: Record<string, unknown>;
+        gridInfoMap?: Record<string, GInfo>;
+      } | null;
+      const verMap = raw?.gridVerMap ?? {};
+      const infoMap: Record<string, GInfo> = { ...(raw?.gridInfoMap ?? {}) };
+      const ids = Object.keys(verMap).length ? Object.keys(verMap) : Object.keys(infoMap);
+
+      // getAllGroups thường KHÔNG kèm tên nhóm (gridInfoMap rỗng/thiếu name) → phải
+      // bù bằng getGroupInfo (nhận mảng id, trả gridInfoMap có name + totalMember).
+      // Chunk 50 id/call để tránh request quá lớn bị Zalo từ chối.
+      const missing = ids.filter((id) => !(infoMap[id]?.name || infoMap[id]?.groupName));
+      for (let i = 0; i < missing.length; i += 50) {
+        const chunk = missing.slice(i, i + 50);
+        try {
+          const more = (await zaloOps.getGroupInfo(accountId, chunk)) as { gridInfoMap?: Record<string, GInfo> };
+          Object.assign(infoMap, more?.gridInfoMap ?? {});
+        } catch { /* giữ id, tên để trống — vẫn gán bot được */ }
+      }
+
+      const groups = ids.map((id) => {
+        const g = infoMap[id] ?? {};
+        return {
+          id,
+          name: g.name || g.groupName || '',
+          totalMember:
+            g.totalMember ?? g.memberCount ?? (Array.isArray(g.memVerList) ? g.memVerList.length : 0),
+        };
+      });
+      return { groups };
     } catch (err) { return handleError(reply, err, 'getAllGroups'); }
   });
 
@@ -37,7 +73,20 @@ export async function groupRoutes(app: FastifyInstance) {
     try {
       await resolveAccount(accountId, request.user!.orgId);
       if (!(await checkAccess(request, reply, accountId, 'read'))) return;
-      return { members: await zaloOps.getGroupMembersInfo(accountId, groupId) };
+      // 1) getGroupInfo → memVerList ("uid_ver"); 2) getGroupMembersInfo(uids) → profile.
+      const info = await zaloOps.getGroupInfo(accountId, groupId) as any;
+      const grid = info?.gridInfoMap?.[groupId] ?? Object.values(info?.gridInfoMap ?? {})[0];
+      const rawIds: string[] = Array.isArray(grid?.memVerList) ? grid.memVerList : [];
+      const uids = [...new Set(rawIds.map((k) => String(k).split('_')[0]).filter(Boolean))];
+      if (uids.length === 0) return { members: [] };
+      const prof = await zaloOps.getGroupMembersInfo(accountId, uids) as any;
+      const profiles = prof?.profiles ?? {};
+      const members = Object.values(profiles).map((p: any) => ({
+        uid: p.id,
+        displayName: p.displayName || p.zaloName || p.id,
+        avatar: p.avatar ?? null,
+      }));
+      return { members };
     } catch (err) { return handleError(reply, err, 'getGroupMembersInfo'); }
   });
 

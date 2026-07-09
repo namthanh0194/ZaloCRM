@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * event-buffer.ts — Event batching for typing indicators + reactions.
  * Uses Redis pub/sub when REDIS_URL is set, otherwise in-memory Maps.
@@ -39,6 +41,12 @@ const REACTION_ALIASES: Record<string, string> = {
 
 function normalizeReaction(reaction: string): string {
   return REACTION_ALIASES[reaction.toLowerCase()] ?? reaction;
+}
+
+/** Lấy Socket.IO server đã đăng ký (null nếu chưa start). Cho module khác emit
+ *  org-scoped event mà không phải truyền io qua nhiều call-site (2026-06-06). */
+export function getIo(): Server | null {
+  return ioRef;
 }
 
 async function start(io: Server): Promise<void> {

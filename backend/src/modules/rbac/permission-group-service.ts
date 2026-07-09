@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * permission-group-service.ts — RBAC Phase Phân Quyền 2026-05-21
  *
@@ -8,7 +10,7 @@
  * phải invalidate (xem D8 RBAC middleware).
  */
 import { randomUUID } from 'node:crypto';
-import { prisma } from '../../shared/database/prisma-client.js';
+import { prisma, tenantTransaction } from '../../shared/database/prisma-client.js';
 import { sanitizeGrants, hasGrant, type GrantsJson, type Resource, type Action } from './permission-types.js';
 
 export interface PermissionGroupNode {
@@ -170,7 +172,7 @@ export async function updatePermissionGroup(input: {
 
   // FIX codex review #5: validate parent thuộc đúng org + active TRƯỚC khi anti-cycle.
   // FIX codex review #2: wrap check + update trong 1 tx atomic.
-  return await prisma.$transaction(async (tx) => {
+  return await tenantTransaction(async (tx) => {
     if (input.parentId !== undefined && input.parentId !== null) {
       const parent = await tx.permissionGroup.findFirst({
         where: { id: input.parentId, orgId: input.orgId, archivedAt: null },
@@ -228,7 +230,7 @@ async function checkIsDescendant(
 
 export async function archivePermissionGroup(orgId: string, id: string): Promise<void> {
   // FIX codex review #7: wrap count + archive trong 1 tx, lock group row → tránh race.
-  await prisma.$transaction(async (tx) => {
+  await tenantTransaction(async (tx) => {
     const rows = await tx.$queryRawUnsafe<Array<{ id: string; is_system: boolean }>>(
       `SELECT id, is_system FROM permission_groups
        WHERE id = $1 AND org_id = $2 AND archived_at IS NULL FOR UPDATE`,
@@ -278,8 +280,9 @@ export async function userHasGrant(
     if (hasGrant(grants, resource, action)) return true;
   }
 
-  // Dual-read fallback (2 tuần): legacy role='owner' → bypass mọi quyền
-  if (user.role === 'owner') return true;
+  // Fallback: legacy role='owner' hoặc 'admin' → bypass mọi quyền.
+  // Anh chốt 2026-06-08: admin toàn quyền như owner (khớp canAccess frontend + getProfile.isFullAccess).
+  if (user.role === 'owner' || user.role === 'admin') return true;
 
   return false;
 }

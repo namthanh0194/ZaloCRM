@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <!--
   AppointmentEditor.vue — 1 modal duy nhất cho create + edit "Nhắc hẹn".
 
@@ -22,8 +24,8 @@
       <div class="editor airtable-scope" @keydown.escape="close" @keydown.ctrl.enter="submit" tabindex="-1">
         <!-- ─── Header ─── -->
         <div class="editor-head">
-          <h2>📌 {{ isEdit ? 'Sửa nhắc hẹn' : 'Tạo nhắc hẹn' }}</h2>
-          <button class="close" @click="close" title="Đóng (Esc)">✕</button>
+          <h2><v-icon size="19" class="head-ic">mdi-calendar-clock</v-icon> {{ isEdit ? 'Sửa nhắc hẹn' : 'Tạo nhắc hẹn' }}</h2>
+          <button class="close" @click="close" title="Đóng (Esc)"><v-icon size="18">mdi-close</v-icon></button>
         </div>
 
         <!-- ─── Body ─── -->
@@ -41,7 +43,7 @@
                 :data-t="t.value"
                 @click="selectType(t.value)"
               >
-                <span class="type-ico">{{ typeIcon(t.value) }}</span>
+                <span class="type-ico"><v-icon size="16">{{ typeMdiIcon(t.value) }}</v-icon></span>
                 {{ t.text }}
               </button>
             </div>
@@ -50,7 +52,7 @@
           <!-- 2. Tiêu đề — icon prefix động theo loại (📞📩🤝👁), template tự fill -->
           <div class="field">
             <div class="title-input-wrap">
-              <span class="ic">{{ titleIcon }}</span>
+              <span class="ic"><v-icon size="16">{{ titleIcon }}</v-icon></span>
               <input
                 ref="titleInputRef"
                 v-model="form.title"
@@ -77,10 +79,10 @@
                 </span>
                 <div class="linked-info">
                   <span class="name">{{ selectedContact.fullName || 'Khách hàng' }}</span>
-                  <span v-if="selectedContact.phone" class="phone-row">{{ selectedContact.phone }}</span>
+                  <span v-if="selectedContact.phone" class="phone-row">{{ formatPhoneVN(selectedContact.phone) }}</span>
                   <span v-else-if="selectedContact.zaloUsername" class="phone-row muted">{{ selectedContact.zaloUsername }}</span>
                 </div>
-                <button type="button" class="remove" @click="clearContact" title="Bỏ link KH">✕</button>
+                <button type="button" class="remove" @click="clearContact" title="Bỏ link KH"><v-icon size="13">mdi-close</v-icon></button>
               </div>
               <!-- KH autocomplete dropdown — autofocus search ngay khi mở -->
               <div v-else-if="custSuggestOpen" class="cust-suggest">
@@ -107,7 +109,7 @@
                   <div class="cust-info-1line">
                     <span class="name">{{ c.fullName || 'Khách hàng' }}</span>
                     <span v-if="c.phone" class="sep">·</span>
-                    <span v-if="c.phone" class="phone">{{ c.phone }}</span>
+                    <span v-if="c.phone" class="phone">{{ formatPhoneVN(c.phone) }}</span>
                     <span v-if="c.zaloUsername" class="nick">({{ c.zaloUsername }})</span>
                   </div>
                 </div>
@@ -139,17 +141,17 @@
             <div class="field">
               <span class="field-label">Ngày</span>
               <button ref="dateBtnRef" class="picker-display" :class="{ open: openDatePicker }" @click="toggleDatePicker">
-                <span class="ic">📅</span>
+                <span class="ic"><v-icon size="16">mdi-calendar-outline</v-icon></span>
                 <span class="val">{{ dateLabel }}</span>
-                <span class="caret">{{ openDatePicker ? '▴' : '▾' }}</span>
+                <span class="caret"><v-icon size="16">{{ openDatePicker ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon></span>
               </button>
             </div>
             <div class="field">
               <span class="field-label">Giờ bắt đầu</span>
               <button ref="timeBtnRef" class="picker-display" :class="{ open: openTimePicker }" @click="toggleTimePicker">
-                <span class="ic">🕐</span>
+                <span class="ic"><v-icon size="16">mdi-clock-outline</v-icon></span>
                 <span class="val">{{ form.time || '--:--' }}</span>
-                <span class="caret">{{ openTimePicker ? '▴' : '▾' }}</span>
+                <span class="caret"><v-icon size="16">{{ openTimePicker ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon></span>
               </button>
             </div>
           </div>
@@ -158,7 +160,7 @@
           <div class="field">
             <div class="duration-header">
               <span class="field-label">Dự kiến dành thời gian</span>
-              <span class="duration-end">🏁 Dự kiến kết thúc: <b class="end-bold">{{ computedEndLabel }}</b> <em>(Tự tính toán)</em></span>
+              <span class="duration-end"><v-icon size="13">mdi-flag-checkered</v-icon> Dự kiến kết thúc: <b class="end-bold">{{ computedEndLabel }}</b> <em>(Tự tính toán)</em></span>
             </div>
             <div class="duration-row">
               <button
@@ -175,7 +177,7 @@
           <!-- 5. Địa điểm — icon prefix + 6 chips 1 dòng (5 preset + smart auto) -->
           <div class="field">
             <div class="location-input-wrap">
-              <span class="ic">📍</span>
+              <span class="ic"><v-icon size="16">mdi-map-marker-outline</v-icon></span>
               <input
                 v-model="form.location"
                 class="location-input"
@@ -190,7 +192,7 @@
                 type="button"
                 class="loc-chip"
                 @click="form.location = p.value"
-              >{{ p.icon }} {{ p.value }}</button>
+              ><v-icon size="14">{{ p.icon }}</v-icon> {{ p.value }}</button>
               <button
                 type="button"
                 class="loc-chip smart"
@@ -198,7 +200,7 @@
                 :disabled="!smartLocation"
                 @click="smartLocation && (form.location = smartLocation)"
                 :title="smartLocation ? `Gợi ý: ${smartLocation}` : 'Tự nhận diện từ tiêu đề (chưa có)'"
-              >🤖 {{ smartLocation ? smartLocation : 'Auto' }}</button>
+              ><v-icon size="14">mdi-robot-outline</v-icon> {{ smartLocation ? smartLocation : 'Auto' }}</button>
             </div>
           </div>
 
@@ -214,12 +216,12 @@
           </div>
 
           <!-- Error -->
-          <div v-if="error" class="error-banner">⚠️ {{ error }}</div>
+          <div v-if="error" class="error-banner"><v-icon size="15">mdi-alert-outline</v-icon> {{ error }}</div>
         </div>
 
         <!-- ─── Footer ─── -->
         <div class="editor-foot">
-          <span class="tip">💡 <kbd>Ctrl</kbd>+<kbd>Enter</kbd> tạo nhanh · <kbd>Esc</kbd> huỷ</span>
+          <span class="tip"><v-icon size="13">mdi-lightbulb-on-outline</v-icon> <kbd>Ctrl</kbd>+<kbd>Enter</kbd> tạo nhanh · <kbd>Esc</kbd> huỷ</span>
           <div class="actions">
             <button type="button" class="at-btn at-btn--secondary" @click="close">Huỷ</button>
             <button
@@ -228,7 +230,8 @@
               :disabled="!canSubmit || saving"
               @click="submit"
             >
-              {{ saving ? 'Đang lưu...' : (isEdit ? '✓ Cập nhật' : '✓ Tạo nhắc hẹn') }}
+              <v-icon v-if="!saving" size="16">mdi-check</v-icon>
+              {{ saving ? 'Đang lưu...' : (isEdit ? 'Cập nhật' : 'Tạo nhắc hẹn') }}
             </button>
           </div>
         </div>
@@ -242,9 +245,9 @@
         v-click-outside="closeDatePicker"
       >
         <div class="dp-head">
-          <button type="button" @click="shiftCalMonth(-1)">‹</button>
+          <button type="button" @click="shiftCalMonth(-1)"><v-icon size="18">mdi-chevron-left</v-icon></button>
           <span class="month">Tháng {{ calMonth.getMonth() + 1 }}, {{ calMonth.getFullYear() }}</span>
-          <button type="button" @click="shiftCalMonth(1)">›</button>
+          <button type="button" @click="shiftCalMonth(1)"><v-icon size="18">mdi-chevron-right</v-icon></button>
         </div>
         <div class="dp-grid">
           <div v-for="w in ['CN','T2','T3','T4','T5','T6','T7']" :key="w" class="dp-wd">{{ w }}</div>
@@ -268,7 +271,7 @@
           >{{ t.label }}</button>
         </div>
         <div class="popup-foot">
-          <button type="button" class="at-btn at-btn--primary popup-confirm" @click="closeDatePicker">✓ Xác nhận</button>
+          <button type="button" class="at-btn at-btn--primary popup-confirm" @click="closeDatePicker"><v-icon size="15">mdi-check</v-icon> Xác nhận</button>
         </div>
       </div>
 
@@ -307,14 +310,14 @@
           </div>
         </div>
         <div class="tp-quick-grid">
-          <button type="button" class="tip-chip" @click="randomTime('morning')">☀️ Sáng</button>
-          <button type="button" class="tip-chip" @click="randomTime('noon')">🌤 Trưa</button>
-          <button type="button" class="tip-chip" @click="randomTime('afternoon')">⛅ Chiều</button>
-          <button type="button" class="tip-chip" @click="randomTime('evening')">🌙 Tối</button>
+          <button type="button" class="tip-chip" @click="randomTime('morning')"><v-icon size="14">mdi-weather-sunny</v-icon> Sáng</button>
+          <button type="button" class="tip-chip" @click="randomTime('noon')"><v-icon size="14">mdi-weather-partly-cloudy</v-icon> Trưa</button>
+          <button type="button" class="tip-chip" @click="randomTime('afternoon')"><v-icon size="14">mdi-weather-sunset</v-icon> Chiều</button>
+          <button type="button" class="tip-chip" @click="randomTime('evening')"><v-icon size="14">mdi-weather-night</v-icon> Tối</button>
         </div>
         <div class="tp-helper">Bấm lại 1 khung để random giờ khác</div>
         <div class="popup-foot">
-          <button type="button" class="at-btn at-btn--primary popup-confirm" @click="closeTimePicker">✓ Xác nhận</button>
+          <button type="button" class="at-btn at-btn--primary popup-confirm" @click="closeTimePicker"><v-icon size="15">mdi-check</v-icon> Xác nhận</button>
         </div>
       </div>
     </div>
@@ -324,13 +327,35 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, nextTick } from 'vue';
 import { api } from '@/api/index';
+import { useAuthStore } from '@/stores/auth';
+import { useUsers } from '@/composables/use-users';
 import {
   APPOINTMENT_TYPE_OPTIONS,
-  typeIcon,
   initials,
   type AppointmentEx as Appointment,
   type AiPrefill,
 } from '@/composables/appointment-helpers';
+
+/** SĐT chuẩn VN để hiển thị: 84xxx / +84xxx → 0xxx (bỏ khoảng trắng, dấu). */
+function formatPhoneVN(p?: string | null): string {
+  if (!p) return '';
+  let s = String(p).replace(/[\s.()-]/g, '');
+  if (s.startsWith('+84')) s = '0' + s.slice(3);
+  else if (s.startsWith('0084')) s = '0' + s.slice(4);
+  else if (s.startsWith('84') && s.length >= 10 && s.length <= 12) s = '0' + s.slice(2);
+  return s;
+}
+
+/** Icon MDI theo loại nhắc hẹn (chuẩn HS — KHÔNG emoji, anh chốt 2026-06-16). */
+const TYPE_MDI: Record<string, string> = {
+  call: 'mdi-phone-outline',
+  message: 'mdi-message-text-outline',
+  meeting: 'mdi-account-multiple-outline',
+  follow_up: 'mdi-eye-outline',
+};
+function typeMdiIcon(t: string): string {
+  return TYPE_MDI[t] || 'mdi-bell-outline';
+}
 
 interface ContactLite {
   id: string;
@@ -468,6 +493,16 @@ async function enrichContactAvatar(contactId: string) {
   }
 }
 
+/** Edit mode khi object lịch thiếu `contact` (chat/list rút gọn) → fetch đầy đủ theo id. */
+async function loadContactById(contactId: string) {
+  try {
+    const res = await api.get(`/contacts/${contactId}`);
+    selectedContact.value = toContactLite(res.data);
+  } catch (err) {
+    console.warn('[editor] load contact for edit failed', err);
+  }
+}
+
 let custSearchHandle: number | null = null;
 function onCustSearch() {
   if (custSearchHandle) window.clearTimeout(custSearchHandle);
@@ -520,9 +555,21 @@ const form = reactive({
   assignedUserId: null as string | null,
 });
 
-// Computed users list (props hoặc empty) + currentUserId
-const users = computed<UserLite[]>(() => props.users ?? []);
-const currentUserId = computed<string | null>(() => props.currentUserId ?? null);
+// Computed users list + currentUserId — ROBUST: editor tự lo nguồn để mở từ đâu (chat,
+// contact, /appointments) cũng có đủ Sale. props.users ưu tiên; thiếu thì tự fetch; luôn
+// đảm bảo có "tôi" (owner đang tạo) trong list để default + hiển thị đúng.
+const auth = useAuthStore();
+const { users: fetchedUsers, fetchUsers } = useUsers();
+const currentUserId = computed<string | null>(() => props.currentUserId ?? auth.user?.id ?? null);
+const users = computed<UserLite[]>(() => {
+  const base = (props.users && props.users.length) ? props.users : (fetchedUsers.value as unknown as UserLite[]);
+  const list: UserLite[] = base ? [...base] : [];
+  const meId = currentUserId.value;
+  if (meId && !list.some((u) => u.id === meId)) {
+    list.unshift({ id: meId, fullName: auth.user?.fullName ?? auth.user?.email ?? 'Tôi', email: auth.user?.email ?? '' });
+  }
+  return list;
+});
 
 const saving = ref(false);
 const error = ref('');
@@ -569,7 +616,7 @@ function selectType(type: string) {
 }
 
 /** Icon prefix trong ô tiêu đề thay đổi theo loại đang chọn */
-const titleIcon = computed(() => typeIcon(form.type));
+const titleIcon = computed(() => typeMdiIcon(form.type));
 
 const canSubmit = computed(() =>
   !!form.title.trim() && !!form.date && !!form.time && !!form.type,
@@ -584,6 +631,8 @@ watch(() => props.modelValue, (open) => {
   openTimePicker.value = false;
   custSuggestOpen.value = false;
   custQuery.value = '';
+  // Mở từ chat/contact (không truyền users) → tự fetch để dropdown Sale đủ người.
+  if (!props.users?.length && !fetchedUsers.value.length) fetchUsers().catch(() => {});
 
   if (props.appointment) {
     // Edit mode
@@ -596,11 +645,18 @@ watch(() => props.modelValue, (open) => {
     form.location = (a as any).location || '';
     form.notes = a.notes || '';
     form.assignedUserId = (a as any).assignedUserId ?? (a as any).assignedTo?.id ?? null;
-    selectedContact.value = a.contact ? toContactLite(a.contact) : null;
-    // Edit mode: appointment endpoint trả friends top-5 (xem APPOINTMENT_INCLUDE),
-    // nhưng nếu KH ko có Zalo nick nào → vẫn fetch detail để chắc chắn có avatar.
-    if (selectedContact.value?.id && !selectedContact.value.avatarUrl) {
-      enrichContactAvatar(selectedContact.value.id);
+    // FIX 2026-06-16 (Anh báo "sửa lịch mất link KH"): vài nguồn list/chat truyền object
+    // lịch KHÔNG kèm `contact` → trước đây set null → mất link. Giờ: có contact thì dùng,
+    // thiếu mà còn contactId thì FETCH lại để giữ link KH.
+    const cObj = (a as any).contact;
+    if (cObj) {
+      selectedContact.value = toContactLite(cObj);
+      if (!selectedContact.value.avatarUrl) enrichContactAvatar(selectedContact.value.id);
+    } else if ((a as any).contactId) {
+      selectedContact.value = null;
+      loadContactById((a as any).contactId);
+    } else {
+      selectedContact.value = null;
     }
     calMonth.value = a.appointmentDate ? new Date(a.appointmentDate) : new Date();
   } else {
@@ -928,11 +984,11 @@ const smartLocation = computed<string | null>(() => {
 });
 
 const LOCATION_PRESETS = [
-  { icon: '🏢', value: 'Văn phòng' },
-  { icon: '🏠', value: 'Nhà khách' },
-  { icon: '🏗', value: 'Dự án' },
-  { icon: '🏘', value: 'Nhà mẫu' },
-  { icon: '☕', value: 'Quán cafe' },
+  { icon: 'mdi-office-building-outline', value: 'Văn phòng' },
+  { icon: 'mdi-home-outline', value: 'Nhà khách' },
+  { icon: 'mdi-crane', value: 'Dự án' },
+  { icon: 'mdi-home-city-outline', value: 'Nhà mẫu' },
+  { icon: 'mdi-coffee-outline', value: 'Quán cafe' },
 ];
 
 // ───────── Contact color (consistent hash) ─────────
@@ -971,7 +1027,9 @@ async function submit() {
       notes: form.notes.trim() || null,
     };
     if (isEdit.value && props.appointment) {
-      const res = await api.patch(`/appointments/${props.appointment.id}`, payload);
+      // FIX 2026-06-09 (Anh báo "lưu sửa lịch báo not_found"): BE chỉ có PUT /appointments/:id
+      // (PATCH /:id chưa định nghĩa → 404 not_found). Đổi patch→put, khớp use-appointments.ts.
+      const res = await api.put(`/appointments/${props.appointment.id}`, payload);
       emit('updated', res.data);
     } else {
       const res = await api.post('/appointments', payload);
@@ -979,7 +1037,8 @@ async function submit() {
     }
     close();
   } catch (err: any) {
-    error.value = err?.response?.data?.error || 'Không lưu được nhắc hẹn';
+    // BE trả `message` (vd lịch trùng giờ — câu chữ cụ thể) → ưu tiên; fallback `error`.
+    error.value = err?.response?.data?.message || err?.response?.data?.error || 'Không lưu được nhắc hẹn';
   } finally {
     saving.value = false;
   }
@@ -999,7 +1058,16 @@ if (typeof window !== 'undefined') {
 </script>
 
 <style scoped>
-@import '@/components/automation/phase7/airtable.css';
+@import '@/assets/airtable.css';
+
+/* FIX 2026-06-09 (Anh báo bể UI): 2 token --at-coral-tint / --at-coral-text KHÔNG
+   được định nghĩa trong airtable.css → render rỗng → hàng KH liên kết (.linked-kh-row)
+   + banner lỗi (.error-banner) mất nền/màu chữ. Bổ sung scoped tại đây (không đụng
+   airtable.css dùng chung). Tint = nền đỏ nhạt, text = chữ đỏ đậm — khớp --at-coral. */
+.airtable-scope {
+  --at-coral-tint: var(--at-atlas-danger-soft, #fdeceb);
+  --at-coral-text: var(--at-coral, #f04438);
+}
 
 /* ─── Backdrop + modal ─── */
 .editor-backdrop {
@@ -1012,9 +1080,10 @@ if (typeof window !== 'undefined') {
 }
 .editor {
   width: 560px; max-width: 100%;
-  /* Fix size: chiều cao 780px (tăng từ 720 để khỏi scroll khi đủ 6 section).
-     Modal KHÔNG expand khi popup mở vì popup TELEPORT ra ngoài (position fixed). */
-  height: 780px;
+  /* FIX 2026-06-09 (Anh báo bể): bỏ height cứng 780px (gây dồn cục section + dư khoảng
+     trống đáy). Modal tự co theo nội dung, cap 94vh — body flex:1 overflow-y:auto tự cuộn
+     nếu thiếu chỗ. Popup ngày/giờ TELEPORT ra ngoài (position fixed) nên không push modal. */
+  height: auto;
   max-height: 94vh;
   background: var(--at-canvas);
   border-radius: var(--at-r-lg);
@@ -1066,7 +1135,32 @@ if (typeof window !== 'undefined') {
 .editor-foot .actions { display: flex; gap: 6px; }
 
 /* ─── Field common ─── */
-.field { display: flex; flex-direction: column; gap: var(--at-s-xs); position: relative; }
+/* FIX 2026-06-09 (Anh báo "bể tè le"): global hs-crm-theme.css định nghĩa `.field` là
+   1 Ô INPUT (height:40px, flex row, border, bg, padding) — leak vào đây làm MỖI section
+   thành 1 khung viền đè chồng lên field dưới. Trong editor, `.field` là 1 KHỐI DỌC
+   (label trên + control dưới). Phải RESET đè lại toàn bộ box-prop global + ép cao tự động.
+   Scope dưới .editor để KHÔNG đụng .field nơi khác. */
+.editor .field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--at-s-xs);
+  position: relative;
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+.editor .field:focus-within { box-shadow: none; } /* huỷ glow global của .field:focus-within */
+/* Khôi phục viền cho input/select THẬT bên trong editor (global .field input{border:0} đã xoá) */
+.editor .field .title-input-wrap,
+.editor .field .location-input-wrap,
+.editor .field .picker-display,
+.editor .field .sale-select,
+.editor .field .notes-area,
+.editor .field .cust-suggest-search { border: 1px solid var(--at-hairline); }
 .field-label {
   font-size: 11.5px; font-weight: 500; color: var(--at-muted);
   text-transform: uppercase; letter-spacing: 0.08em;
@@ -1530,4 +1624,47 @@ if (typeof window !== 'undefined') {
   .duration-grid { grid-template-columns: repeat(3, 1fr); }
   .picker-popup { width: 100%; }
 }
+
+/* ═══ HS Holding theme polish (anh chốt 2026-06-16) ═══════════════════════════
+   Đổi accent từ --at-ink (đen trung tính) → brand teal-blue HS; hàng KH liên kết
+   từ coral (đỏ) → brand-soft. --brand* là token global (hs-crm-theme.css). Đặt
+   CUỐI block để thắng cascade (cùng specificity → rule sau thắng). */
+.editor { border-top: 3px solid var(--brand, #1786be); }
+.editor-head { background: linear-gradient(180deg, var(--brand-softer, #f2f8fc), var(--at-canvas, #fff)); }
+.editor-head h2 { color: var(--brand-700, #0b5880); font-weight: 700; display: flex; align-items: center; gap: 7px; }
+.editor-head h2 .head-ic { color: var(--brand, #1786be); }
+
+/* Icon MDI inline (thay emoji) — căn giữa theo dòng chữ, kế thừa màu chữ */
+.editor :deep(.v-icon),
+.picker-popup :deep(.v-icon) { vertical-align: middle; }
+
+/* Hàng KH liên kết: coral → brand-soft, chữ về ink bình thường */
+.linked-kh-row { background: var(--brand-soft, #e4f1f8); }
+.linked-kh-row .linked-info { color: var(--at-ink, #1f2d3d); }
+.link-kh-btn { color: var(--brand-700, #0b5880); }
+.link-kh-btn:hover { background: var(--brand-softer, #f2f8fc); border-color: var(--brand, #1786be); }
+
+/* Focus → viền + glow brand */
+.title-input-wrap:focus-within,
+.location-input-wrap:focus-within,
+.sale-select:focus,
+.cust-suggest-search:focus,
+.notes-area:focus,
+.picker-display.open { border-color: var(--brand, #1786be); box-shadow: 0 0 0 3px var(--brand-soft, #e4f1f8); }
+
+/* Chips đang chọn → brand */
+.type-chip.active,
+.tag-chip.active,
+.tip-chip.active,
+.loc-chip.active { background: var(--brand-soft, #e4f1f8); border-color: var(--brand, #1786be); color: var(--brand-700, #0b5880); }
+
+/* Ngày/giờ đang chọn → brand */
+.dp-day.today { background: var(--brand, #1786be); color: #fff; }
+.dp-day.selected:not(.today) { background: var(--brand-soft, #e4f1f8); color: var(--brand-700, #0b5880); border-color: var(--brand, #1786be); }
+.tp-wheel-item.selected { color: var(--brand-700, #0b5880); }
+
+/* Nút primary (Tạo/Cập nhật + Xác nhận popup) → brand */
+.at-btn--primary { background: var(--brand, #1786be); color: #fff; }
+.at-btn--primary:hover:not(:disabled) { background: var(--brand-600, #0f6fa0); }
+.at-btn--primary:active:not(:disabled) { background: var(--brand-700, #0b5880); }
 </style>

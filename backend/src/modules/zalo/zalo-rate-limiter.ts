@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * zalo-rate-limiter.ts — Per-account, per-operation-type rate limiting.
  * Uses Redis when REDIS_URL is set, otherwise in-memory Maps.
@@ -6,24 +8,9 @@
 import type { OpCategory } from '../../shared/zalo-operations.js';
 import type { RedisClient } from '../../shared/redis-client.js';
 import { getRedis } from '../../shared/redis-client.js';
-
-interface CategoryLimit {
-  daily: number;
-  burst: number;
-  burstWindowMs: number;
-}
-
-const CATEGORY_LIMITS: Record<OpCategory, CategoryLimit> = {
-  message:       { daily: 200,  burst: 5,  burstWindowMs: 30_000 },
-  reaction:      { daily: 300,  burst: 10, burstWindowMs: 30_000 },
-  chat_action:   { daily: 500,  burst: 15, burstWindowMs: 30_000 },
-  group_admin:   { daily: 50,   burst: 5,  burstWindowMs: 60_000 },
-  group_read:    { daily: 1000, burst: 20, burstWindowMs: 30_000 },
-  friend_action: { daily: 30,   burst: 8,  burstWindowMs: 60_000 },
-  friend_read:   { daily: 500,  burst: 10, burstWindowMs: 30_000 },
-  profile:       { daily: 10,   burst: 3,  burstWindowMs: 60_000 },
-  query:         { daily: 2000, burst: 30, burstWindowMs: 30_000 },
-};
+// 2026-06-06 (Anh chốt) — trần SDK đọc từ DB (cấu hình ở màn Quản lý nick Zalo),
+// KHÔNG còn hardcode trong file này.
+import { getEffectiveLimit, ALL_CATEGORIES, DEFAULT_SDK_LIMITS, type CategoryLimit } from './sdk-limit-service.js';
 
 interface DailyCounter { count: number; date: string; }
 
@@ -47,7 +34,10 @@ class ZaloRateLimiter {
 
   async checkLimits(accountId: string, category: OpCategory = 'message'): Promise<{ allowed: boolean; reason?: string }> {
     try {
-      const limits = CATEGORY_LIMITS[category] || CATEGORY_LIMITS.message;
+      // #2026-06-06 (Anh chốt) — trần đọc từ DB (nick override → org default → fallback),
+      // KHÔNG còn hardcode CATEGORY_LIMITS. Cache 60s trong sdk-limit-service.
+      const eff = await getEffectiveLimit(accountId, category);
+      const limits: CategoryLimit = { daily: eff.daily, burst: eff.burst, burstWindowMs: eff.burstWindowMs };
       const r = await this.getRedisClient();
 
       if (r) return this.checkRedis(r, accountId, category, limits);
@@ -125,6 +115,29 @@ class ZaloRateLimiter {
     else this.dailyCounts.set(key, { count: 1, date: today });
   }
 
+  // 2026-06-06 — đếm OPERATION-LEVEL riêng (vd 'contact_sync' = getAllFriends) cho dashboard.
+  // Không ảnh hưởng rate-limit (chỉ là counter metric). Key: rl:op:<acct>:<op>.
+  async recordOperation(accountId: string, op: string): Promise<void> {
+    const r = await this.getRedisClient();
+    if (!r) return;
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const key = `rl:op:${accountId}:${op}`;
+      await r.hincrby(key, today, 1);
+      await r.expire(key, 86400 * 9); // giữ ~9 ngày cho sparkline 7 ngày
+    } catch { /* metric best-effort */ }
+  }
+
+  async getOperationCount(accountId: string, op: string): Promise<number> {
+    const r = await this.getRedisClient();
+    if (!r) return 0;
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const val = await r.hget(`rl:op:${accountId}:${op}`, today);
+      return val ? parseInt(val, 10) : 0;
+    } catch { return 0; }
+  }
+
   async getDailyCount(accountId: string, category: OpCategory = 'message'): Promise<number> {
     const r = await this.getRedisClient();
     if (r) {
@@ -143,14 +156,16 @@ class ZaloRateLimiter {
 
   async getAllDailyCounts(accountId: string): Promise<Record<string, number>> {
     const result: Record<string, number> = {};
-    for (const cat of Object.keys(CATEGORY_LIMITS)) {
+    for (const cat of ALL_CATEGORIES) {
       result[cat] = await this.getDailyCount(accountId, cat as OpCategory);
     }
     return result;
   }
 
+  /** @deprecated trần thật giờ per-nick từ DB (sdk-limit-service.getEffectiveLimit).
+   *  Hàm này chỉ trả fallback hằng số, giữ cho backward-compat. */
   getLimitsConfig(): Record<string, CategoryLimit> {
-    return { ...CATEGORY_LIMITS };
+    return { ...DEFAULT_SDK_LIMITS };
   }
 }
 

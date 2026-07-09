@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * Composable for contact (khách hàng) management:
  * - List with filters, pagination
@@ -47,6 +49,18 @@ export interface Contact {
   metadata?: Record<string, unknown>;
   assignedUserId?: string | null;
   assignedUser?: { id?: string; fullName: string; email?: string } | null;
+  // Phase Contact Scope Hybrid 2026-05-27 — vai trò của VIEWER với Contact này
+  //   primary       = sale chính (ContactAccess.role='primary')
+  //   collaborator  = sale phụ (chăm qua nick mình)
+  //   admin         = org admin/owner (view full)
+  viewerRole?: 'primary' | 'collaborator' | 'admin' | null;
+  // M55 2026-05-30: ContactAccess list (sale đang/đã chăm KH này — counter "Cùng chăm")
+  contactAccess?: Array<{
+    role: 'primary' | 'collaborator';
+    source: string;
+    createdAt: string;
+    user: { id: string; fullName: string | null; email: string | null } | null;
+  }>;
   createdAt?: string;
   updatedAt?: string;
   firstContactDate?: string | null;
@@ -75,6 +89,12 @@ export interface Contact {
   zaloLookupAt?: string | null;
   zaloLookupAttempts?: number;
   importBatchId?: string | null;
+
+  // #4 (2026-06-20): số lần gắn sequence (auto+manual), aggregate mức Cha — read-only
+  sequenceAttachCount?: number;
+  sequenceActiveCount?: number;
+  // #3 (2026-06-20): số lần đã gửi kết bạn cho SĐT này (mức Cha) — read-only
+  friendInviteSentCount?: number;
 
   // Consent
   consentStatus?: string | null;
@@ -191,6 +211,32 @@ export function messagePreview(
   return CONTENT_TYPE_LABEL[contentType ?? ''] ?? (contentType ?? '');
 }
 
+/**
+ * Tin nhắn cuối (lastInbound/OutboundPreview) đôi khi là raw JSON của sự kiện
+ * Zalo ({"title":"...","description":"...","href":"..."}) và thường BỊ CẮT 200 ký
+ * tự ở backend → JSON.parse fail. cleanPreview() trích title|text|description rồi
+ * mới qua messagePreview, tránh hiển thị code lạ cho sale (design-review 2026-06-03).
+ */
+export function cleanPreview(
+  raw: string | null | undefined,
+  contentType: string | null | undefined,
+  maxLen = 60,
+): string {
+  if (!raw) return messagePreview(raw, contentType, maxLen);
+  const s = raw.trim();
+  if (s.startsWith('{') || s.startsWith('[')) {
+    try {
+      const obj = JSON.parse(s);
+      const picked = obj?.title || obj?.text || obj?.description || obj?.caption || obj?.content;
+      if (typeof picked === 'string' && picked.trim()) return messagePreview(picked, contentType, maxLen);
+    } catch { /* JSON truncate → regex bên dưới */ }
+    const m = s.match(/"(?:title|text|description|caption|content)"\s*:\s*"([^"]+)"/);
+    if (m && m[1]) return messagePreview(m[1], contentType, maxLen);
+    return messagePreview('', contentType, maxLen);
+  }
+  return messagePreview(raw, contentType, maxLen);
+}
+
 export interface AccountActivityItem {
   zaloAccountId: string;
   zaloAccount: {
@@ -238,6 +284,9 @@ export interface ContactFilters {
   relationshipKindAny?: string;
   dateFrom?: string;
   dateTo?: string;
+  sequenceAttachMin?: number | null; // #4: lọc KH gắn ≥ N sequence
+  friendInviteMin?: number | null;   // #3: lọc KH đã gửi kết bạn ≥ N lần
+  sort?: 'score' | '' | null;        // 'score' = điểm cao lên đầu; rỗng = tương tác mới nhất
 }
 
 export const SOURCE_OPTIONS = [
@@ -268,7 +317,9 @@ export function useContacts() {
     status: '',
     statusId: '',
     assignedUserId: '',
-    threadType: '',
+    // Anh chốt 2026-05-28: bảng Khách hàng mặc định lọc User 1-1 (ẩn KH nhóm).
+    // Sale có thể đổi sang "Tất cả" hoặc "Nhóm" bằng dropdown Loại trên toolbar.
+    threadType: 'user',
     hasZalo: '',
     multiNick: '',
     scoreMin: null,
@@ -276,6 +327,9 @@ export function useContacts() {
     relationshipKindAny: '',
     dateFrom: '',
     dateTo: '',
+    sequenceAttachMin: null,
+    friendInviteMin: null,
+    sort: null,
   });
 
   const pagination = reactive({ page: 1, limit: 20 });
@@ -300,6 +354,9 @@ export function useContacts() {
           relationshipKindAny: filters.relationshipKindAny || undefined,
           dateFrom: filters.dateFrom || undefined,
           dateTo: filters.dateTo || undefined,
+          sequenceAttachMin: filters.sequenceAttachMin ?? undefined,
+          friendInviteMin: filters.friendInviteMin ?? undefined,
+          sort: filters.sort || undefined,
         },
       });
       contacts.value = res.data.contacts ?? res.data;

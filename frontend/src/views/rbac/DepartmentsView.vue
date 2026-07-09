@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <div class="dept-page">
     <header class="page-hero">
@@ -145,7 +147,7 @@ onMounted(async () => {
 
 const userNameMap = computed(() => {
   const m = new Map<string, string>();
-  for (const u of allUsers.value) m.set(u.id, u.fullName || u.email);
+  for (const u of allUsers.value) m.set(u.id, u.fullName || u.email || u.phone || '(?)');
   return m;
 });
 

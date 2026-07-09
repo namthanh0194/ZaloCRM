@@ -1,71 +1,61 @@
-# Contributing to ZaloCRM
+# Đóng góp cho ZaloCRM
 
-Thanks for taking the time to contribute! This guide explains how to propose
-changes and what we expect from contributions.
+Cảm ơn bạn đã quan tâm đóng góp! Tài liệu này mô tả quy trình và các điều kiện pháp lý.
 
-## Before you start
+Mã nguồn công khai: <https://github.com/locphamnguyen/ZaloCRM>
 
-By submitting a contribution you agree to the
-[Contributor License Agreement (CLA)](CLA.md). This is required before any
-pull request can be merged. You can accept it by adding a sign-off line to your
-commits:
+## Giấy phép đóng góp
 
+ZaloCRM phát hành theo **GNU AGPL-3.0** (xem [LICENSE](LICENSE)). **Khi gửi đóng góp, bạn đồng ý
+phát hành đóng góp đó theo AGPL-3.0** và chấp nhận **2 yêu cầu** dưới đây.
+
+### 1. CLA (Contributor License Agreement) — bắt buộc
+Dự án dùng **dual-license** (AGPL + thương mại), nên cần bạn ký **CLA** cấp cho người bảo trì quyền
+phát hành đóng góp của bạn theo cả AGPL lẫn giấy phép thương mại.
+
+- Lần đầu mở Pull Request, **bot CLA-assistant** sẽ tự bình luận với link ký. Ký 1 lần là dùng cho mọi PR sau.
+- PR **chưa ký CLA sẽ không được merge**.
+
+### 2. DCO (Developer Certificate of Origin) — bắt buộc
+Mỗi commit phải có dòng **`Signed-off-by`** chứng nhận bạn có quyền đóng góp (xem [DCO](DCO)):
+
+```bash
+git commit -s -m "feat: mô tả thay đổi"
+# → tự thêm: Signed-off-by: Tên Bạn <email@example.com>
 ```
-Signed-off-by: Your Name <your@email>
-```
+Cấu hình `git config user.name` / `user.email` đúng trước khi commit.
 
-(use `git commit -s` to add it automatically), or by stating in your pull
-request that you have read and agree to the CLA.
+## Quy trình
 
-## Reporting bugs
+1. **Fork** `locphamnguyen/ZaloCRM` → tạo branch từ nhánh chính: `git checkout -b feat/ten-tinh-nang`.
+2. Code + **chạy kiểm tra trước khi gửi**:
+   ```bash
+   (cd backend && npx tsc --noEmit)      # backend typecheck
+   (cd frontend && npx vue-tsc -b)       # frontend typecheck
+   (cd frontend && npm run build)        # build thật (bắt lỗi SFC/CSS)
+   ```
+3. Commit theo **Conventional Commits** + `-s` (DCO):
+   `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`, `test:` …
+4. Mở **Pull Request** về `locphamnguyen/ZaloCRM`, mô tả rõ thay đổi + cách kiểm thử. Ký CLA khi bot nhắc.
 
-Open a GitHub issue and include:
+## Quy ước code
 
-- What you expected to happen vs. what actually happened.
-- Steps to reproduce (smallest possible case).
-- Environment: OS, Node version, browser, and relevant `.env` settings
-  (never paste real secrets).
-- Logs or screenshots if helpful.
+- TypeScript strict; backend NodeNext (import `.js` extension). Vue 3 `<script setup>`.
+- Mỗi file nguồn mới giữ **SPDX header**:
+  ```
+  // SPDX-License-Identifier: AGPL-3.0-or-later
+  // Copyright (C) 2026 Nguyễn Tiến Lộc
+  ```
+  (file `.vue` dùng `<!-- ... -->`).
+- **KHÔNG commit secrets** — `.env` đã được `.gitignore`. Dùng `.env.example` làm mẫu.
+- Viết code theo phong cách sẵn có của file xung quanh (naming, comment, idiom).
 
-## Proposing changes
+## Báo lỗi / đề xuất
 
-1. **Open an issue first** for anything non-trivial, so we can align on the
-   approach before you write code.
-2. **Fork** the repository and create a branch from `main`:
-   `git checkout -b feat/short-description`.
-3. Make focused commits with clear messages (Conventional Commits preferred:
-   `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`).
-4. Keep pull requests small and single-purpose. Large, mixed PRs are hard to
-   review and slow to merge.
+Mở **Issue** trên `locphamnguyen/ZaloCRM` với: mô tả, bước tái hiện, log/ảnh, môi trường (OS, Docker, version).
+Lỗi bảo mật: gửi riêng email **locnt@locnguyendata.com** (đừng mở issue công khai).
 
-## Development
+## Giấy phép thương mại
 
-- Backend: `backend/` (Fastify + Prisma + Socket.IO, TypeScript).
-- Frontend: `frontend/` (Vue 3 + Vuetify + Pinia + Vite).
-- Install: `npm install` in each of `backend/` and `frontend/`.
-- Type-check before pushing: `npx tsc --noEmit` (backend),
-  `npx vue-tsc --noEmit -p tsconfig.app.json` (frontend).
-- Run tests: `npm test` (backend).
-
-## Code standards
-
-- Keep changes consistent with the surrounding code (naming, structure, style).
-- Prefer small, focused modules over large files.
-- Handle errors and edge cases; don't commit broken or commented-out code.
-- Add or update tests for behavior you change.
-- Do **not** commit secrets (`.env`, keys, tokens) or generated artifacts.
-
-## Pull request checklist
-
-- [ ] Linked to an issue (for non-trivial changes).
-- [ ] CLA accepted (sign-off or statement).
-- [ ] Type-check and tests pass locally.
-- [ ] Commits are focused with clear messages.
-- [ ] No secrets or unrelated files included.
-
-## Review
-
-A maintainer will review your PR. Be ready to discuss and revise. Whether a
-contribution is merged is at the maintainer's discretion.
-
-Thank you for helping improve ZaloCRM!
+Muốn dùng ZaloCRM không chịu ràng buộc copyleft của AGPL (nhúng vào sản phẩm đóng, SaaS độc quyền…):
+liên hệ **locnt@locnguyendata.com**.

@@ -1,7 +1,11 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <component :is="layout">
     <router-view />
   </component>
+  <!-- 2026-06-16 — hộp xác nhận HS theme global (thay window.confirm toàn app) -->
+  <ConfirmHost />
 </template>
 
 <script setup lang="ts">
@@ -10,6 +14,7 @@ import { useRoute } from 'vue-router';
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import MobileLayout from '@/layouts/MobileLayout.vue';
+import ConfirmHost from '@/components/ui/ConfirmHost.vue';
 import { useMobile } from '@/composables/use-mobile';
 import { useAuthStore } from '@/stores/auth';
 import { usePrivacyStore } from '@/stores/privacy';

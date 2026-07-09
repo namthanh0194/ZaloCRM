@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * scoring/aggregate-contact.ts — Aggregate Friend → Contact scoring.
  *
@@ -60,6 +62,8 @@ export async function computeContactAggregate(
       autoTags: [],
       stuckSinceAggregate: null,
       lastActivity: null,
+      lastInboundAt: null,
+      lastOutboundAt: null,
     };
   }
 
@@ -125,12 +129,17 @@ export async function computeContactAggregate(
   }
 
   // ── 6. lastActivity = MAX(lastInboundAt | lastOutboundAt | lastInteractionAt) ──
+  // Phase Lead Pool v2.A 2026-05-29: tách lastInboundAt + lastOutboundAt riêng.
+  // forgotten pool query đổi sang dùng lastInboundAt để chỉ tính lần KH reply
+  // (sale spam outbound KHÔNG còn giữ lead vĩnh viễn).
   let lastActivity: Date | null = null;
+  let lastInboundAt: Date | null = null;
+  let lastOutboundAt: Date | null = null;
   for (const f of friends) {
+    if (f.lastInboundAt && (!lastInboundAt || f.lastInboundAt > lastInboundAt)) lastInboundAt = f.lastInboundAt;
+    if (f.lastOutboundAt && (!lastOutboundAt || f.lastOutboundAt > lastOutboundAt)) lastOutboundAt = f.lastOutboundAt;
     for (const ts of [f.lastInboundAt, f.lastOutboundAt, f.lastInteractionAt]) {
-      if (ts && (!lastActivity || ts > lastActivity)) {
-        lastActivity = ts;
-      }
+      if (ts && (!lastActivity || ts > lastActivity)) lastActivity = ts;
     }
   }
 
@@ -142,6 +151,8 @@ export async function computeContactAggregate(
     autoTags,
     stuckSinceAggregate,
     lastActivity,
+    lastInboundAt,
+    lastOutboundAt,
   };
 }
 
@@ -161,12 +172,17 @@ export async function updateContactAggregate(contactId: string): Promise<void> {
       where: { id: contactId },
       data: {
         leadScore: result.leadScore,
-        statusId: result.statusId,
+        // FIFO 2026-06-16 — KHÔNG ghi đè Contact.statusId về null khi không Friend nào có status
+        // (vd lead Pool KH-không-Zalo: status được set thẳng vào Contact, chưa có Friend mang status).
+        // Chỉ cập nhật khi aggregate ra status thật (≥1 Friend có status). Giữ status sale đã set.
+        ...(result.statusId !== null ? { statusId: result.statusId } : {}),
         ownerFriendId: result.ownerFriendId,
         aggregateBreakdown: result.aggregateBreakdown as any,
         autoTags: result.autoTags,
         stuckSinceAggregate: result.stuckSinceAggregate,
         lastActivity: result.lastActivity,
+        lastInboundAt: result.lastInboundAt,
+        lastOutboundAt: result.lastOutboundAt,
         aggregateScoreUpdatedAt: new Date(),
       },
     });

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * engagement-service.ts — Phase 8 Engagement Heatmap Timeline
  *
@@ -22,7 +24,7 @@
  *   - cold:     Avg intensity <15 across 28 days
  *   - noise:    <5 total interactions in 28 days (insufficient data)
  */
-import { prisma } from '../../shared/database/prisma-client.js';
+import { prisma, tenantTransaction } from '../../shared/database/prisma-client.js';
 import { logger } from '../../shared/utils/logger.js';
 
 export type EngagementPattern = 'hot' | 'champion' | 'stable' | 'cooling' | 'cold' | 'noise';
@@ -205,7 +207,7 @@ export async function incrementDailyAggregate(input: IncrementInput): Promise<vo
   }
 
   try {
-    await prisma.$transaction(async (tx) => {
+    await tenantTransaction(async (tx) => {
       const existing = await tx.contactEngagementDaily.findUnique({
         where: { orgId_contactId_date: { orgId: input.orgId, contactId: input.contactId, date } },
       });

@@ -1,146 +1,141 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
- * privacy-routes.ts — Phase Riêng Tư 2026-05-22
+ * privacy-routes.ts — Phase Riêng Tư (OTP-only 2026-06-06)
+ *
+ * Anh chốt 2026-06-06: bỏ PIN hoàn toàn, chỉ unlock qua OTP gửi Zalo nick nội bộ.
  *
  * Endpoints:
- *   POST   /api/v1/privacy/setup-pin            { currentPassword, pin }
- *   POST   /api/v1/privacy/unlock               { pin, durationMinutes }  → set HttpOnly cookie + return expiresAt
- *   POST   /api/v1/privacy/lock                                            → revoke current session
- *   GET    /api/v1/privacy/status                                          → hasPin + active sessions
- *   PATCH  /api/v1/zalo-accounts/:id/privacy-mode  { mode }                → flip nick main/sub
- *   POST   /api/v1/admin/privacy/reset-pin/:userId                          → owner reset PIN (forgot PIN)
- *   GET    /api/v1/admin/privacy/audit?userId=                              → audit log unlock events
+ *   GET    /api/v1/privacy/otp/status            → canRequestOtp + blockedReason + lockedUntil
+ *   POST   /api/v1/privacy/otp/request           { durationMinutes }           → gửi OTP qua Zalo
+ *   POST   /api/v1/privacy/otp/verify            { tokenId, code }             → set HttpOnly cookie + expiresAt
+ *   POST   /api/v1/privacy/lock                                                → revoke current session
+ *   GET    /api/v1/privacy/status                                             → active sessions
+ *   GET    /api/v1/privacy/my-nicks                                           → nicks user owner
+ *   PATCH  /api/v1/zalo-accounts/:id/privacy-mode  { mode }                   → flip nick main/sub
+ *   POST   /api/v1/admin/privacy/reset-lock/:userId                           → owner reset lock (sai OTP nhiều)
+ *   GET    /api/v1/admin/privacy/audit?userId=                                → audit log unlock events
  */
-import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import bcrypt from 'bcryptjs';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { prisma } from '../../shared/database/prisma-client.js';
 import { authMiddleware } from '../auth/auth-middleware.js';
 import { userHasGrant } from '../rbac/permission-group-service.js';
 import {
-  setupPin,
-  unlock,
   lock,
   getStatus,
-  adminResetPin,
   revokeAllSessions,
-  changePin,
-  verifyPin,
+  adminResetLock,
   type SessionDuration,
-} from './pin-service.js';
+} from './session-service.js';
+import {
+  requestOtp,
+  verifyOtp,
+  getOtpStatus,
+  PrivacyOtpError,
+} from './otp-service.js';
 
 const COOKIE_NAME = 'priv_session';
-const COOKIE_OPTS_BASE = {
-  httpOnly: true,
-  sameSite: 'strict' as const,
-  path: '/',
-};
+
+function setSessionCookie(reply: any, token: string, expiresAt: Date): void {
+  const maxAge = Math.floor((expiresAt.getTime() - Date.now()) / 1000);
+  reply.header(
+    'Set-Cookie',
+    `${COOKIE_NAME}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${maxAge}${
+      process.env.NODE_ENV === 'production' ? '; Secure' : ''
+    }`,
+  );
+}
+
+function clearSessionCookie(reply: any): void {
+  reply.header('Set-Cookie', `${COOKIE_NAME}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0`);
+}
 
 export async function registerPrivacyRoutes(app: FastifyInstance): Promise<void> {
-  // POST /privacy/setup-pin — Phase Privacy v2 2026-05-23: drop currentPassword gate.
-  // Anh chốt: setup PIN lần đầu chỉ cần PIN 4 số. JWT auth đã đủ verify identity.
-  // Nếu user đã có PIN trước → BLOCK, force dùng /change-pin (với oldPin).
-  app.post('/api/v1/privacy/setup-pin', { preHandler: authMiddleware }, async (request, reply) => {
+  // ── OTP unlock flow ────────────────────────────────────────────────────
+
+  // GET /privacy/otp/status — FE biết user có thể xin OTP hay đang block/lock.
+  app.get('/api/v1/privacy/otp/status', { preHandler: authMiddleware }, async (request, reply) => {
     const user = (request as any).user;
     if (!user) return reply.status(401).send({ error: 'unauthorized' });
-    const body = (request.body ?? {}) as { pin?: string };
-    if (!body.pin) {
-      return reply.status(400).send({ error: 'Cần pin' });
-    }
-
-    // Check existing PIN — force dùng /change-pin nếu đã setup trước
-    const existing = await prisma.user.findUnique({
-      where: { id: user.userId ?? user.id },
-      select: { privacyPinHash: true },
-    });
-    if (!existing) return reply.status(404).send({ error: 'User not found' });
-    if (existing.privacyPinHash) {
-      return reply.status(409).send({
-        error: 'PIN đã setup. Dùng "Đổi PIN" với PIN cũ để thay đổi.',
-        code: 'PIN_ALREADY_SET',
-      });
-    }
-
     try {
-      await setupPin(user.userId ?? user.id, body.pin);
-      return reply.send({ ok: true });
+      const status = await getOtpStatus(user.userId ?? user.id, user.orgId);
+      return reply.send(status);
     } catch (e: any) {
-      return reply.status(400).send({ error: e.message });
+      return reply.status(500).send({ error: e.message });
     }
   });
 
-  // Phase Privacy v2 2026-05-23 — POST /privacy/verify-pin
-  // Verify oldPin trước khi cho user sang step 2 (đặt PIN mới). UX: feedback ngay
-  // "PIN cũ sai" thay vì để user nhập newPin xong mới biết fail.
-  // KHÔNG increment fail counter (verify là check, không phải unlock attempt).
-  app.post('/api/v1/privacy/verify-pin', { preHandler: authMiddleware }, async (request, reply) => {
+  // POST /privacy/otp/request { durationMinutes } — sinh OTP 4 số, gửi Zalo nick nội bộ.
+  app.post('/api/v1/privacy/otp/request', { preHandler: authMiddleware }, async (request, reply) => {
     const user = (request as any).user;
     if (!user) return reply.status(401).send({ error: 'unauthorized' });
-    const body = (request.body ?? {}) as { pin?: string };
-    if (!body.pin || !/^\d{4}$/.test(body.pin)) {
-      return reply.status(400).send({ error: 'PIN phải 4 chữ số' });
+    const body = (request.body ?? {}) as {
+      durationMinutes?: number;
+      context?: { action?: 'enable' | 'disable' | 'unlock'; nickName?: string };
+    };
+    if (!body.durationMinutes) {
+      return reply.status(400).send({ error: 'Cần durationMinutes' });
     }
     try {
-      const valid = await verifyPin(user.userId ?? user.id, body.pin);
-      return reply.send({ valid });
-    } catch (e: any) {
-      return reply.status(400).send({ error: e.message });
-    }
-  });
-
-  // Phase Privacy v2 2026-05-23 — POST /privacy/change-pin
-  // Đổi PIN bằng PIN cũ (KHÔNG cần password login). Revoke all sessions sau khi đổi.
-  app.post('/api/v1/privacy/change-pin', { preHandler: authMiddleware }, async (request, reply) => {
-    const user = (request as any).user;
-    if (!user) return reply.status(401).send({ error: 'unauthorized' });
-    const body = (request.body ?? {}) as { oldPin?: string; newPin?: string };
-    if (!body.oldPin || !body.newPin) {
-      return reply.status(400).send({ error: 'Cần oldPin + newPin' });
-    }
-    try {
-      await changePin(user.userId ?? user.id, body.oldPin, body.newPin);
-      // Clear cookie vì session đã revoke
-      reply.header('Set-Cookie', `${COOKIE_NAME}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0`);
-      return reply.send({ ok: true });
-    } catch (e: any) {
-      return reply.status(400).send({ error: e.message });
-    }
-  });
-
-  // POST /privacy/unlock — set HttpOnly cookie + return expiresAt
-  app.post('/api/v1/privacy/unlock', { preHandler: authMiddleware }, async (request, reply) => {
-    const user = (request as any).user;
-    if (!user) return reply.status(401).send({ error: 'unauthorized' });
-    const body = (request.body ?? {}) as { pin?: string; durationMinutes?: number };
-    if (!body.pin || !body.durationMinutes) {
-      return reply.status(400).send({ error: 'Cần pin + durationMinutes' });
-    }
-
-    try {
-      const result = await unlock({
+      const result = await requestOtp({
         userId: user.userId ?? user.id,
-        pin: body.pin,
-        durationMinutes: body.durationMinutes as SessionDuration,
-        ip: request.ip,
-        userAgent: request.headers['user-agent'],
+        orgId: user.orgId,
+        durationMinutes: body.durationMinutes,
+        ipAddress: request.ip,
+        userAgent: request.headers['user-agent'] ?? null,
+        context: body.context?.action
+          ? { action: body.context.action, nickName: body.context.nickName }
+          : undefined,
       });
-
-      // FIX codex review #3: HttpOnly cookie thay localStorage cho XSS-safe
-      const maxAge = Math.floor((result.expiresAt.getTime() - Date.now()) / 1000);
-      reply.header(
-        'Set-Cookie',
-        `${COOKIE_NAME}=${result.sessionToken}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${maxAge}${
-          process.env.NODE_ENV === 'production' ? '; Secure' : ''
-        }`,
-      );
-      return reply.send({ ok: true, expiresAt: result.expiresAt });
+      return reply.send(result);
     } catch (e: any) {
+      if (e instanceof PrivacyOtpError) {
+        return reply.status(e.statusCode).send({ error: e.message, code: e.errorCode });
+      }
       return reply.status(400).send({ error: e.message });
     }
   });
 
-  // POST /privacy/lock — revoke session(s).
-  // Anh chốt 2026-05-22: revoke ALL active sessions cho user (không chỉ theo cookie).
-  // Đảm bảo lock thật sự lock dù cookie thiếu/lệch hoặc có orphan session từ
-  // các browser khác. activeSessionCount=0 ngay sau request → bubble blur kích hoạt.
+  // POST /privacy/otp/verify { tokenId, code } — match → tạo session + set cookie.
+  app.post('/api/v1/privacy/otp/verify', { preHandler: authMiddleware }, async (request, reply) => {
+    const user = (request as any).user;
+    if (!user) return reply.status(401).send({ error: 'unauthorized' });
+    const body = (request.body ?? {}) as { tokenId?: string; code?: string };
+    if (!body.tokenId || !body.code) {
+      return reply.status(400).send({ error: 'Cần tokenId + code' });
+    }
+    try {
+      const result = await verifyOtp({
+        userId: user.userId ?? user.id,
+        orgId: user.orgId,
+        tokenId: body.tokenId,
+        code: body.code,
+        ipAddress: request.ip,
+        userAgent: request.headers['user-agent'] ?? null,
+      });
+      // CHỈ mở khoá XEM (action='unlock') mới tạo session → set cookie. Gạt (enable/disable)
+      // chỉ xác nhận mã, không có session/cookie (anh chốt 2026-06-06 — Q6).
+      if (result.action === 'unlock' && result.sessionToken && result.expiresAt) {
+        setSessionCookie(reply, result.sessionToken, result.expiresAt);
+        return reply.send({
+          ok: true,
+          action: result.action,
+          expiresAt: result.expiresAt,
+          durationMinutes: result.durationMinutes,
+        });
+      }
+      return reply.send({ ok: true, action: result.action });
+    } catch (e: any) {
+      if (e instanceof PrivacyOtpError) {
+        return reply.status(e.statusCode).send({ error: e.message, code: e.errorCode });
+      }
+      return reply.status(400).send({ error: e.message });
+    }
+  });
+
+  // POST /privacy/lock — revoke ALL active sessions cho user.
+  // Anh chốt 2026-05-22: revoke ALL (không chỉ theo cookie) → lock thật sự lock dù cookie
+  // thiếu/lệch hoặc có orphan session từ browser khác. activeSessionCount=0 ngay → blur kích hoạt.
   app.post('/api/v1/privacy/lock', { preHandler: authMiddleware }, async (request, reply) => {
     const user = (request as any).user;
     const userId = user?.userId ?? user?.id;
@@ -149,11 +144,11 @@ export async function registerPrivacyRoutes(app: FastifyInstance): Promise<void>
     }
     const cookieToken = (request as any).cookies?.[COOKIE_NAME] || extractCookie(request, COOKIE_NAME);
     if (cookieToken) await lock(cookieToken); // belt-and-braces (no-op nếu đã revoke ở trên)
-    reply.header('Set-Cookie', `${COOKIE_NAME}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0`);
+    clearSessionCookie(reply);
     return reply.send({ ok: true });
   });
 
-  // GET /privacy/status
+  // GET /privacy/status — active sessions của user.
   app.get('/api/v1/privacy/status', { preHandler: authMiddleware }, async (request, reply) => {
     const user = (request as any).user;
     if (!user) return reply.status(401).send({ error: 'unauthorized' });
@@ -164,14 +159,14 @@ export async function registerPrivacyRoutes(app: FastifyInstance): Promise<void>
   // GET /privacy/my-nicks — trả CHỈ nicks user là chính chủ (owner) trong org.
   // Anh chốt 2026-05-22: Privacy page chỉ thấy nick mình owner — không bao gồm
   // granted access cross-sale (vì privacy phải chính chủ flip).
-  // Phase Privacy v2 2026-05-23: include friendCount per nick để auto-default internal contact.
   app.get('/api/v1/privacy/my-nicks', { preHandler: authMiddleware }, async (request, reply) => {
     const user = (request as any).user;
     if (!user) return reply.status(401).send({ error: 'unauthorized' });
     const userId = user.userId ?? user.id;
 
     const nicks = await prisma.zaloAccount.findMany({
-      where: { orgId: user.orgId, ownerUserId: userId },
+      // 2026-06-10: ẩn nick đã xóa mềm khỏi list cấu hình Riêng tư của user.
+      where: { orgId: user.orgId, ownerUserId: userId, archivedAt: null },
       select: {
         id: true,
         zaloUid: true,
@@ -196,8 +191,7 @@ export async function registerPrivacyRoutes(app: FastifyInstance): Promise<void>
     return reply.send({ nicks: shaped });
   });
 
-  // PATCH /zalo-accounts/:id/privacy-mode — flip nick main/sub
-  // Chỉ owner của nick mới flip được.
+  // PATCH /zalo-accounts/:id/privacy-mode — flip nick main/sub. Chỉ owner mới flip.
   app.patch('/api/v1/zalo-accounts/:id/privacy-mode', { preHandler: authMiddleware }, async (request, reply) => {
     const user = (request as any).user;
     if (!user) return reply.status(401).send({ error: 'unauthorized' });
@@ -217,8 +211,19 @@ export async function registerPrivacyRoutes(app: FastifyInstance): Promise<void>
       return reply.status(403).send({ error: 'Chỉ owner của nick mới flip privacy mode' });
     }
 
-    // Phase Privacy v2 2026-05-23: hard cap khi flip sang 'main'.
-    // Đếm nicks user đang 'main' (exclude nick hiện tại nếu đang main → reuse slot).
+    // 2026-06-11 — MỞ LẠI bật mới Riêng tư sau khi vá xong 3 đợt lỗ lộ nội dung
+    // (realtime redact server-side + scope org + list/search redact + leak-guard).
+    // Mặc định MỞ; chỉ khóa khẩn khi set env PRIVACY_LOCK_NEW=1 (cờ kill-switch nếu
+    // phát hiện lỗ mới). Vẫn luôn cho TẮT (mode='sub').
+    const privacyNewLocked = process.env.PRIVACY_LOCK_NEW === '1';
+    if (privacyNewLocked && body.mode === 'main' && account.privacyMode !== 'main') {
+      return reply.status(423).send({
+        error: 'Tính năng Riêng tư đang tạm khóa bật mới (kill-switch bảo mật).',
+        code: 'PRIVACY_FEATURE_LOCKED',
+      });
+    }
+
+    // Hard cap khi flip sang 'main' (Phase Privacy v2 2026-05-23).
     if (body.mode === 'main' && account.privacyMode !== 'main') {
       const me = await prisma.user.findUnique({
         where: { id: userId },
@@ -243,40 +248,38 @@ export async function registerPrivacyRoutes(app: FastifyInstance): Promise<void>
       data: { privacyMode: body.mode },
     });
 
-    // Broadcast WebSocket event (codex review style — invalidate cache khác client)
     const io = (request.server as any).io;
     io?.emit('privacy:mode-changed', { accountId: id, mode: body.mode });
 
     return reply.send({ ok: true, mode: body.mode });
   });
 
-  // POST /admin/privacy/reset-pin/:userId — owner reset PIN cho sale (forgot PIN)
-  app.post('/api/v1/admin/privacy/reset-pin/:userId', {
+  // POST /admin/privacy/reset-lock/:userId — owner reset lock cho sale (sai OTP nhiều lần).
+  app.post('/api/v1/admin/privacy/reset-lock/:userId', {
     preHandler: [
       authMiddleware,
       async (req: any, rep: any) => {
         const u = req.user;
         if (!u) return rep.status(401).send({ error: 'unauthorized' });
         const allowed = await userHasGrant(u.userId ?? u.id, 'user', 'edit');
-        if (!allowed) return rep.status(403).send({ error: 'Cần quyền user.edit để reset PIN' });
+        if (!allowed) return rep.status(403).send({ error: 'Cần quyền user.edit để reset' });
       },
     ],
   }, async (request, reply) => {
     const user = (request as any).user;
     const { userId } = request.params as { userId: string };
 
-    // Verify target user ∈ same org
     const target = await prisma.user.findFirst({
       where: { id: userId, orgId: user.orgId },
       select: { id: true },
     });
     if (!target) return reply.status(404).send({ error: 'User không tồn tại' });
 
-    await adminResetPin(userId);
+    await adminResetLock(userId);
     return reply.send({ ok: true });
   });
 
-  // GET /admin/privacy/audit?userId= — audit log unlock events
+  // GET /admin/privacy/audit?userId= — audit log unlock events.
   app.get('/api/v1/admin/privacy/audit', {
     preHandler: [
       authMiddleware,

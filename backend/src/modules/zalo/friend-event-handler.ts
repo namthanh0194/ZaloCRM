@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * friend-event-handler.ts — persists zca-js `friend_event` to the Friend table.
  *
@@ -13,10 +15,13 @@
  *
  * Updates Contact.{accepted,pending,chatting}NicksCount on every transition.
  */
-import { prisma } from '../../shared/database/prisma-client.js';
+import { prisma, tenantTransaction } from '../../shared/database/prisma-client.js';
 import { logger } from '../../shared/utils/logger.js';
 import { randomUUID } from 'node:crypto';
 import { zaloPool } from './zalo-pool.js';
+import { resolveOrCreateContact } from '../contacts/resolve-contact.js';
+import { logEvent } from '../../shared/ee-registry/automation.js';
+import { isListeningState } from '../../shared/ee-registry/automation.js';
 
 // zca-js FriendEventType numeric values (mirrored from models/FriendEvent.d.ts)
 export const FriendEventType = {
@@ -79,7 +84,9 @@ interface ContactRef {
 
 /**
  * Resolve (or create) the Contact row matching a Zalo uid in a given nick.
- * Tries Friend.zaloUidInNick first, then Contact.zaloUid global, then creates a stub.
+ * Wave 1.5-B: delegates to central resolveOrCreateContact helper.
+ * Helper handles Friend reverse-lookup, getUserInfo enrichment, globalId/username/phone match,
+ * and race-safe ON CONFLICT stub creation.
  */
 async function resolveContact(
   zaloAccountId: string,
@@ -88,93 +95,14 @@ async function resolveContact(
   fallbackName?: string | null,
 ): Promise<ContactRef | null> {
   if (!uid) return null;
-
-  const existingFriend = await prisma.friend.findFirst({
-    where: { zaloAccountId, zaloUidInNick: uid },
-    select: { contactId: true, contact: { select: { orgId: true } } },
+  const result = await resolveOrCreateContact({
+    orgId,
+    zaloAccountId,
+    zaloUidInNick: uid,
+    fallbackFullName: fallbackName,
+    enrichViaGetUserInfo: true,
   });
-  if (existingFriend) return { id: existingFriend.contactId, orgId: existingFriend.contact.orgId };
-
-  const byGlobalUid = await prisma.contact.findFirst({
-    where: { orgId, zaloUid: uid },
-    select: { id: true, orgId: true },
-  });
-  if (byGlobalUid) return byGlobalUid;
-
-  // Cross-nick contact matching — UID này từ POV nick mới, có thể đã là Contact
-  // dưới UID khác (per-account UID rule). Hỏi Zalo getUserInfo để lấy globalId/
-  // username/phone → match Contact đã có thay vì tạo stub mới. Tránh trường hợp
-  // friend:updated event emit cho contactId stub mới mà UI conv bind contactId cũ.
-  let resolvedGlobalId: string | null = null;
-  let resolvedUsername: string | null = null;
-  let resolvedPhone: string | null = null;
-  let resolvedName: string | null = null;
-  let resolvedAvatar: string | null = null;
-  try {
-    const instance = zaloPool.getInstance(zaloAccountId);
-    if (instance?.api?.getUserInfo && instance.status === 'connected') {
-      const result: any = await instance.api.getUserInfo(uid);
-      const profiles = result?.changed_profiles || {};
-      const profile = profiles[uid] || profiles[`${uid}_0`];
-      if (profile) {
-        resolvedGlobalId = String(profile.globalId || '').trim() || null;
-        resolvedUsername = String(profile.username || '').trim() || null;
-        resolvedPhone = String(profile.phoneNumber || '').trim() || null;
-        resolvedName = (profile.zaloName || profile.zalo_name || profile.displayName || profile.display_name || '').trim() || null;
-        resolvedAvatar = (profile.avatar || '').trim() || null;
-      }
-    }
-  } catch (err) {
-    logger.debug(`[friend-event] getUserInfo(${uid}) failed in resolveContact:`, err);
-  }
-
-  if (resolvedGlobalId || resolvedUsername) {
-    const byIdentity = await prisma.contact.findFirst({
-      where: {
-        orgId,
-        OR: [
-          ...(resolvedGlobalId ? [{ zaloGlobalId: resolvedGlobalId }] : []),
-          ...(resolvedUsername ? [{ zaloUsername: resolvedUsername }] : []),
-        ],
-      },
-      select: { id: true, orgId: true },
-    });
-    if (byIdentity) {
-      logger.info(`[friend-event] Cross-nick match: uid=${uid} → existing contact=${byIdentity.id} via globalId/username`);
-      return byIdentity;
-    }
-  }
-
-  if (resolvedPhone) {
-    const { normalizePhone } = await import('../../shared/utils/phone.js');
-    const phoneNormalized = normalizePhone(resolvedPhone);
-    if (phoneNormalized) {
-      const byPhone = await prisma.contact.findFirst({
-        where: { orgId, phoneNormalized },
-        select: { id: true, orgId: true },
-      });
-      if (byPhone) {
-        logger.info(`[friend-event] Cross-nick match: uid=${uid} → existing contact=${byPhone.id} via phone`);
-        return byPhone;
-      }
-    }
-  }
-
-  // Fresh — create stub Contact với data fetch được từ Zalo (avatar/name/globalId/etc)
-  const created = await prisma.contact.create({
-    data: {
-      id: randomUUID(),
-      orgId,
-      zaloUid: uid,
-      fullName: resolvedName || fallbackName || 'Unknown',
-      zaloGlobalId: resolvedGlobalId,
-      zaloUsername: resolvedUsername,
-      avatarUrl: resolvedAvatar,
-      phone: resolvedPhone,
-    },
-    select: { id: true, orgId: true },
-  });
-  return created;
+  return { id: result.id, orgId: result.orgId };
 }
 
 /**
@@ -185,6 +113,45 @@ async function resolveContact(
  *
  * All in a single transaction to keep counters consistent.
  */
+/**
+ * Lớp 2b (2026-06-22) — chuông Follow-Up mất do lệch contact. Khi gắn/khẳng định Friend(nick,uid)
+ * vào `contactId`, re-point Conversation(nick, externalThreadId=uid) đang trỏ contact KHÁC về
+ * `contactId`. Khoá khớp AN TOÀN (nick,thread)≡friend(nick,uid) — KHÔNG đoán globalId/SĐT (vụ
+ * dedup-fuzzy đã bị CEO bỏ 20/06). Conversation có @@unique(zaloAccountId, externalThreadId) → ≤1
+ * row, chỉ đổi FK contactId (KHÔNG P2002). Best-effort: lỗi KHÔNG chặn luồng friend.
+ * @returns số conversation đã re-point.
+ */
+export async function reconcileConversationContact(args: {
+  orgId: string;
+  zaloAccountId: string;
+  contactId: string;
+  zaloUidInNick: string;
+}): Promise<number> {
+  const { orgId, zaloAccountId, contactId, zaloUidInNick } = args;
+  if (!zaloUidInNick) return 0;
+  try {
+    const res = await prisma.conversation.updateMany({
+      where: {
+        orgId,
+        zaloAccountId,
+        externalThreadId: zaloUidInNick,
+        threadType: 'user',
+        contactId: { not: contactId },
+      },
+      data: { contactId },
+    });
+    if (res.count > 0) {
+      logger.info(
+        `[reconcile-conv] re-point ${res.count} hội thoại nick=${zaloAccountId} thread=${zaloUidInNick} → contact=${contactId}`,
+      );
+    }
+    return res.count;
+  } catch (err) {
+    logger.warn(`[reconcile-conv] failed nick=${zaloAccountId} thread=${zaloUidInNick}:`, err);
+    return 0;
+  }
+}
+
 export async function applyFriendTransition(args: {
   orgId: string;
   zaloAccountId: string;
@@ -200,7 +167,7 @@ export async function applyFriendTransition(args: {
   const { orgId, zaloAccountId, contactId, zaloUidInNick, newFriendshipStatus } = args;
   const source = args.source ?? 'event';
 
-  await prisma.$transaction(async (tx) => {
+  await tenantTransaction(async (tx) => {
     const existing = await tx.friend.findUnique({
       where: { zaloAccountId_zaloUidInNick: { zaloAccountId, zaloUidInNick } },
       select: {
@@ -277,6 +244,22 @@ export async function applyFriendTransition(args: {
           where: { id: contactId, assignedUserId: null },
           data: { assignedUserId: nick.ownerUserId },
         });
+        // Phase Contact Scope Hybrid 2026-05-27 — upsert ContactAccess collaborator
+        // (or primary nếu chưa có ContactAccess role=primary). 2 sale có nick riêng
+        // cùng chăm 1 KH → mỗi sale tự thành collaborator qua kết bạn.
+        if (nick.ownerUserId) {
+          await tx.contactAccess.upsert({
+            where: { contactId_userId: { contactId, userId: nick.ownerUserId } },
+            update: {}, // giữ role hiện tại nếu đã có
+            create: {
+              orgId,
+              contactId,
+              userId: nick.ownerUserId,
+              role: 'collaborator',
+              source: 'auto_from_friend',
+            },
+          });
+        }
       }
     }
 
@@ -289,11 +272,15 @@ export async function applyFriendTransition(args: {
     }
   });
 
+  // Lớp 2b (2026-06-22): sau khi gắn Friend(nick,uid)→contactId, re-point hội thoại đang trỏ
+  // contact KHÁC về đúng contactId → chuông Follow-Up + tab + hồ sơ khớp. Best-effort, ngoài tx.
+  await reconcileConversationContact({ orgId, zaloAccountId, contactId, zaloUidInNick });
+
   // Phase 7 — emit AutomationEvent so engine can fire triggers bound to this
   // event. Imported lazily to avoid circular dep (engine imports prisma helpers).
   if (newFriendshipStatus === 'accepted' || newFriendshipStatus === 'pending_received') {
     try {
-      const { automationEventBus } = await import('../automation/engine/event-bus.js');
+      const { automationEventBus } = await import('../../shared/ee-registry/event-bus.js');
       automationEventBus.emit({
         type: newFriendshipStatus === 'accepted' ? 'friendship_accepted' : 'friendship_received',
         orgId,
@@ -303,6 +290,20 @@ export async function applyFriendTransition(args: {
       });
     } catch (err) {
       // Engine not loaded (e.g. in tests) — silent fail
+    }
+  }
+
+  // Phase Internal Contact 2-method 2026-05-23 — nếu accept này là pending handshake
+  // setup của sale → trigger gửi verify code. Lazy import + best-effort, silent fail.
+  if (newFriendshipStatus === 'accepted') {
+    try {
+      const { onFriendAcceptedForInternalContact } = await import(
+        '../system-notifications/internal-contact-handshake-hook.js'
+      );
+      await onFriendAcceptedForInternalContact({ orgId, zaloAccountId, zaloUidInNick });
+    } catch (err: any) {
+      // Hook không phải hot path — log debug, không block friend transition
+      logger.debug(`[internal-contact-hook] skipped: ${err?.message || err}`);
     }
   }
 }
@@ -436,6 +437,263 @@ export async function handleFriendEvent(
     logger.info(
       `[friend-event:${accountId}] type=${event.type} uid=${friendUid} → ${newStatus}`,
     );
+
+    // Wave 3 Event Log — log accept/reject vào Mục tiêu timeline.
+    // Tìm trigger gốc qua FriendRequestOutbox (contact, nick) → trigger_id.
+    // Nếu KH không thuộc Mục tiêu nào (chat thường) → skip log.
+    if (newStatus === 'accepted' || newStatus === 'rejected') {
+      void (async () => {
+        try {
+          const outbox = await prisma.friendRequestOutbox.findFirst({
+            where: {
+              contactId: contact.id,
+              nickId: accountId,
+              kind: 'FRIEND_REQUEST',
+            },
+            select: { triggerId: true },
+            orderBy: { createdAt: 'desc' },
+          });
+          if (!outbox?.triggerId) return; // KH không thuộc Mục tiêu
+
+          const [contactRow, nickRow] = await Promise.all([
+            prisma.contact.findUnique({
+              where: { id: contact.id },
+              select: { fullName: true, crmName: true, phone: true },
+            }),
+            prisma.zaloAccount.findUnique({
+              where: { id: accountId },
+              select: { displayName: true },
+            }),
+          ]);
+          const contactDisplay =
+            contactRow?.crmName?.trim() ||
+            contactRow?.fullName?.trim() ||
+            contactRow?.phone ||
+            'KH';
+          const nickDisplay = nickRow?.displayName?.trim() || accountId.slice(0, 8);
+
+          // T5 (eng-review D12, regression R2): guard log Monitor theo trigger.state.
+          // Trigger completed/cancelled → KHÔNG ghi event accept/reject vào Monitor cũ.
+          const fTrigger = await prisma.automationTrigger.findUnique({
+            where: { id: outbox.triggerId },
+            select: { state: true, followUpFriendEnabled: true },
+          });
+          const fListening = isListeningState(fTrigger?.state);
+
+          if (newStatus === 'accepted') {
+            if (fListening) {
+              void logEvent({
+                orgId,
+                triggerId: outbox.triggerId,
+                contactId: contact.id,
+                nickId: accountId,
+                eventType: 'friend_accepted',
+                eventPriority: 'info',
+                summary: `${contactDisplay} đã đồng ý kết bạn với nick ${nickDisplay}`,
+                metadata: { friendUid },
+              });
+            }
+
+            // ── #1 2026-06-06 (Anh chốt): Công tắc 2 "Bám đuổi khi ĐÃ là bạn" ──
+            // Trước đây onFriendAccepted là CODE CHẾT (0 caller) → KH duyệt KB không
+            // tự kích bám đuổi, chỉ luồng stranger (drainer) lo. Giờ nối lại: khi KH
+            // accept thật VÀ followUpFriendEnabled → gọi onFriendAccepted (tự enqueue
+            // bám đuổi + Tin 2 Cảm ơn). enqueueSequenceStart dedup theo jobId
+            // (triggerId-contactId-0) nên nếu luồng stranger đã enroll thì KHÔNG double.
+            // followUpFriendEnabled đã load chung ở fTrigger (T5) — không query lại.
+            try {
+              if (fTrigger?.followUpFriendEnabled) {
+                const { onFriendAccepted } = await import('../../shared/ee-registry/automation.js');
+                await onFriendAccepted({
+                  orgId,
+                  triggerId: outbox.triggerId,
+                  contactId: contact.id,
+                  nickId: accountId,
+                  acceptedAt: new Date(),
+                });
+              }
+            } catch (err) {
+              logger.warn(`[friend-event:${accountId}] onFriendAccepted hook failed contact=${contact.id}:`, err);
+            }
+          } else {
+            if (fListening) {
+              void logEvent({
+                orgId,
+                triggerId: outbox.triggerId,
+                contactId: contact.id,
+                nickId: accountId,
+                eventType: 'friend_rejected',
+                eventPriority: 'warning',
+                summary: `${contactDisplay} từ chối kết bạn — vẫn tiếp tục chuỗi bám đuổi`,
+                metadata: { friendUid },
+              });
+            }
+
+            // I12 2026-06-04 — Tin 4: gửi tin khi KH từ chối KB (nếu bật).
+            // Gửi qua hộp người lạ (KH chưa là bạn). Đọc cờ enableRejectedFollowUp + template.
+            try {
+              const trg = await prisma.automationTrigger.findUnique({
+                where: { id: outbox.triggerId },
+                select: { enableRejectedFollowUp: true, rejectedTemplate: true },
+              });
+              if (trg?.enableRejectedFollowUp && trg.rejectedTemplate?.trim() && friendUid) {
+                const { sendStrangerFollowUp } = await import('../../shared/ee-registry/automation.js');
+                await sendStrangerFollowUp({
+                  orgId,
+                  triggerId: outbox.triggerId,
+                  contactId: contact.id,
+                  nickId: accountId,
+                  uid: friendUid,
+                  template: trg.rejectedTemplate,
+                  eventType: 'rejected_follow_up_sent',
+                });
+              }
+            } catch (err) {
+              logger.warn(`[friend-event:${accountId}] Tin4 rejected follow-up failed contact=${contact.id}:`, err);
+            }
+          }
+        } catch (err) {
+          logger.warn(
+            `[friend-event:${accountId}] event-log lookup failed contact=${contact.id}:`,
+            err,
+          );
+        }
+      })();
+    }
+
+    // Wave 3 2026-05-30 — KH block nick → log customer_block + update
+    // CustomerListEntry.queueStatus='customer_block'. Filter 1-1: tìm trigger gốc qua
+    // FriendRequestOutbox (contact, nick); nếu không thuộc Mục tiêu thì skip.
+    // Guard whereInclude tránh ghi đè terminal state (converted_lead, cancelled);
+    // customer_reply có thể bị overwrite vì block là tín hiệu mạnh hơn (KH chặn hẳn).
+    if (newStatus === 'blocked') {
+      void (async () => {
+        try {
+          const outbox = await prisma.friendRequestOutbox.findFirst({
+            where: {
+              contactId: contact.id,
+              nickId: accountId,
+              kind: 'FRIEND_REQUEST',
+            },
+            select: { triggerId: true },
+            orderBy: { createdAt: 'desc' },
+          });
+          if (!outbox?.triggerId) return; // KH không thuộc Mục tiêu
+
+          const [contactRow, nickRow] = await Promise.all([
+            prisma.contact.findUnique({
+              where: { id: contact.id },
+              select: { fullName: true, crmName: true, phone: true },
+            }),
+            prisma.zaloAccount.findUnique({
+              where: { id: accountId },
+              select: { displayName: true },
+            }),
+          ]);
+          const contactDisplay =
+            contactRow?.crmName?.trim() ||
+            contactRow?.fullName?.trim() ||
+            contactRow?.phone ||
+            'KH';
+          const nickDisplay = nickRow?.displayName?.trim() || accountId.slice(0, 8);
+
+          // T5 (eng-review D12, regression R2): CHỈ ghi log Monitor khi trigger nguồn
+          // ĐANG nghe (active/paused). Trigger completed/cancelled vẫn ghi rác vào
+          // Monitor trigger cũ = bug nghe-mãi. Guard state trước logEvent.
+          const blockTrigger = await prisma.automationTrigger.findUnique({
+            where: { id: outbox.triggerId },
+            select: { state: true },
+          });
+          const triggerListening = isListeningState(blockTrigger?.state);
+
+          if (triggerListening) {
+            void logEvent({
+              orgId,
+              triggerId: outbox.triggerId,
+              contactId: contact.id,
+              nickId: accountId,
+              eventType: 'customer_block',
+              eventPriority: 'urgent',
+              summary: `🚫 ${contactDisplay} đã chặn nick ${nickDisplay} — Mục tiêu dừng cho nick này`,
+              metadata: { friendUid },
+            });
+          }
+
+          try {
+            // #2 2026-06-06 — queueStatus ở bảng nối per-trigger.
+            await prisma.triggerQueueEntry.updateMany({
+              where: {
+                triggerId: outbox.triggerId,
+                contactId: contact.id,
+                queueStatus: {
+                  notIn: ['customer_block', 'converted_lead', 'cancelled'],
+                },
+              },
+              data: { queueStatus: 'customer_block' },
+            });
+          } catch (updErr) {
+            logger.warn(
+              `[friend-event:${accountId}] customer_block entry update failed contact=${contact.id}:`,
+              updErr,
+            );
+          }
+
+          // I5 FIX 2026-06-03 — Dừng chuỗi bám đuổi khi KH chặn nick.
+          // Bug cũ: dừng task qua automationTask stub (no-op) → chuỗi BullMQ KHÔNG bị
+          // hủy → job step tiếp theo vẫn fire dù KH đã chặn. Đổi sang onCustomerBlock
+          // (event-hooks.ts) — nó cancel pending sequence-step jobs trong BullMQ +
+          // set pause flag vĩnh viễn. Block là tín hiệu chấm dứt mạnh nhất.
+          try {
+            const { onCustomerBlock } = await import('../../shared/ee-registry/automation.js');
+            await onCustomerBlock({
+              orgId,
+              triggerId: outbox.triggerId,
+              contactId: contact.id,
+              nickId: accountId,
+            });
+          } catch (err) {
+            logger.warn('[friend-event] onCustomerBlock (cancel BullMQ jobs) failed:', err);
+          }
+
+          // I5 2026-06-03 — Bắn thông báo nội bộ cho sale chủ nick (high priority).
+          // Trước fix: customer_block có log event nhưng KHÔNG báo sale → sale không
+          // biết KH đã chặn (tín hiệu mạnh nhất). Anh chốt 2026-06-03 thêm notify.
+          try {
+            const nickOwner = await prisma.zaloAccount.findUnique({
+              where: { id: accountId },
+              select: { ownerUserId: true },
+            });
+            // I13: tôn trọng cờ notifyChannels.block (tắt = không báo chặn).
+            const { shouldNotifyOwner } = await import('../../shared/ee-registry/automation.js');
+            if (nickOwner?.ownerUserId && (await shouldNotifyOwner(outbox.triggerId, 'block'))) {
+              const { notifyCustomerBlock } = await import('../../shared/ee-registry/automation.js');
+              const triggerRow = await prisma.automationTrigger.findUnique({
+                where: { id: outbox.triggerId },
+                select: { name: true },
+              });
+              await notifyCustomerBlock({
+                orgId,
+                targetUserId: nickOwner.ownerUserId,
+                contactId: contact.id,
+                contactName: contactRow?.fullName ?? contactRow?.crmName ?? '',
+                contactPhone: contactRow?.phone ?? '',
+                nickId: accountId,
+                nickName: nickDisplay,
+                triggerId: outbox.triggerId,
+                triggerName: triggerRow?.name ?? '',
+              });
+            }
+          } catch (err) {
+            logger.warn('[friend-event] notifyCustomerBlock failed:', err);
+          }
+        } catch (err) {
+          logger.warn(
+            `[friend-event:${accountId}] customer_block event-log lookup failed contact=${contact.id}:`,
+            err,
+          );
+        }
+      })();
+    }
   } catch (err) {
     logger.error(`[friend-event:${accountId}] apply error:`, err);
   }

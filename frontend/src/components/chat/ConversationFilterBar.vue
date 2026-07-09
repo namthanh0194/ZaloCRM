@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <div class="cfb">
     <!-- ① Quick pills row — soft button, no icon, count fixed-slot tránh nhảy UI -->
@@ -45,7 +47,10 @@
         v-for="tab in TABS"
         :key="tab.key"
         class="cfb-tab"
-        :class="{ active: filters.state.activeTab === tab.key }"
+        :class="{
+          active: filters.state.activeTab === tab.key,
+          'has-unread': tab.key === 'other' && priorityHasUnread,
+        }"
         @click="setActiveTab(tab.key)"
         :title="tab.tooltip"
       >
@@ -84,8 +89,13 @@ const props = defineProps<{
     main?: number;
     other?: number;
   };
+  /** 2026-06-11 — tab Ưu tiên KHÔNG hiện số đếm, nhưng IN ĐẬM hơn khi có hội thoại
+   *  chưa đọc trong tab này. Đọc hết → hết đậm. ChatView truyền cờ này xuống. */
+  priorityHasUnread?: boolean;
 }>();
 
+// 2026-06-20: phát khi click LẠI tab đang active → ChatView clear ô tìm kiếm.
+const emit = defineEmits<{ 'reselect-tab': [] }>();
 
 type TabKey = 'personal' | 'group' | 'main' | 'other';
 
@@ -97,12 +107,19 @@ const TABS: Array<{
   { key: 'personal', label: 'Cá nhân', tooltip: 'Chỉ hội thoại 1-1 (user với user)' },
   { key: 'group',    label: 'Nhóm',    tooltip: 'Chỉ hội thoại nhóm' },
   { key: 'main',     label: 'Chính',   tooltip: 'Hộp thư chính (cả user lẫn nhóm)' },
-  { key: 'other',    label: 'Khác',    tooltip: 'Hội thoại đã move qua Khác' },
+  // 2026-06-11 — đổi "Khác" → "Ưu tiên" (key 'other' giữ nguyên, load-bearing
+  // ở use-inbox-filters + PATCH /:id/tab). Hội thoại chuyển vào đây sẽ KHÔNG còn
+  // ở tab Cá nhân nữa (loại trừ lẫn nhau, xử lý ở backend).
+  { key: 'other',    label: 'Ưu tiên', tooltip: 'Hội thoại ưu tiên (đã ghim từ menu chuột phải)' },
 ];
 
 function setActiveTab(key: TabKey) {
+  // 2026-06-20 (anh báo): click LẠI tab đang active cũng phải clear ô tìm kiếm. activeTab
+  // không đổi → watch ở ChatView không fire → emit 'reselect-tab' để parent tự clear search.
+  const sameTab = props.filters.state.activeTab === key;
   // Single-active: tab khác sẽ tự deselect.
   props.filters.state.activeTab = key;
+  if (sameTab) emit('reselect-tab');
 }
 
 function toggleSort() {
@@ -218,10 +235,13 @@ function toggleSort() {
   border-bottom: none;
 }
 .cfb-tabs.main-tab-style .cfb-tab {
-  padding: 7px 4px;
+  padding: 7px 1px;
   text-align: center;
-  font-size: 12.5px;
+  /* 2026-06-11 — "Ưu tiên" (7 ký tự) dài hơn "Khác"; giảm font + padding để 4 tab
+     đều không bị cắt chữ ở 1366px. */
+  font-size: 11px;
   font-weight: 600;
+  letter-spacing: -0.2px;
   color: #6B7280;
   cursor: pointer;
   border: none;
@@ -244,9 +264,30 @@ function toggleSort() {
   color: #6366F1;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(99, 102, 241, 0.1);
 }
+/* 2026-06-11 — tab Ưu tiên có tin chưa đọc: in ĐẬM hơn + đậm màu + chấm báo nhỏ.
+   Không hiện con số (theo yêu cầu). Đọc hết → class này biến mất → trở lại thường. */
+.cfb-tabs.main-tab-style .cfb-tab.has-unread:not(.active) {
+  color: #111827;
+  font-weight: 800;
+}
+.cfb-tabs.main-tab-style .cfb-tab.has-unread .tab-label::after {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 5px;
+  border-radius: 50%;
+  background: #EF4444;
+  vertical-align: middle;
+}
 .cfb-tab .tab-label {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* Main-tab: font đã đủ nhỏ để "Ưu tiên" vừa khít → không cắt ellipsis. */
+.cfb-tabs.main-tab-style .cfb-tab .tab-label {
+  overflow: visible;
+  text-overflow: clip;
 }
 /* Bottom border thay cho tabs section sau khi đổi sang main-tab pill style */
 .cfb-tabs.main-tab-style + .cfb-mini {

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * friend-serializer.ts — Canonical Prisma include + DTO transform cho Friend.
  *
@@ -35,6 +37,11 @@ export const ZALO_ACCOUNT_LITE_SELECT = {
   phone: true,
   zaloUid: true,
   avatarUrl: true,
+  // PRIVACY 2026-06-11: BẮT BUỘC có để redactFriend quyết định blur. Thiếu 2 field
+  // này thì dù gọi redactFriend cũng không chặn được (audit H11). Fail-closed:
+  // redactFriend mặc định redact nếu privacyMode undefined.
+  privacyMode: true,
+  ownerUserId: true,
   owner: { select: { id: true, fullName: true } },
 } as const satisfies Prisma.ZaloAccountSelect;
 

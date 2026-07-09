@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <v-dialog v-model="show" max-width="980" persistent scrollable>
     <v-card>
@@ -11,14 +13,19 @@
           <div class="cdd-header-main">
             <div class="cdd-name-row">
               <span class="cdd-name">{{ contact?.crmName || contact?.fullName || 'KH chưa đặt tên' }}</span>
+              <!-- 2026-06-03: thống nhất 3 nhãn Zalo chuẩn (office-hours review) -->
               <v-chip
                 v-if="contact?.hasZalo === true"
                 color="success" size="x-small" variant="tonal"
-              >Có Zalo</v-chip>
+              >🟢 Có Zalo</v-chip>
               <v-chip
                 v-else-if="contact?.hasZalo === false"
                 color="error" size="x-small" variant="tonal"
-              >Không Zalo</v-chip>
+              >🔴 Không tìm thấy</v-chip>
+              <v-chip
+                v-else
+                color="grey" size="x-small" variant="tonal"
+              >⚪ Chưa tìm</v-chip>
               <v-chip v-if="contact?.source" size="x-small" variant="tonal" color="info">{{ contact.source }}</v-chip>
               <v-chip v-if="contact?.status" size="x-small" variant="tonal" color="warning">{{ contact.status }}</v-chip>
             </div>

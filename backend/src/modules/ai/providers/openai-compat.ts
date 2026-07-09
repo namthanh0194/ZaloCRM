@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * Shared handler for OpenAI-compatible chat/completions API.
  * Works with: OpenAI, Qwen (dashscope compat mode), Kimi (Moonshot).
@@ -9,6 +11,9 @@ export async function generateWithOpenaiCompat(
   system: string,
   prompt: string,
   maxTokens = 600,
+  // OpenAI thế hệ mới (gpt-5.x / o-series) bỏ `max_tokens`, đòi `max_completion_tokens`.
+  // Qwen/Kimi (compat mode cũ) vẫn dùng `max_tokens` → cho phép caller chọn tên tham số.
+  tokenParam: 'max_tokens' | 'max_completion_tokens' = 'max_tokens',
 ) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 60_000);
@@ -25,7 +30,7 @@ export async function generateWithOpenaiCompat(
           { role: 'system', content: system },
           { role: 'user', content: prompt },
         ],
-        max_tokens: maxTokens,
+        [tokenParam]: maxTokens,
       }),
       signal: controller.signal,
     });

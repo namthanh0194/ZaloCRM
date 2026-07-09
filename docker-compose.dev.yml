@@ -11,6 +11,13 @@ services:
       POSTGRES_USER: crmuser
       POSTGRES_PASSWORD: devpassword
       POSTGRES_DB: zalocrm
+      TZ: Asia/Ho_Chi_Minh
+    # Cùng quy ước với prod: log giờ VN, NHƯNG timezone=UTC để @default(now()) lưu UTC
+    # (Prisma đọc cột timestamp như UTC — đổi sang ICT sẽ lệch +7h).
+    command: >
+      postgres
+      -c timezone=UTC
+      -c log_timezone=Asia/Ho_Chi_Minh
     ports:
       - "5433:5432"
     volumes:

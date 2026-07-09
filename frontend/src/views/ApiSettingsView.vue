@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <div style="max-width: 700px;">
     <h1 class="text-h5 mb-4">
@@ -41,7 +43,9 @@
         <v-text-field
           v-model="webhookSecret"
           label="Secret (HMAC)"
-          type="password"
+          :type="showWebhookSecret ? 'text' : 'password'"
+          :append-inner-icon="showWebhookSecret ? 'mdi-eye-off' : 'mdi-eye'"
+          @click:append-inner="showWebhookSecret = !showWebhookSecret"
           class="mb-3"
         />
         <div class="d-flex gap-2">
@@ -69,6 +73,7 @@
     <v-card>
       <v-card-title class="text-body-1">API Documentation</v-card-title>
       <v-card-text>
+        <div class="mb-3">Document xem tại đây: <a href="https://docs.locnguyendata.com/" target="_blank" rel="noopener">https://docs.locnguyendata.com/</a></div>
         <pre style="font-size: 12px; overflow-x: auto; white-space: pre-wrap;">Header: X-API-Key: your-key
 
 GET  /api/public/contacts
@@ -109,6 +114,7 @@ const apiKey = ref('');
 const generatingKey = ref(false);
 const webhookUrl = ref('');
 const webhookSecret = ref('');
+const showWebhookSecret = ref(false);
 const saving = ref(false);
 const testing = ref(false);
 const showAiConfig = ref(false);

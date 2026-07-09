@@ -1,23 +1,27 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * duplicate-detector.ts — Detect & auto-merge duplicate contacts per org.
  *
- * Policy (theo đề xuất user 2026-05-12):
- *   Hard match (1 trong các key → auto-merge, confidence 1.0):
- *     - zaloGlobalId (Zalo toàn cục, source-of-truth)
- *     - zaloUsername (Zalo handle t_xxx, toàn cục)
- *     - phone (normalized)
- *   Conflict guard: nếu group có ≥2 globalId hoặc ≥2 username khác nhau
- *     → KHÔNG auto-merge, flag DuplicateGroup chờ sale review.
- *   Soft match (name 100% exact + 1 trong 3 điều kiện phụ → auto-merge):
- *     - birthDate khớp
- *     - lastActivity cùng ngày (date-level)
- *     - notes (mô tả KH) khớp exact non-empty
- *   Fuzzy match (Levenshtein name > 0.9) còn lại → DuplicateGroup chờ sale.
- *   Legacy zaloUid match (per-account) → DuplicateGroup chờ sale.
+ * Policy (anh chốt LẠI 2026-06-16 — CHỈ gộp theo globalId + phone):
+ *   Hard match → auto-merge:
+ *     - zaloGlobalId (Zalo toàn cục, source-of-truth) — khối (1)
+ *     - phone (normalized), kèm conflict-guard globalId — khối (3)
+ *   Conflict guard: group có ≥2 globalId khác nhau → KHÔNG merge, flag chờ sale.
+ *   Legacy zaloUid match (per-account) → DuplicateGroup chờ sale — khối (5).
+ *   Parent candidates (name+phone trùng, globalId khác) → gợi ý cha-con — khối (7).
+ *
+ * ĐÃ BỎ (gây gộp loạn 51 Contact, gồm 2 người trùng tên "Trọng Ngoán"):
+ *   - (2) zaloUsername: Zalo trả placeholder rác dùng chung (t_ggzbdcmi80=55 người).
+ *   - (4) Soft match theo TÊN: tên VN trùng + privacy blur ▒ ghi đè tên hàng loạt.
+ *   - (6) Fuzzy name (Levenshtein): tên gần-giống → gợi ý rác.
+ *   Chi tiết: docs/DESIGN-DEDUPE-BANNER-TRONG-CHAT-20260616.md.
  */
 import { prisma } from '../../shared/database/prisma-client.js';
 import { logger } from '../../shared/utils/logger.js';
 import { mergeContacts } from './merge-service.js';
+import { followMergedInto } from './resolve-contact.js';
+import { withTenant } from '../../shared/tenant/tenant-context.js';
 
 interface ContactLite {
   id: string;
@@ -32,42 +36,25 @@ interface ContactLite {
   createdAt: Date;
 }
 
-function levenshteinRatio(a: string, b: string): number {
-  const la = a.length;
-  const lb = b.length;
-  if (la === 0 && lb === 0) return 1;
-  if (la === 0 || lb === 0) return 0;
-  const dp: number[][] = Array.from({ length: la + 1 }, (_, i) =>
-    Array.from({ length: lb + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)),
-  );
-  for (let i = 1; i <= la; i++) {
-    for (let j = 1; j <= lb; j++) {
-      dp[i][j] =
-        a[i - 1] === b[j - 1]
-          ? dp[i - 1][j - 1]
-          : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
-    }
-  }
-  return 1 - dp[la][lb] / Math.max(la, lb);
-}
-
+// Bỏ helper levenshteinRatio/normNotes/sameDate (anh chốt 2026-06-16): chỉ phục vụ
+// khối gộp-theo-tên (4) + fuzzy-name (6) đã bỏ. normPhone + normName giữ lại vì khối
+// (3) phone + (7) parent-candidate còn dùng.
 function normPhone(phone: string): string {
   return phone.replace(/[\s\-\.]/g, '').toLowerCase();
 }
 
+/**
+ * THUẦN (test được): chọn globalId để backfill từ Friend của 1 contact.
+ * CHỈ trả khi Friend cho ĐÚNG 1 globalId. ≥2 globalId khác nhau = mơ hồ (Friend trỏ nhiều
+ * Zalo identity) → null (KHÔNG backfill/merge, tránh gộp nhầm 2 người). 0 → null.
+ */
+export function pickBackfillGlobalId(gids: Set<string> | undefined): string | null {
+  if (!gids || gids.size !== 1) return null;
+  return [...gids][0];
+}
+
 function normName(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, ' ');
-}
-
-function normNotes(notes: string | null): string {
-  return (notes || '').trim().toLowerCase().replace(/\s+/g, ' ');
-}
-
-function sameDate(a: Date | null, b: Date | null): boolean {
-  if (!a || !b) return false;
-  return a.getUTCFullYear() === b.getUTCFullYear()
-    && a.getUTCMonth() === b.getUTCMonth()
-    && a.getUTCDate() === b.getUTCDate();
 }
 
 async function saveGroup(
@@ -154,7 +141,9 @@ export async function detectDuplicates(): Promise<void> {
   let totalAutoMerged = 0;
   let totalConflictGroups = 0;
 
-  for (const org of orgs) {
+  // Phase 1a RLS (Giai đoạn 0.2): mỗi org chạy trong tenant context riêng để mọi
+  // org-scoped query (contact/duplicateGroup/parentCandidate...) set đúng app.current_org.
+  for (const org of orgs) await withTenant(org.id, async () => {
     const systemUserId = await resolveSystemUserId(org.id);
     if (!systemUserId) {
       logger.warn(`[duplicate-detector] org ${org.id} không có user active → skip auto-merge, chỉ flag DuplicateGroup`);
@@ -172,6 +161,62 @@ export async function detectDuplicates(): Promise<void> {
     const conflictRef = { count: 0 };
     const filterRemaining = () => contacts.filter(c => !autoMergedIds.has(c.id));
 
+    // ── (0) BACKFILL globalId từ FRIEND (FIX 2026-06-20 dedup globalId↔phone) ──
+    // Hồ sơ import-SĐT đẻ contact phone-KHÔNG-globalId; friend-sync đã lưu globalId trên
+    // Friend → dùng nó nối với hồ sơ gốc-Zalo (globalId-KHÔNG-phone). backfill-global-id.ts
+    // cũ CHỈ chạy contact có hội thoại user-thread → bỏ sót hồ sơ import 0-hội-thoại, nên làm ở đây.
+    // LƯU Ý unique(orgId, zaloGlobalId): nếu đã có contact giữ globalId đó → MERGE thẳng
+    // (import vào hồ sơ gốc = primary), KHÔNG set (tránh P2002). Conflict-guard: Friend cho
+    // ≥2 globalId khác nhau → bỏ qua (mơ hồ).
+    const noGid = contacts.filter(c => !c.zaloGlobalId);
+    if (noGid.length) {
+      const friends = await prisma.friend.findMany({
+        where: { contactId: { in: noGid.map(c => c.id) }, zaloGlobalId: { not: null } },
+        select: { contactId: true, zaloGlobalId: true },
+      });
+      const gidsByContact = new Map<string, Set<string>>();
+      for (const f of friends) {
+        if (!f.zaloGlobalId) continue;
+        if (!gidsByContact.has(f.contactId)) gidsByContact.set(f.contactId, new Set());
+        gidsByContact.get(f.contactId)!.add(f.zaloGlobalId);
+      }
+      for (const c of noGid) {
+        if (autoMergedIds.has(c.id)) continue;
+        const gid = pickBackfillGlobalId(gidsByContact.get(c.id)); // null nếu 0 hoặc ≥2 (mơ hồ)
+        if (!gid) continue;
+        // Tìm holder kể cả ĐÃ-merged: unique(org_id, zalo_global_id) NON-partial → contact
+        // merged-away VẪN giữ globalId trong index → KHÔNG lọc mergedInto, dùng followMergedInto
+        // về gốc alive (nếu chỉ lọc alive sẽ set đè → P2002 với holder đã-merged).
+        const holder = await prisma.contact.findFirst({
+          where: { orgId: org.id, zaloGlobalId: gid, id: { not: c.id } },
+          select: { id: true },
+        });
+        if (holder) {
+          const root = (await followMergedInto(holder.id)).id; // holder có thể đã merged → về gốc
+          if (root === c.id) continue;
+          // Hồ sơ gốc-Zalo (root) = primary; import (c) = secondary gộp vào.
+          if (systemUserId) {
+            try {
+              await mergeContacts(org.id, systemUserId, root, [c.id]);
+              autoMergedIds.add(c.id);
+              totalAutoMerged++;
+              logger.info(`[duplicate-detector] merge import ${c.id} → gốc ${root} via Friend.globalId`);
+            } catch (err) {
+              logger.warn(`[duplicate-detector] merge-via-friend-globalId failed ${c.id}→${root}:`, err);
+              await saveGroup(org.id, [root, c.id], 'globalId_from_friend_mergefail', 0.5);
+            }
+          } else {
+            await saveGroup(org.id, [root, c.id], 'globalId_from_friend', 1.0);
+          }
+        } else {
+          // Chưa ai giữ globalId này → set lên contact (an toàn, để lần sau match được).
+          c.zaloGlobalId = gid;
+          await prisma.contact.update({ where: { id: c.id }, data: { zaloGlobalId: gid } })
+            .catch((err) => logger.warn(`[duplicate-detector] backfill globalId set ${c.id} failed:`, err));
+        }
+      }
+    }
+
     // ── (1) Hard match: zaloGlobalId ──────────────────────────────────────
     const byGlobalId = new Map<string, ContactLite[]>();
     for (const c of contacts) {
@@ -185,18 +230,11 @@ export async function detectDuplicates(): Promise<void> {
       }
     }
 
-    // ── (2) Hard match: zaloUsername ──────────────────────────────────────
-    const byUsername = new Map<string, ContactLite[]>();
-    for (const c of filterRemaining()) {
-      if (!c.zaloUsername) continue;
-      if (!byUsername.has(c.zaloUsername)) byUsername.set(c.zaloUsername, []);
-      byUsername.get(c.zaloUsername)!.push(c);
-    }
-    for (const group of byUsername.values()) {
-      if (systemUserId && await autoMergeHardMatch(org.id, systemUserId, group, 'zalo_username', autoMergedIds, conflictRef)) {
-        totalAutoMerged++;
-      }
-    }
+    // ── (2) ĐÃ BỎ: Hard match zaloUsername (anh chốt 2026-06-16) ──────────
+    // Zalo trả username placeholder KHÔNG duy nhất (vd 't_ggzbdcmi80' bị 55 contact
+    // dùng chung) → gộp hàng chục người khác nhau vào 1 (nguồn "hố đen" như contact
+    // "Linh" gom 159 người). Username KHÔNG còn là khóa auto-merge. Chỉ gộp theo
+    // globalId (1) + phone (3). Xem docs/DESIGN-DEDUPE-BANNER-TRONG-CHAT-20260616.md.
 
     // ── (3) Hard match: phone (normalized) ────────────────────────────────
     const byPhone = new Map<string, ContactLite[]>();
@@ -213,59 +251,12 @@ export async function detectDuplicates(): Promise<void> {
       }
     }
 
-    // ── (4) Soft match: name 100% exact + 1 trong 3 điều kiện phụ ─────────
-    // Group by normalized name (exact), then pair-wise check secondary signals.
-    const byNameExact = new Map<string, ContactLite[]>();
-    for (const c of filterRemaining()) {
-      if (!c.fullName) continue;
-      const key = normName(c.fullName);
-      if (!key || key === 'unknown') continue;
-      if (!byNameExact.has(key)) byNameExact.set(key, []);
-      byNameExact.get(key)!.push(c);
-    }
-    for (const group of byNameExact.values()) {
-      if (group.length < 2) continue;
-      // Pair-wise: nếu có 1 cặp khớp soft condition → gom cả nhóm để merge
-      // (giả định traffic chung 1 name + 1 soft signal là đồng nhất).
-      const mergeable: ContactLite[] = [];
-      const seen = new Set<string>();
-      for (let i = 0; i < group.length; i++) {
-        for (let j = i + 1; j < group.length; j++) {
-          const a = group[i];
-          const b = group[j];
-          const birthMatch = sameDate(a.birthDate, b.birthDate);
-          const lastActMatch = sameDate(a.lastActivity, b.lastActivity);
-          const notesA = normNotes(a.notes);
-          const notesB = normNotes(b.notes);
-          const notesMatch = notesA.length > 0 && notesA === notesB;
-          if (birthMatch || lastActMatch || notesMatch) {
-            if (!seen.has(a.id)) { mergeable.push(a); seen.add(a.id); }
-            if (!seen.has(b.id)) { mergeable.push(b); seen.add(b.id); }
-          }
-        }
-      }
-      if (mergeable.length >= 2) {
-        const sorted = [...mergeable].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-        const primary = sorted[0];
-        const secondaries = sorted.slice(1).map(c => c.id);
-        if (!systemUserId) {
-          await saveGroup(org.id, mergeable.map(c => c.id), 'name_with_soft_match', 0.9);
-          totalGroups++;
-        } else {
-          try {
-            await mergeContacts(org.id, systemUserId, primary.id, secondaries);
-            autoMergedIds.add(primary.id);
-            secondaries.forEach(id => autoMergedIds.add(id));
-            totalAutoMerged++;
-            logger.info(`[duplicate-detector] Auto-merged ${secondaries.length + 1} contacts via name+softMatch (primary=${primary.id})`);
-          } catch (err) {
-            logger.error(`[duplicate-detector] Auto-merge name+softMatch failed:`, err);
-            await saveGroup(org.id, mergeable.map(c => c.id), 'name_with_soft_match', 0.9);
-            totalGroups++;
-          }
-        }
-      }
-    }
+    // ── (4) ĐÃ BỎ: Soft match theo TÊN (anh chốt 2026-06-16) ─────────────
+    // Trước đây gộp khi fullName trùng-exact + 1 tín hiệu phụ (cùng birthDate HOẶC
+    // cùng-ngày lastActivity HOẶC notes trùng). Đây là GỐC RỄ gộp loạn: tên VN trùng
+    // nhiều (Linh/Huy/Dung) + privacy blur ▒ từng ghi đè hàng loạt tên thành giống hệt
+    // → tự gộp 2+ người KHÁC NHAU (vd "Nguyễn Trọng Ngoán" 2 người gộp làm 1). TÊN
+    // KHÔNG còn là khóa gộp (cả auto lẫn gợi ý). Chỉ gộp theo globalId (1) + phone (3).
 
     // ── (5) zaloUid match (per-account, legacy) → DuplicateGroup manual ──
     const byZalo = new Map<string, string[]>();
@@ -281,21 +272,11 @@ export async function detectDuplicates(): Promise<void> {
       }
     }
 
-    // ── (6) Fuzzy name (Levenshtein > 0.9) — chỉ contact không có identifier ──
-    //     → DuplicateGroup chờ sale duyệt (risk gộp nhầm cao)
-    const noIdContacts = filterRemaining().filter(c => !c.phone && !c.zaloUid && !c.zaloGlobalId && !c.zaloUsername && !!c.fullName);
-    for (let i = 0; i < noIdContacts.length; i++) {
-      for (let j = i + 1; j < noIdContacts.length; j++) {
-        const nameA = normName(noIdContacts[i].fullName!);
-        const nameB = normName(noIdContacts[j].fullName!);
-        if (nameA === nameB) continue; // exact đã xử lý ở (4)
-        const ratio = levenshteinRatio(nameA, nameB);
-        if (ratio > 0.9) {
-          await saveGroup(org.id, [noIdContacts[i].id, noIdContacts[j].id], 'name', ratio);
-          totalGroups++;
-        }
-      }
-    }
+    // ── (6) ĐÃ BỎ: Fuzzy name Levenshtein > 0.9 (anh chốt 2026-06-16) ────
+    // Trước đây tạo DuplicateGroup gợi ý cho contact tên gần-giống (không identifier).
+    // Bỏ vì TÊN không còn là tín hiệu gộp (kể cả gợi ý) — tên VN trùng/gần-giống nhiều
+    // → gợi ý toàn rác, sale bỏ qua. Nhất quán với việc bỏ khối (4). Helper
+    // levenshteinRatio đã xóa luôn vì không còn caller.
 
     // ── (7) Parent candidates: name+phone TRÙNG nhưng globalId KHÁC ────
     //     → suggest user as cha-con (cross-Zalo-identity human-level link).
@@ -324,7 +305,7 @@ export async function detectDuplicates(): Promise<void> {
     }
 
     totalConflictGroups += conflictRef.count;
-  }
+  });
 
   logger.info(
     `[duplicate-detector] auto-merged=${totalAutoMerged} group(s); ` +

@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <div class="rich-text-editor" :class="{ focused: isFocused, 'has-content': !!modelValue }">
     <!-- Toolbar — chỉ hiện khi showToolbar=true. Anh chốt 2026-05-21: thêm color + size. -->
@@ -130,26 +132,51 @@
         <CodeIcon :size="16" :stroke-width="2" />
       </v-btn>
 
-    </div>
+      <v-spacer />
 
-    <!-- AI Format — luôn hiện khi có text trong editor, không phụ thuộc vào toolbar.
-         Nổi ở góc phải trên của vùng editor để user paste text vào là thấy ngay. -->
-    <button
-      v-if="modelValue.trim()"
-      type="button"
-      class="ai-format-btn ai-format-floating"
-      :class="{ loading: aiFormatLoading }"
-      :disabled="aiFormatLoading"
-      title="AI tự format đoạn text — bold tiêu đề, màu giá tiền, size lớn tiêu đề..."
-      @click="onAiFormat"
-    >
-      <SparklesIcon v-if="!aiFormatLoading" :size="14" :stroke-width="2" />
-      <v-progress-circular v-else indeterminate size="12" width="2" />
-      <span>{{ aiFormatLoading ? 'Đang format...' : 'AI Format' }}</span>
-    </button>
+      <!-- 2026-05-21: AI Format — gửi raw text trong editor cho AI, return styled payload,
+           apply vào editor cho user xem trước khi bấm gửi. Chỉ hiện khi có text. -->
+      <button
+        type="button"
+        class="ai-format-btn"
+        :class="{ loading: aiFormatLoading }"
+        :disabled="aiFormatLoading || !modelValue.trim()"
+        title="AI tự format đoạn text — bold tiêu đề, màu giá tiền, size lớn tiêu đề..."
+        @click="onAiFormat"
+      >
+        <SparklesIcon v-if="!aiFormatLoading" :size="14" :stroke-width="2" />
+        <v-progress-circular v-else indeterminate size="12" width="2" />
+        <span>{{ aiFormatLoading ? 'Đang format...' : 'AI Format' }}</span>
+      </button>
+    </div>
 
     <!-- Editor content -->
     <EditorContent :editor="editor" class="editor-content" />
+
+    <!-- @mention popup — Teleport ra body, neo theo caret (mentionPos). -->
+    <Teleport to="body">
+      <div
+        v-if="mentionOpen && mentionItems.length"
+        class="mention-popup"
+        :style="{ left: mentionPos.left + 'px', top: mentionPos.top + 'px' }"
+      >
+        <button
+          v-for="(m, i) in mentionItems"
+          :key="m.uid"
+          type="button"
+          class="mention-item"
+          :class="{ active: i === mentionIndex }"
+          @mousedown.prevent="selectMention(m)"
+          @mouseenter="mentionIndex = i"
+        >
+          <v-avatar size="22" color="grey-lighten-3" class="mention-avatar">
+            <v-img v-if="m.avatar" :src="m.avatar" />
+            <span v-else class="mention-avatar-fallback">{{ m.name.charAt(0).toUpperCase() }}</span>
+          </v-avatar>
+          <span class="mention-name">{{ m.name }}</span>
+        </button>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -159,8 +186,11 @@ import { useEditor, EditorContent } from '@tiptap/vue-3';
 import { Mark, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
+import Mention from '@tiptap/extension-mention';
+import type { SuggestionProps, SuggestionKeyDownProps } from '@tiptap/suggestion';
 import { api } from '@/api/index';
 import { useToast } from '@/composables/use-toast';
+import { useGroups } from '@/composables/use-groups';
 
 // Lucide icons (anh chốt 2026-05-22 — bộ icon đồng bộ thay MDI)
 import {
@@ -233,9 +263,29 @@ const props = withDefaults(defineProps<{
   modelValue: string;
   placeholder?: string;
   showToolbar?: boolean;
+  // 2026-06-08: ô chat (MessageThread) cần Enter = gửi ngay → giữ default true.
+  // Trình soạn nhiều dòng (BlockEditorDialog) set false → Enter + Shift+Enter đều
+  // xuống dòng bình thường (anh hay dùng Shift+Enter). Fix "Enter không xuống dòng".
+  submitOnEnter?: boolean;
+  // 2026-06-09: khi popup mẫu (gõ "/") đang mở, cha truyền hàm này để CHẶN ↑↓/Enter/Esc
+  // ở editor và chuyển cho popup điều hướng (vì popup Teleport ra body, không hứng được phím).
+  // Trả true = đã xử lý → editor consume, KHÔNG tự gửi/xuống dòng.
+  interceptKeys?: (event: KeyboardEvent) => boolean;
+  // 2026-06-24: @mention thành viên nhóm — chỉ bật khi conv là group + có account/group id.
+  isGroup?: boolean;
+  accountId?: string | null;
+  groupId?: string | null;
+  // Danh sách thành viên để @tag (cha dựng từ người gửi trong hội thoại — tin cậy,
+  // không phụ thuộc API group-members live hay 404). Ưu tiên hơn fetch API.
+  members?: Array<{ uid: string; name: string; avatar?: string | null }>;
 }>(), {
   placeholder: 'Nhập tin nhắn...',
   showToolbar: false,
+  submitOnEnter: true,
+  isGroup: false,
+  accountId: null,
+  groupId: null,
+  members: () => [],
 });
 
 const emit = defineEmits<{
@@ -246,6 +296,68 @@ const emit = defineEmits<{
 }>();
 
 const isFocused = ref(false);
+
+// ── @mention thành viên nhóm 2026-06-24 ──────────────────────────────────
+// Member shape thực tế từ GET /groups/:id/members: { uid, displayName?, name?, avatar? }.
+interface GroupMember { uid: string; name: string; avatar?: string | null }
+const { fetchMembers, members: rawMembers } = useGroups();
+const memberCache = ref<GroupMember[]>([]);
+let membersLoaded = false;
+let membersLoading: Promise<void> | null = null;
+
+// Fetch members 1 lần (cache) khi user bắt đầu gõ '@'. Idempotent qua membersLoaded.
+async function ensureMembers() {
+  if (membersLoaded || membersLoading) return membersLoading ?? undefined;
+  if (!props.accountId || !props.groupId) return;
+  membersLoading = (async () => {
+    await fetchMembers(props.accountId!, props.groupId!);
+    memberCache.value = (rawMembers.value || []).map((m: any) => ({
+      uid: String(m.uid ?? m.id ?? ''),
+      name: m.displayName || m.name || m.uid || 'Thành viên',
+      avatar: m.avatar ?? null,
+    })).filter((m) => m.uid);
+    membersLoaded = true;
+  })();
+  await membersLoading;
+  membersLoading = null;
+}
+
+// Reset cache khi đổi group (chuyển hội thoại) để không lẫn member nhóm cũ.
+watch(() => props.groupId, () => {
+  membersLoaded = false;
+  membersLoading = null;
+  memberCache.value = [];
+});
+
+// ── Popup state (Teleport trong template) ────────────────────────────────
+const mentionOpen = ref(false);
+const mentionItems = ref<GroupMember[]>([]);
+const mentionIndex = ref(0);
+const mentionPos = ref({ left: 0, top: 0 });
+// Lệnh chèn mention do Tiptap suggestion cung cấp trong render().
+let mentionCommand: ((item: GroupMember) => void) | null = null;
+
+function selectMention(item: GroupMember) {
+  // Tiptap mention command nhận { id, label }.
+  mentionCommand?.({ id: item.uid, label: item.name } as any);
+}
+
+function moveMention(delta: number) {
+  const n = mentionItems.value.length;
+  if (!n) return;
+  mentionIndex.value = (mentionIndex.value + delta + n) % n;
+}
+
+function chooseMention() {
+  const item = mentionItems.value[mentionIndex.value];
+  if (item) selectMention(item);
+}
+
+// Đặt vị trí popup theo clientRect con trỏ (popup nằm TRÊN caret, canh trái).
+function positionMention(rect: DOMRect | null | undefined) {
+  if (!rect) return;
+  mentionPos.value = { left: rect.left, top: rect.top };
+}
 
 const editor = useEditor({
   content: props.modelValue,
@@ -258,13 +370,98 @@ const editor = useEditor({
     Placeholder.configure({ placeholder: props.placeholder }),
     ZaloColorMark,
     ZaloSizeMark,
+    // @mention: LUÔN đăng ký extension (useEditor chỉ chạy 1 lần — nếu gate theo
+    // props.isGroup lúc init, group resolve sau sẽ không bao giờ có mention). Gate
+    // group nằm trong items(): chỉ group mới trả danh sách. Node attrs {id,label}.
+    Mention.configure({
+      HTMLAttributes: { class: 'mention' },
+      renderHTML({ options, node }) {
+        return ['span', mergeAttributes(options.HTMLAttributes), `@${node.attrs.label ?? node.attrs.id}`];
+      },
+      suggestion: {
+        char: '@',
+        async items({ query }: { query: string }) {
+          if (!props.isGroup) return [];
+          // ĐỦ thành viên nhóm từ API Zalo (getGroupInfo→members); GỘP thêm người đã
+          // chat (props.members) làm fallback khi API lỗi/404. Dedup theo uid, API trước.
+          await ensureMembers();
+          const propList: GroupMember[] = (props.members || []).map((m) => ({
+            uid: String(m.uid),
+            name: m.name || 'Thành viên',
+            avatar: m.avatar ?? null,
+          })).filter((m) => m.uid);
+          const map = new Map<string, GroupMember>();
+          for (const m of [...memberCache.value, ...propList]) {
+            if (m.uid && !map.has(m.uid)) map.set(m.uid, m);
+          }
+          const list = [...map.values()];
+          const q = query.trim().toLowerCase();
+          if (!q) return list.slice(0, 8);
+          return list.filter((m) => m.name.toLowerCase().includes(q)).slice(0, 8);
+        },
+        render() {
+          return {
+            onStart: (sp: SuggestionProps<GroupMember>) => {
+              mentionCommand = sp.command as unknown as (item: GroupMember) => void;
+              mentionItems.value = sp.items;
+              mentionIndex.value = 0;
+              positionMention(sp.clientRect?.());
+              mentionOpen.value = mentionItems.value.length > 0;
+            },
+            onUpdate: (sp: SuggestionProps<GroupMember>) => {
+              mentionCommand = sp.command as unknown as (item: GroupMember) => void;
+              mentionItems.value = sp.items;
+              mentionIndex.value = 0;
+              positionMention(sp.clientRect?.());
+              mentionOpen.value = mentionItems.value.length > 0;
+            },
+            onKeyDown: (kp: SuggestionKeyDownProps) => {
+              if (!mentionOpen.value) return false;
+              const k = kp.event.key;
+              if (k === 'ArrowUp') { moveMention(-1); return true; }
+              if (k === 'ArrowDown') { moveMention(1); return true; }
+              if (k === 'Enter') { chooseMention(); return true; }
+              if (k === 'Escape') { mentionOpen.value = false; return true; }
+              return false;
+            },
+            onExit: () => {
+              mentionOpen.value = false;
+              mentionItems.value = [];
+              mentionCommand = null;
+            },
+          };
+        },
+      },
+    }),
   ],
   editorProps: {
     handleKeyDown(_view, event) {
-      if (event.key === 'Enter' && !event.shiftKey) {
-        event.preventDefault();
-        emit('submit');
-        return true;
+      // @mention popup đang mở → để suggestion plugin tự xử ↑↓/Enter/Esc, KHÔNG gửi/xuống dòng.
+      if (mentionOpen.value && ['ArrowUp', 'ArrowDown', 'Enter', 'Escape'].includes(event.key)) {
+        return false;
+      }
+      // Popup mẫu đang mở → nhường ↑↓/Enter/Esc cho popup điều hướng (chèn/đóng).
+      if (props.interceptKeys && ['ArrowUp', 'ArrowDown', 'Enter', 'Escape'].includes(event.key)) {
+        if (props.interceptKeys(event)) {
+          event.preventDefault();
+          return true; // consume — không để Tiptap dời con trỏ / gửi tin
+        }
+      }
+      if (event.key === 'Enter') {
+        // Shift+Enter = LUÔN xuống dòng (soft break) ngay trong ô đang gõ, KHÔNG nhảy
+        // focus sang ô khác. Tự chèn hardBreak + consume event (return true) để Tiptap/
+        // Vuetify dialog không nuốt phím rồi đẩy focus đi (bug "Shift+Enter nhảy ô sau").
+        if (event.shiftKey) {
+          event.preventDefault();
+          editor.value?.chain().focus().setHardBreak().run();
+          return true;
+        }
+        // Enter thường: ô chat (submitOnEnter) → gửi. Block editor → để Tiptap xuống dòng.
+        if (props.submitOnEnter) {
+          event.preventDefault();
+          emit('submit');
+          return true;
+        }
       }
       return false;
     },
@@ -287,22 +484,33 @@ const editor = useEditor({
     },
     attributes: { class: 'tiptap-input' },
   },
-  onUpdate({ editor: ed }) {
-    const text = ed.getText();
-    emit('update:modelValue', text);
+  onUpdate() {
+    // 2026-06-08: emit text từ getRichPayload (đoạn nối bằng '\n' đơn) để khớp tuyệt đối
+    // với watch modelValue ở trên (tránh vòng lặp setContent). getText() nối '\n\n' gây lệch.
+    emit('update:modelValue', getRichPayload().text);
     emit('typing');
   },
   onFocus() { isFocused.value = true; },
   onBlur() { isFocused.value = false; },
 });
 
-// Sync external modelValue changes into editor
+// Sync external modelValue changes into editor.
+// 2026-06-08 FIX: dùng getRichPayload().text (chứa '\n' đúng từng đoạn) để so sánh, KHÔNG
+// dùng getText() (TipTap nối đoạn bằng '\n\n' → luôn lệch với modelValue '\n' → vòng lặp
+// setContent mỗi keystroke → gộp dòng + nhảy focus). Khi cần set thật thì convert '\n' →
+// nhiều paragraph (setContent string thuần KHÔNG tạo xuống dòng → đó là bug "dán bị gộp").
 watch(() => props.modelValue, (val) => {
   if (!editor.value) return;
-  const current = editor.value.getText();
-  if (val !== current) {
-    editor.value.commands.setContent(val || '');
-  }
+  const current = getRichPayload().text;
+  if ((val || '') === current) return; // round-trip do chính editor phát ra → bỏ qua
+  const lines = (val || '').split('\n');
+  editor.value.commands.setContent({
+    type: 'doc',
+    content: lines.map((line) => ({
+      type: 'paragraph',
+      content: line ? [{ type: 'text', text: line }] : [],
+    })),
+  });
 });
 
 // ── Apply color / size to selection ──────────────────────────────────────
@@ -371,11 +579,13 @@ function insertText(text: string) {
 //   lst_1 / lst_2    → bullet / numbered list (apply per line)
 
 interface ZaloStyle { st: string; start: number; len: number }
+interface ZaloMention { uid: string; pos: number; len: number }
 interface TiptapMark { type: string; attrs?: Record<string, unknown> }
 interface TiptapNode {
   type: string;
   text?: string;
   marks?: TiptapMark[];
+  attrs?: Record<string, unknown>;
   content?: TiptapNode[];
 }
 
@@ -386,9 +596,10 @@ const MARK_TO_ZALO: Record<string, string> = {
   strike: 's',
 };
 
-function extractRichPayload(doc: TiptapNode | null): { text: string; styles: ZaloStyle[] } {
-  if (!doc) return { text: '', styles: [] };
+function extractRichPayload(doc: TiptapNode | null): { text: string; styles: ZaloStyle[]; mentions: ZaloMention[] } {
+  if (!doc) return { text: '', styles: [], mentions: [] };
   const styles: ZaloStyle[] = [];
+  const mentions: ZaloMention[] = [];
   let textBuf = '';
   // Track list context — apply lst_1/lst_2 per line inside list nodes.
   let listType: 'bullet' | 'ordered' | null = null;
@@ -398,6 +609,17 @@ function extractRichPayload(doc: TiptapNode | null): { text: string; styles: Zal
   }
 
   function walkNode(node: TiptapNode, blockListType: typeof listType) {
+    // @mention: chèn "@label" vào text + ghi mention {uid, pos, len} theo plain text.
+    // Xử lý TRƯỚC nhánh text/block. pos = vị trí ký tự '@', len = độ dài "@label" (gồm '@').
+    if (node.type === 'mention') {
+      const uid = String(node.attrs?.id ?? '');
+      const label = String(node.attrs?.label ?? node.attrs?.id ?? '');
+      const display = `@${label}`;
+      const pos = textBuf.length;
+      textBuf += display;
+      if (uid) mentions.push({ uid, pos, len: display.length });
+      return;
+    }
     if (node.type === 'text' && typeof node.text === 'string') {
       const start = textBuf.length;
       textBuf += node.text;
@@ -443,11 +665,11 @@ function extractRichPayload(doc: TiptapNode | null): { text: string; styles: Zal
   }
 
   walkNode(doc, listType);
-  return { text: textBuf, styles };
+  return { text: textBuf, styles, mentions };
 }
 
-function getRichPayload(): { text: string; styles: ZaloStyle[] } {
-  if (!editor.value) return { text: '', styles: [] };
+function getRichPayload(): { text: string; styles: ZaloStyle[]; mentions: ZaloMention[] } {
+  if (!editor.value) return { text: '', styles: [], mentions: [] };
   return extractRichPayload(editor.value.getJSON() as TiptapNode);
 }
 
@@ -465,7 +687,7 @@ async function onAiFormat() {
       toast.warning('AI chưa apply được format (đoạn quá ngắn hoặc AI tắt). Anh tự format hoặc gửi plain text.');
       return;
     }
-    applyRichPayload(data);
+    applyRichPayload(data, { focus: true });
     toast.success(`AI đã format ${data.styles.length} đoạn — anh xem rồi bấm gửi`);
   } catch (err: any) {
     const msg = err?.response?.data?.error || 'Lỗi gọi AI Format';
@@ -483,10 +705,20 @@ async function onAiFormat() {
  * Caveat: Zalo styles support per-char overlap (b + i + color cùng range). Tiptap setMark
  * idempotent → apply nhiều mark cùng range = OK.
  */
-function applyRichPayload(payload: { text: string; styles?: Array<{ st: string; start: number; len: number }> }) {
+// opts.focus: chỉ TRUE khi caller chủ động muốn lấy focus (vd AI Format). MẶC ĐỊNH false
+// để nạp nội dung lúc mount KHÔNG cướp focus — fix bug nhiều editor (block stack) giành
+// focus, con trỏ loạn khi chuyển giữa các thành phần (anh báo 2026-06-08).
+function applyRichPayload(
+  payload: { text: string; styles?: Array<{ st: string; start: number; len: number }> },
+  opts: { focus?: boolean } = {},
+) {
   if (!editor.value) return;
   const text = payload.text || '';
-  if (!text) return;
+  if (!text) {
+    // Vẫn clear nội dung cũ khi payload rỗng (đổi sang biến thể trống) để không sót text card trước.
+    editor.value.commands.setContent('');
+    return;
+  }
 
   // Set raw text first — convert \n thành paragraph break để Tiptap render đúng nhiều dòng.
   const lines = text.split('\n');
@@ -528,7 +760,8 @@ function applyRichPayload(payload: { text: string; styles?: Array<{ st: string; 
 
     editor.value.chain().setTextSelection({ from, to }).setMark(markName, attrs || {}).run();
   }
-  editor.value.commands.focus('end');
+  // Chỉ focus khi caller yêu cầu (AI Format). Nạp lúc mount → KHÔNG focus → không cướp con trỏ.
+  if (opts.focus) editor.value.commands.focus('end');
 }
 
 defineExpose({ clear, focus, insertText, getRichPayload, applyRichPayload });
@@ -697,13 +930,6 @@ onBeforeUnmount(() => { editor.value?.destroy(); });
 .ai-format-btn.loading {
   opacity: 0.8;
 }
-.ai-format-floating {
-  position: absolute;
-  top: 6px;
-  right: 8px;
-  z-index: 5;
-}
-.rich-text-editor { position: relative; }
 
 /* Editor content */
 .editor-content :deep(.tiptap-input) {
@@ -747,5 +973,61 @@ onBeforeUnmount(() => { editor.value?.destroy(); });
   border-radius: 7px;
   font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
   margin: 4px 0;
+}
+
+/* @mention node trong editor — pill xanh nhạt giống Zalo */
+.editor-content :deep(.tiptap-input .mention) {
+  color: var(--smax-primary, #2962ff);
+  background: var(--smax-primary-soft, #e3f2fd);
+  border-radius: 4px;
+  padding: 0 3px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+</style>
+
+<!-- Popup @mention Teleport ra body → KHÔNG dùng scoped (style scoped không áp được). -->
+<style>
+.mention-popup {
+  position: fixed;
+  z-index: 3000;
+  transform: translateY(calc(-100% - 6px)); /* nổi TRÊN caret */
+  min-width: 180px;
+  max-width: 280px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.16);
+  padding: 4px;
+}
+.mention-popup .mention-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  background: transparent;
+  border-radius: 7px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 13px;
+  color: #212121;
+  transition: background 0.1s ease;
+}
+.mention-popup .mention-item.active,
+.mention-popup .mention-item:hover {
+  background: #e3f2fd;
+}
+.mention-popup .mention-avatar-fallback {
+  font-size: 11px;
+  font-weight: 700;
+  color: #6b7280;
+}
+.mention-popup .mention-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

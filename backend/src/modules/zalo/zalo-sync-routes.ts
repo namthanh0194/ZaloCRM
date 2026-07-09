@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * zalo-sync-routes.ts — Endpoints to sync Zalo friends/contacts to CRM contacts.
  * Requires owner or admin role.
@@ -5,17 +7,18 @@
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../../shared/database/prisma-client.js';
 import { authMiddleware } from '../auth/auth-middleware.js';
-import { requireRole } from '../auth/role-middleware.js';
+import { requireGrant } from '../rbac/rbac-middleware.js';
 import { zaloPool } from './zalo-pool.js';
 import { logger } from '../../shared/utils/logger.js';
 import { randomUUID } from 'node:crypto';
 import { backfillAccountHistory } from './zalo-history-backfill.js';
+import { resolveOrCreateContact } from '../contacts/resolve-contact.js';
 
 export async function zaloSyncRoutes(app: FastifyInstance) {
   app.addHook('preHandler', authMiddleware);
 
   // Sync all friends from a Zalo account to contacts
-  app.post('/api/v1/zalo-accounts/:id/sync-contacts', { preHandler: requireRole('owner', 'admin') },
+  app.post('/api/v1/zalo-accounts/:id/sync-contacts', { preHandler: requireGrant('zalo_account', 'edit') },
     async (request, reply) => {
       const user = request.user!;
       const { id } = request.params as { id: string };
@@ -36,34 +39,24 @@ export async function zaloSyncRoutes(app: FastifyInstance) {
           const zaloName = friend.zaloName || friend.zalo_name || friend.displayName || friend.display_name || '';
           const avatar = friend.avatar || '';
           const phone = friend.phoneNumber || '';
+          const globalId = friend.globalId || '';
+          const username = friend.username || '';
 
-          const existing = await prisma.contact.findFirst({
-            where: { zaloUid: uid, orgId: user.orgId },
+          // Wave 1.5-B (B7 fix): dùng central resolver thay vì Contact.zaloUid only dedup
+          // (vi phạm rule per-account UID — cùng KH 2 nick có 2 zaloUid khác nhau → tạo dup).
+          const resolved = await resolveOrCreateContact({
+            orgId: user.orgId,
+            zaloAccountId: id,
+            zaloUidInNick: uid,
+            zaloGlobalId: globalId || null,
+            zaloUsername: username || null,
+            phone: phone || null,
+            fallbackFullName: zaloName || null,
+            fallbackAvatarUrl: avatar || null,
+            enrichViaGetUserInfo: false,
           });
-
-          if (existing) {
-            await prisma.contact.update({
-              where: { id: existing.id },
-              data: {
-                fullName: zaloName || existing.fullName,
-                avatarUrl: avatar || existing.avatarUrl,
-                phone: phone || existing.phone,
-              },
-            });
-            updated++;
-          } else {
-            await prisma.contact.create({
-              data: {
-                id: randomUUID(),
-                orgId: user.orgId,
-                zaloUid: uid,
-                fullName: zaloName || 'Unknown',
-                avatarUrl: avatar || null,
-                phone: phone || null,
-              },
-            });
-            created++;
-          }
+          if (resolved.created) created++;
+          else updated++;
         }
 
         // Backfill: link orphaned conversations (contactId is null) to contacts
@@ -73,13 +66,21 @@ export async function zaloSyncRoutes(app: FastifyInstance) {
         return { success: true, created, updated, linked, total: friends.length };
       } catch (err) {
         logger.error('[sync] Zalo contacts error:', err);
-        return reply.status(500).send({ error: 'Sync failed: ' + String(err) });
+        // 2026-06-11: Zalo trả 429 (Too Many Requests) khi đồng bộ quá dày → map sang thông
+        // báo rõ ràng thay vì "Sync failed: ZcaApiError 429" khó hiểu. Trả đúng 429 (không 500).
+        const msg = String(err);
+        if (/\b429\b|too many requests/i.test(msg)) {
+          return reply.status(429).send({
+            error: 'Zalo đang giới hạn tần suất đồng bộ. Vui lòng thử lại sau vài phút.',
+          });
+        }
+        return reply.status(500).send({ error: 'Đồng bộ danh bạ thất bại: ' + msg });
       }
     }
   );
 
   // Sync group history from Zalo (manual trigger for fresh accounts / re-sync)
-  app.post('/api/v1/zalo-accounts/:id/sync-history', { preHandler: requireRole('owner', 'admin') },
+  app.post('/api/v1/zalo-accounts/:id/sync-history', { preHandler: requireGrant('zalo_account', 'edit') },
     async (request, reply) => {
       const { id } = request.params as { id: string };
       const instance = zaloPool.getInstance(id);

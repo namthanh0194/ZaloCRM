@@ -1,24 +1,16 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * user-assignment-routes.ts — D7 User assignment endpoints
  *
  * Endpoints cho admin gán user vào dept + permission group + list users (filter).
  * Dùng cho frontend Settings → Users page (mirror Getfly Quản lý người dùng).
  */
-import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { prisma } from '../../shared/database/prisma-client.js';
 import { authMiddleware } from '../auth/auth-middleware.js';
 import { seedDefaultPermissionGroups, migrateLegacyUsersToPermissionGroups } from './seed-default-groups.js';
-import { userHasGrant } from './permission-group-service.js';
-import type { Resource, Action } from './permission-types.js';
-
-function requireGrant(resource: Resource, action: Action) {
-  return async (request: FastifyRequest, reply: FastifyReply) => {
-    const user = (request as any).user;
-    if (!user) return reply.status(401).send({ error: 'unauthorized' });
-    const allowed = await userHasGrant(user.userId ?? user.id, resource, action);
-    if (!allowed) return reply.status(403).send({ error: `Forbidden: ${resource}.${action}` });
-  };
-}
+import { requireGrant } from './rbac-middleware.js';
 
 export async function registerUserAssignmentRoutes(app: FastifyInstance): Promise<void> {
   // GET /api/v1/rbac/users — list users với filter dept/group
@@ -43,6 +35,13 @@ export async function registerUserAssignmentRoutes(app: FastifyInstance): Promis
       select: {
         id: true,
         email: true,
+        // UI refactor 2026-05-27 — phone hiển thị trong cột chính, email ẩn theo toggle
+        phone: true,
+        // Avatar Zalo lưu lúc create (findUser response). Hiển thị name column.
+        avatarUrl: true,
+        // Phase status 4-state 2026-05-27 — FE compute 4 trạng thái từ 3 trường này + isActive
+        passwordChangedAt: true,
+        lastLoginAt: true,
         fullName: true,
         role: true, // legacy
         permissionGroupId: true,
@@ -55,10 +54,24 @@ export async function registerUserAssignmentRoutes(app: FastifyInstance): Promis
           },
         },
         // Phase Privacy v2 2026-05-23 — cột "🏠 Liên lạc nội bộ" trong UsersRbacView
+        // UI refactor 2026-05-27: add internalContactMethod + internalContactPhone để render
+        // "Zalo ngoài" tag khi sale dùng SĐT cá nhân (không phải nick CRM).
         maxPrivacyNicks: true,
+        internalContactMethod: true,
+        internalContactPhone: true,
         internalContactZaloAccountId: true,
         internalContactNick: {
-          select: { id: true, displayName: true, avatarUrl: true, zaloUid: true, status: true },
+          select: { id: true, displayName: true, avatarUrl: true, phone: true, zaloUid: true, status: true },
+        },
+        // UI 2026-05-27 — handshake status từ SystemNotifyRecipient (1 row per (user × sender nick)).
+        // Cột "Liên lạc nội bộ" render 7 trạng thái dựa vào field này:
+        //   ready / pending_friend_request / pending_user_confirm / invalid / missing_internal_contact
+        // Workflow "Tạo nhân viên qua Zalo" cũng tạo recipient ready ngay → FE biết handshake thành công
+        // dù User.internalContactMethod chưa được sync ngược.
+        systemNotifyRecipients: {
+          select: { status: true, error: true, friendRequestSentAt: true },
+          orderBy: { updatedAt: 'desc' },
+          take: 1,
         },
         isActive: true,
       },
@@ -70,7 +83,22 @@ export async function registerUserAssignmentRoutes(app: FastifyInstance): Promis
       ? users.filter((u) => u.departmentMember?.departmentId === query.departmentId)
       : users;
 
-    return reply.send({ users: filtered });
+    // Phase Onboarding v1 2026-05-24 — admin theo dõi % setup của từng sale
+    const { getOnboardingSummariesForOrg } = await import('../auth/onboarding-service.js');
+    const summaries = await getOnboardingSummariesForOrg(user.orgId);
+    const withOnboarding = filtered.map((u) => {
+      // Flatten recipient (1 latest row) thành 2 field phẳng cho FE dễ render
+      const recipient = u.systemNotifyRecipients?.[0] ?? null;
+      const { systemNotifyRecipients: _drop, ...rest } = u as any;
+      return {
+        ...rest,
+        recipientStatus: recipient?.status ?? null,
+        recipientError: recipient?.error ?? null,
+        onboarding: summaries[u.id] ?? null,
+      };
+    });
+
+    return reply.send({ users: withOnboarding });
   });
 
   // PATCH /api/v1/rbac/users/:id/permission-group — gán user vào permission group
@@ -176,7 +204,7 @@ export async function registerUserAssignmentRoutes(app: FastifyInstance): Promis
           },
           select: { id: true, email: true },
         });
-        created.push({ id: newUser.id, email: newUser.email, group: tu.group });
+        created.push({ id: newUser.id, email: newUser.email ?? '', group: tu.group });
       }
 
       return reply.send({ ok: true, created, defaultPassword: 'Test@1234' });

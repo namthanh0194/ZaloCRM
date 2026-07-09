@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * chat-attachment-routes.ts — Upload chat attachments (image/video) and send via Zalo.
  * Accepts multipart form with 1+ files + optional caption.
@@ -9,6 +11,7 @@ import { writeFile, unlink, mkdir, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { Server } from 'socket.io';
+import { emitChatMessage } from '../../shared/realtime/emit-chat.js';
 import { prisma } from '../../shared/database/prisma-client.js';
 import { authMiddleware } from '../auth/auth-middleware.js';
 import { requireZaloAccess } from '../zalo/zalo-access-middleware.js';
@@ -17,14 +20,18 @@ import { zaloRateLimiter } from '../zalo/zalo-rate-limiter.js';
 import { zaloOps } from '../../shared/zalo-operations.js';
 import { generateThumbnail, sendNativeVideo } from '../../shared/video-processor.js';
 import { uploadBuffer, type UploadResult } from '../../shared/storage/minio-client.js';
+import { compressImage } from '../media/media-service.js';
 import { logger } from '../../shared/utils/logger.js';
+// Fix 2026-06-03 — M11 optimistic badge cache (Anh báo "Sale CRM · Staff")
+// 2026-06-11 — createMediaMessage gộp 4 block message.create lặp (DRY, eng review E4).
+import { getUserFullName, createMediaMessage } from './chat-helpers.js';
 
-const IMAGE_MAX = 100 * 1024 * 1024;
-const VIDEO_MAX = 500 * 1024 * 1024;
-const FILE_MAX = 1024 * 1024 * 1024;
-const ALLOWED_IMAGE = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const ALLOWED_VIDEO = ['video/mp4', 'video/quicktime', 'video/webm'];
-const ALLOWED_FILE = [
+export const IMAGE_MAX = 100 * 1024 * 1024;
+export const VIDEO_MAX = 500 * 1024 * 1024;
+export const FILE_MAX = 1024 * 1024 * 1024;
+export const ALLOWED_IMAGE = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+export const ALLOWED_VIDEO = ['video/mp4', 'video/quicktime', 'video/webm'];
+export const ALLOWED_FILE = [
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.ms-excel',
@@ -72,6 +79,14 @@ export async function chatAttachmentRoutes(app: FastifyInstance) {
         include: { zaloAccount: true },
       });
       if (!conversation) return reply.status(404).send({ error: 'Conversation not found' });
+
+      // T7b (YC2 2026-06-20): chặn gửi file/ảnh qua nick ĐÃ XÓA (archivedAt).
+      if (conversation.zaloAccount.archivedAt) {
+        return reply.status(409).send({ error: 'Nick này đã bị xóa — chỉ xem lại lịch sử, không gửi được.', code: 'NICK_ARCHIVED' });
+      }
+
+      // Fix 2026-06-03 — optimistic badge "Sale CRM · {tên}"
+      const userFullName = await getUserFullName(user.id);
 
       const instance = zaloPool.getInstance(conversation.zaloAccountId);
       if (!instance?.api) return reply.status(400).send({ error: 'Zalo account not connected' });
@@ -130,7 +145,13 @@ export async function chatAttachmentRoutes(app: FastifyInstance) {
           const tmpPath = path.join(tmpRoot, `${i}-${f.filename || 'upload'}`);
           await writeFile(tmpPath, f.buffer);
           tmpPaths[i] = tmpPath;
-          mirrors[i] = await uploadBuffer(f.buffer, f.mimeType, f.filename);
+          // 2026-06-22: NÉN ảnh trước khi LƯU mirror (R2) — giảm dung lượng. Ảnh GỬI khách dùng
+          // tmpPath (bytes GỐC) nên khách vẫn nhận ảnh nét; chỉ bản lưu/hiển thị-CRM là webp nhẹ.
+          // compressImage tự bỏ qua video/file + gif/định dạng lạ + fallback gốc nếu sharp lỗi.
+          const proc = f.kind === 'image'
+            ? await compressImage(f.buffer, f.mimeType)
+            : { buffer: f.buffer, mimeType: f.mimeType };
+          mirrors[i] = await uploadBuffer(proc.buffer, proc.mimeType, f.filename);
         }));
 
         const created: any[] = [];
@@ -157,20 +178,15 @@ export async function chatAttachmentRoutes(app: FastifyInstance) {
           const zaloMsgId = String(sendResult?.msgId || sendResult?.data?.msgId || '');
           for (const i of imageIndexes) {
             const mirror = mirrors[i];
-            const msg = await prisma.message.create({
-              data: {
-                id: randomUUID(),
-                conversationId: id,
-                zaloMsgId: zaloMsgId || null,
-                zaloMsgIdNum: zaloMsgId && /^\d+$/.test(zaloMsgId) ? BigInt(zaloMsgId) : null,
-                senderType: 'self',
-                senderUid: conversation.zaloAccount.zaloUid || '',
-                senderName: 'Staff',
-                content: JSON.stringify({ href: mirror.url, thumb: mirror.url, size: mirror.size }),
-                contentType: 'image',
-                sentAt: new Date(),
-                repliedByUserId: user.id,
-              },
+            const msg = await createMediaMessage({
+              conversationId: id,
+              zaloAccount: conversation.zaloAccount,
+              repliedByUserId: user.id,
+              zaloMsgId,
+              contentType: 'image',
+              content: JSON.stringify({ href: mirror.url, thumb: mirror.url, size: mirror.size }),
+              metadata: { sender: { kind: 'user_crm', name: userFullName } },
+              sentVia: 'user',
             });
             created.push(msg);
           }
@@ -201,26 +217,15 @@ export async function chatAttachmentRoutes(app: FastifyInstance) {
             const zaloMsgId = String((sendResult as any)?.msgId || (sendResult as any)?.data?.msgId || '');
             const mirror = mirrors[i];
             const thumbUrl = thumbnailMirror?.url ?? mirror.url;
-            const msg = await prisma.message.create({
-              data: {
-                id: randomUUID(),
-                conversationId: id,
-                zaloMsgId: zaloMsgId || null,
-                zaloMsgIdNum: zaloMsgId && /^\d+$/.test(zaloMsgId) ? BigInt(zaloMsgId) : null,
-                senderType: 'self',
-                senderUid: conversation.zaloAccount.zaloUid || '',
-                senderName: 'Staff',
-                content: JSON.stringify({
-                  href: mirror.url,
-                  thumb: thumbUrl,
-                  thumbUrl,
-                  thumbnail: thumbUrl,
-                  size: mirror.size,
-                }),
-                contentType: 'video',
-                sentAt: new Date(),
-                repliedByUserId: user.id,
-              },
+            const msg = await createMediaMessage({
+              conversationId: id,
+              zaloAccount: conversation.zaloAccount,
+              repliedByUserId: user.id,
+              zaloMsgId,
+              contentType: 'video',
+              content: JSON.stringify({ href: mirror.url, thumb: thumbUrl, thumbUrl, thumbnail: thumbUrl, size: mirror.size }),
+              metadata: { sender: { kind: 'user_crm', name: userFullName } },
+              sentVia: 'user',
             });
             created.push(msg);
           } catch (err) {
@@ -236,30 +241,17 @@ export async function chatAttachmentRoutes(app: FastifyInstance) {
             const zaloMsgId = String(sendResult?.msgId || sendResult?.data?.msgId || '');
             const mirror = mirrors[i];
             const thumbUrl = thumbnailMirror?.url ?? mirror.url;
-            const msg = await prisma.message.create({
-              data: {
-                id: randomUUID(),
-                conversationId: id,
-                zaloMsgId: zaloMsgId || null,
-                zaloMsgIdNum: zaloMsgId && /^\d+$/.test(zaloMsgId) ? BigInt(zaloMsgId) : null,
-                senderType: 'self',
-                senderUid: conversation.zaloAccount.zaloUid || '',
-                senderName: 'Staff',
-                content: JSON.stringify({
-                  href: mirror.url,
-                  thumb: thumbUrl,
-                  thumbUrl,
-                  thumbnail: thumbUrl,
-                  size: mirror.size,
-                }),
-                contentType: 'video',
-                sentAt: new Date(),
-                repliedByUserId: user.id,
-              },
+            const msg = await createMediaMessage({
+              conversationId: id,
+              zaloAccount: conversation.zaloAccount,
+              repliedByUserId: user.id,
+              zaloMsgId,
+              contentType: 'video',
+              content: JSON.stringify({ href: mirror.url, thumb: thumbUrl, thumbUrl, thumbnail: thumbUrl, size: mirror.size }),
+              metadata: { sender: { kind: 'user_crm', name: userFullName } },
+              sentVia: 'user',
             });
             created.push(msg);
-          } finally {
-            await generatedThumbnail?.cleanup().catch(() => {});
           }
         }
 
@@ -277,20 +269,13 @@ export async function chatAttachmentRoutes(app: FastifyInstance) {
           const zaloMsgId = String(sendResult?.msgId || sendResult?.data?.msgId || '');
           const mirror = mirrors[i];
           const f = files[i];
-          const msg = await prisma.message.create({
-            data: {
-              id: randomUUID(),
-              conversationId: id,
-              zaloMsgId: zaloMsgId || null,
-              zaloMsgIdNum: zaloMsgId && /^\d+$/.test(zaloMsgId) ? BigInt(zaloMsgId) : null,
-              senderType: 'self',
-              senderUid: conversation.zaloAccount.zaloUid || '',
-              senderName: 'Staff',
-              content: JSON.stringify({ href: mirror.url, name: f.filename, size: mirror.size, mime: f.mimeType }),
-              contentType: 'file',
-              sentAt: new Date(),
-              repliedByUserId: user.id,
-            },
+          const msg = await createMediaMessage({
+            conversationId: id,
+            zaloAccount: conversation.zaloAccount,
+            repliedByUserId: user.id,
+            zaloMsgId,
+            contentType: 'file',
+            content: JSON.stringify({ href: mirror.url, name: f.filename, size: mirror.size, mime: f.mimeType }),
           });
           created.push(msg);
         }
@@ -301,15 +286,16 @@ export async function chatAttachmentRoutes(app: FastifyInstance) {
         });
 
         for (const m of created) {
-          // PRIVACY 2026-05-22: kèm _privacyMeta cho FE realtime blur
-          io?.emit('chat:message', {
+          // PRIVACY 2026-06-11: redact + scope org (emit-chat). Nick main → URL file
+          // KHÔNG ra room org (chỉ chính chủ đã unlock nhận bản thật).
+          await emitChatMessage({
+            io,
+            orgId: user.orgId,
             accountId: conversation.zaloAccountId,
-            message: m,
             conversationId: id,
-            _privacyMeta: {
-              privacyMode: conversation.zaloAccount.privacyMode,
-              ownerUserId: conversation.zaloAccount.ownerUserId,
-            },
+            message: m,
+            privacyMode: conversation.zaloAccount.privacyMode,
+            ownerUserId: conversation.zaloAccount.ownerUserId,
           });
         }
 

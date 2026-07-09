@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * zalo-history-backfill.ts — initial history seeding for fresh accounts.
  *
@@ -9,7 +11,7 @@
  * Fire-and-forget callable: errors are logged, not propagated.
  */
 import { randomUUID } from 'node:crypto';
-import { prisma } from '../../shared/database/prisma-client.js';
+import { prisma, tenantTransaction } from '../../shared/database/prisma-client.js';
 import { logger } from '../../shared/utils/logger.js';
 import { handleIncomingMessage } from '../chat/message-handler.js';
 import { detectContentType, extractAlbumInfo } from './zalo-message-helpers.js';
@@ -193,33 +195,23 @@ export async function backfillAccountHistory(api: any, accountId: string): Promi
       const zaloName = friend?.zaloName || friend?.zalo_name || friend?.displayName || friend?.display_name || '';
       const avatar = friend?.avatar || '';
       const phone = friend?.phoneNumber || '';
+      const globalId = friend?.globalId || '';
+      const username = friend?.username || '';
 
       try {
-        const existing = await prisma.contact.findFirst({
-          where: { zaloUid: uid, orgId: account.orgId },
-          select: { id: true, fullName: true },
+        // Wave 1.5-B (B7 fix): dùng central resolver thay vì Contact.zaloUid only dedup
+        const { resolveOrCreateContact } = await import('../contacts/resolve-contact.js');
+        await resolveOrCreateContact({
+          orgId: account.orgId,
+          zaloAccountId: accountId,
+          zaloUidInNick: uid,
+          zaloGlobalId: globalId || null,
+          zaloUsername: username || null,
+          phone: phone || null,
+          fallbackFullName: zaloName || null,
+          fallbackAvatarUrl: avatar || null,
+          enrichViaGetUserInfo: false,
         });
-        if (existing) {
-          await prisma.contact.update({
-            where: { id: existing.id },
-            data: {
-              fullName: zaloName || existing.fullName,
-              avatarUrl: avatar || undefined,
-              phone: phone || undefined,
-            },
-          });
-        } else {
-          await prisma.contact.create({
-            data: {
-              id: randomUUID(),
-              orgId: account.orgId,
-              zaloUid: uid,
-              fullName: zaloName || 'Unknown',
-              avatarUrl: avatar || null,
-              phone: phone || null,
-            },
-          });
-        }
         result.friendsSynced++;
       } catch (err) {
         result.errors++;
@@ -323,12 +315,13 @@ export async function backfillAccountHistory(api: any, accountId: string): Promi
   }
 
   // Sanity check: verify what actually landed in DB for this account
-  const dbCounts = await prisma.$transaction([
-    prisma.conversation.count({ where: { zaloAccountId: accountId } }),
-    prisma.message.count({
+  const dbCounts = await tenantTransaction(async (tx) => {
+    const conversations = await tx.conversation.count({ where: { zaloAccountId: accountId } });
+    const messages = await tx.message.count({
       where: { conversation: { zaloAccountId: accountId } },
-    }),
-  ]).catch(() => [0, 0] as [number, number]);
+    });
+    return [conversations, messages] as [number, number];
+  }).catch(() => [0, 0] as [number, number]);
 
   logger.info(
     `[backfill:${accountId}] Done — friends=${result.friendsSynced} groups=${result.groupsSynced} ` +

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * webhook-settings-routes.ts — Manage webhook URL/secret and public API key generation.
  * All routes require JWT auth and are scoped to user's org.
@@ -5,6 +7,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { prisma } from '../../shared/database/prisma-client.js';
 import { authMiddleware } from '../auth/auth-middleware.js';
+import { requireGrant } from '../rbac/rbac-middleware.js';
 import { logger } from '../../shared/utils/logger.js';
 import { emitWebhook } from './webhook-service.js';
 import crypto from 'node:crypto';
@@ -13,7 +16,7 @@ export async function webhookSettingsRoutes(app: FastifyInstance): Promise<void>
   app.addHook('preHandler', authMiddleware);
 
   // GET /api/v1/settings/webhook — retrieve current webhook config
-  app.get('/api/v1/settings/webhook', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get('/api/v1/settings/webhook', { preHandler: requireGrant('webhook', 'access') }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { orgId } = request.user!;
 
@@ -36,7 +39,7 @@ export async function webhookSettingsRoutes(app: FastifyInstance): Promise<void>
   });
 
   // PUT /api/v1/settings/webhook — save webhook URL and secret
-  app.put('/api/v1/settings/webhook', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.put('/api/v1/settings/webhook', { preHandler: requireGrant('webhook', 'edit') }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { orgId } = request.user!;
       const { url, secret } = request.body as { url?: string; secret?: string };
@@ -54,7 +57,7 @@ export async function webhookSettingsRoutes(app: FastifyInstance): Promise<void>
   });
 
   // POST /api/v1/settings/webhook/test — deliver a test event to configured URL
-  app.post('/api/v1/settings/webhook/test', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post('/api/v1/settings/webhook/test', { preHandler: requireGrant('webhook', 'edit') }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { orgId } = request.user!;
 
@@ -72,7 +75,7 @@ export async function webhookSettingsRoutes(app: FastifyInstance): Promise<void>
   });
 
   // POST /api/v1/settings/api-key/generate — generate new public API key
-  app.post('/api/v1/settings/api-key/generate', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post('/api/v1/settings/api-key/generate', { preHandler: requireGrant('webhook', 'create') }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { orgId } = request.user!;
 
@@ -87,7 +90,7 @@ export async function webhookSettingsRoutes(app: FastifyInstance): Promise<void>
   });
 
   // GET /api/v1/settings/api-key — retrieve masked API key
-  app.get('/api/v1/settings/api-key', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get('/api/v1/settings/api-key', { preHandler: requireGrant('webhook', 'access') }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { orgId } = request.user!;
 

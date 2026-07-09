@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <v-app>
     <OfflineIndicator />
@@ -8,7 +10,7 @@
         <div class="d-flex align-center justify-center" style="width: 28px; height: 28px; background: linear-gradient(135deg, #00F2FF, #0077B6); border-radius: 8px;">
           <v-icon size="16" color="white">mdi-robot</v-icon>
         </div>
-        <span class="font-weight-bold text-body-1">Zalo<span style="color: #00F2FF;">CRM</span></span>
+        <span class="font-weight-bold text-body-1"><span style="color: #00F2FF;">CRM</span></span>
       </div>
 
       <v-spacer />

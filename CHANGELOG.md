@@ -1,6 +1,45 @@
 # Changelog
 
-Tất cả thay đổi đáng chú ý của ZaloCRM được ghi lại tại đây. Dự án dùng nhánh `main` làm dòng phát hành chính.
+Các thay đổi đáng chú ý của ZCRM. Theo [Semantic Versioning](https://semver.org/lang/vi/).
+
+> Các tag `v1.x`–`v3.3.x` là **lịch sử upstream** (locphamnguyen/ZaloCRM) — xem đầy đủ ở cuối file.
+> `v3.4.x` là dòng release hiện tại.
+
+## [3.4.0] - 2026-06-20
+
+Đợt cập nhật lớn: **giao diện mới** + **Dashboard mới**, **nâng cao bảo mật**, **quét nhóm Zalo**, **bộ báo cáo mới**, **cầu Zalo ↔ Telegram**, **độ tin cậy chat**, và chuyển sang **mã nguồn mở AGPL-3.0**.
+
+### Added — Tính năng mới
+- **Giao diện mới** — redesign toàn diện UI (layout, theme sáng/tối, responsive desktop/mobile).
+- **Giao diện Dashboard mới** — trang điều hành thiết kế lại, biểu đồ + KPI trực quan hơn.
+- **Nâng cao bảo mật** — access token ngắn + **refresh token rotation**, CSP + security headers, RBAC phòng ban/đội nhóm, audit log, Privacy PIN.
+- **Quét nhóm Zalo** — quét nhóm & danh sách thành viên (GroupMember/GroupScan) bằng worker nền, trong menu Marketing.
+- **Bộ báo cáo mới** — Tổng quan điều hành · Vận hành Nick Zalo · Hiệu suất Sale & Team · Tương tác khách hàng · Audit & Sức khoẻ hệ thống · **Phân tích nâng cao**.
+- **API hoàn chỉnh cho ZCRM Mobile App** — bộ REST API đầy đủ (auth, chat, contacts, lịch hẹn, báo cáo, push) phục vụ ứng dụng di động.
+- **Cầu Zalo ↔ Telegram** — mirror tin nhắn **2 chiều** (vào/ra) + **media** (ảnh/video/audio/file, giữ tên file gốc), realtime + badge, chống lặp theo `msgId`.
+- **Chuông "đang theo dõi"** sau tên khách ở cột 2 chat (đồng bộ 3 nơi).
+- **Chat "Phạm vi làm việc":** scope trở thành điều kiện LOAD; mỗi lần gắn 1 card + nhóm "đã xong" thu gọn.
+- **Template:** mở rộng 8 biến cá nhân hóa.
+- **AI:** quản lý API key + model provider trên giao diện (per-org).
+- **Media:** hiển thị nguồn nick/sale + metadata + bảng review tag khi gửi.
+- **API:** Public REST API (X-API-Key) + tài liệu API (vi/en + Postman collection).
+
+### Changed — Thay đổi / Giao diện
+- **Giấy phép → AGPL-3.0:** relicense sang GNU AGPL-3.0 (copyleft + §13 SaaS source-disclosure) + **dual-license thương mại** + điều khoản **trademark "ZCRM"**; SPDX header trên toàn bộ file nguồn; thêm CONTRIBUTING + DCO; link **"Mã nguồn"** ở trang login (tuân thủ §13).
+- Hồ sơ KH dùng tag per-nick (TagV2); nút Hồ sơ ở trang Bạn bè mở popup.
+- Bộ nhận diện ZCRM mới (logo monochrome, design system) + user guide + quick start (quản trị/nhân viên).
+
+### Fixed — Sửa lỗi
+- **clamav** image tag `1.3` → `1.4` (tag 1.3 không tồn tại trên Docker Hub).
+- **Build:** sửa `@import` CSS trỏ sai sau khi di chuyển `airtable.css` (chỉ lộ ở `vite build`).
+- **Privacy:** chặn blur `▒` ăn vào data — tên KH không bị ghi đè bằng `▒▒▒▒`.
+- **Chat:** bấm avatar/tên KH báo "Không tải được thông tin user" (per-account UID); badge "tin ở nick khác" gọn 1 dòng.
+- **Gửi tin (advance):** toast đỏ → vàng + báo đúng lý do; sửa báo "đã gửi" sai khi tin chưa đi + promote nhầm job mồ côi.
+- **Realtime/Socket:** tự hồi socket khi treo lâu (token 15' hết hạn).
+
+---
+
+## Lịch sử upstream (locphamnguyen/ZaloCRM)
 
 ## v3.3.4 — 06/06/2026
 
@@ -69,7 +108,6 @@ Tất cả thay đổi đáng chú ý của ZaloCRM được ghi lại tại đ�
 ### Hygiene
 
 - Thêm `.env.bak*` và `.env.*.bak` vào `.gitignore` — ngăn commit nhầm file backup env.
-- Bổ sung biến Facebook integration (`FB_GRAPH_API_VERSION`, `FB_APP_ID`, `FB_APP_SECRET`, `FB_WEBHOOK_VERIFY_TOKEN`, `FB_TOKEN_ENC_KEY`, `FB_OAUTH_REDIRECT_URI`) vào `.env.example` kèm hướng dẫn tạo.
 
 ### Upgrade notes
 
@@ -82,16 +120,13 @@ MINIO_ROOT_PASSWORD=<strong-password>
 ## v3.3.0 — 25/05/2026
 
 ### Added
-- Facebook Lead Ingestion: Meta OAuth, page connection, webhook verify/HMAC, lead queue, form auto-discovery.
-- Tự tạo Customer List theo Facebook page/form và gán sale vòng tròn cho lead mới.
 - Chuyển tiếp media trong chat: image, video, audio.
 - Backfill/mirror ảnh/video inbound từ Zalo CDN sang MinIO/S3/R2.
 - Cloudflare R2 config trong `.env.example`.
 - Release screenshots tại `docs/release-images/v3.3/`.
 
 ### Changed
-- Merge upstream `hsholding/main` qua branch `merge/hsholding-main-20260525`.
-- Merge `feat/fb-lead-ingestion` vào `main`.
+- Merge upstream `locphamnguyen/main` qua branch `merge/upstream-main-20260525`.
 - Chat media pipeline dùng object storage nhất quán hơn cho preview và forward.
 - `.env` parser xử lý secret/password có ký tự `#`.
 
@@ -105,14 +140,11 @@ MINIO_ROOT_PASSWORD=<strong-password>
 ## v3.2.0 — 21/05/2026
 
 ### Added
-- Bot-Auto framework: Blocks, Sequences, Triggers, Broadcasts, Customer Lists.
 - Lead Scoring Phase 6: signal detector, auto-decay, auto tags, stuck lead dashboard.
-- Customer Lists import CSV/Excel, column mapping, inline edit, undo delete.
 - Scoring settings tại `/settings/crm/scoring`.
 - Scripts hỗ trợ Phase 7 runner và setup test data.
 
 ### Changed
-- Bot-Auto được đưa lên top-level navigation.
 - Appointments, Friends, Zalo Accounts, Settings layout được redesign.
 - Zalo Labels auto-sync khi connect/reconnect.
 - Contact touch-profile endpoint bổ sung thông tin từ SDK khi mở conversation.
@@ -183,7 +215,6 @@ MINIO_ROOT_PASSWORD=<strong-password>
 
 ### Added
 - AI Assistant: gợi ý trả lời, tóm tắt, phân tích cảm xúc.
-- Workflow Automation.
 - Integration Hub: Google Sheets, Telegram, Facebook, Zapier.
 - Mobile PWA.
 - Contact Intelligence: gộp trùng, lead scoring, auto-tag.

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * friend-routes.ts — REST API for Zalo friend management.
  * Ports openzca friend commands: queries, requests, management, privacy.
@@ -5,8 +7,10 @@
  */
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { authMiddleware } from '../auth/auth-middleware.js';
+import { requireGrant } from '../rbac/rbac-middleware.js';
 import { zaloOps } from '../../shared/zalo-operations.js';
 import { resolveAccount, checkAccess, handleError, getAccessibleZaloAccountIds } from './zalo-route-helpers.js';
+import { getZaloScope } from './zalo-scope.js';
 import { markFriendRequestSent } from './friend-event-handler.js';
 import { prisma } from '../../shared/database/prisma-client.js';
 import { normalizePhone } from '../../shared/utils/phone.js';
@@ -29,7 +33,7 @@ export async function friendRoutes(app: FastifyInstance) {
   // ── DB-backed friend list (preferred over live for /friends UI) ───────────
 
   // GET .../friends-db?kind=...&page=1&limit=25&search=...&sortBy=recent|score-desc|score-asc|stuck
-  app.get(`${BASE}-db`, async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get(`${BASE}-db`, { preHandler: requireGrant('friend', 'access') }, async (request: FastifyRequest, reply: FastifyReply) => {
     const { accountId } = request.params as { accountId: string };
     const {
       kind = 'all',
@@ -37,7 +41,8 @@ export async function friendRoutes(app: FastifyInstance) {
       limit = '25',
       search = '',
       sortBy = 'recent',
-    } = request.query as { kind?: string; page?: string; limit?: string; search?: string; sortBy?: string };
+      statusId = '',
+    } = request.query as { kind?: string; page?: string; limit?: string; search?: string; sortBy?: string; statusId?: string };
     const user = request.user!;
     if (!await checkAccess(request, reply, accountId, 'read')) return;
     try {
@@ -48,6 +53,8 @@ export async function friendRoutes(app: FastifyInstance) {
 
       const where: any = { zaloAccountId: accountId, orgId: user.orgId };
       if (kind && kind !== 'all') where.relationshipKind = kind;
+      // Filter theo Trạng thái KH per-nick (Friend.statusId). '' = tất cả.
+      if (statusId) where.statusId = statusId;
       if (search.trim()) {
         const q = search.trim();
         // Phone fast path: normalize input canonical → exact match phoneNormalized
@@ -90,8 +97,12 @@ export async function friendRoutes(app: FastifyInstance) {
       ]);
 
       const counts = Object.fromEntries(countsRaw.map((g) => [g.relationshipKind, g._count]));
+      // PRIVACY 2026-06-11 (audit C7/H4): redact Friend row thuộc nick main non-owner
+      // (blur preview tin/alias/danh tính Zalo + Contact PII nhúng).
+      const { buildPrivacyContext, redactFriend } = await import('../privacy/redact.js');
+      const privacyCtx = await buildPrivacyContext(request);
       return {
-        friends: friends.map(toFriendDto),
+        friends: friends.map((f) => redactFriend(toFriendDto(f) as any, privacyCtx)),
         total,
         counts,
         page: pageNum,
@@ -104,7 +115,7 @@ export async function friendRoutes(app: FastifyInstance) {
 
   // GET /api/v1/friends-db/all-nicks — cross-nick Friend list (mọi nick user có access)
   // Phục vụ FriendsView "Tất cả nick" mode. Flat per-pair: 1 KH × N nick chăm → N rows.
-  app.get('/api/v1/friends-db/all-nicks', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get('/api/v1/friends-db/all-nicks', { preHandler: requireGrant('friend', 'access') }, async (request: FastifyRequest, reply: FastifyReply) => {
     const user = request.user!;
     const {
       kind = 'all',
@@ -112,16 +123,14 @@ export async function friendRoutes(app: FastifyInstance) {
       limit = '25',
       search = '',
       sortBy = 'recent',
-    } = request.query as { kind?: string; page?: string; limit?: string; search?: string; sortBy?: string };
+      statusId = '',
+    } = request.query as { kind?: string; page?: string; limit?: string; search?: string; sortBy?: string; statusId?: string };
     try {
-      // B3 fix — Resolve accessible accounts via shared helper (cùng hierarchy với
-      // checkAccess): owner/admin → tất cả nick org; non-admin → ACL + owned.
-      // Trước đây inline chỉ explicit + owned → admin không own đủ nick bị empty list.
-      const accessibleIds = await getAccessibleZaloAccountIds({
-        id: user.id,
-        orgId: user.orgId,
-        role: user.role,
-      });
+      // Phase Zalo Account Mutation Gate 2026-05-27: migrate sang getZaloScope
+      // (helper cũ getAccessibleZaloAccountIds chỉ ACL+owned, KHÔNG cascade dept.
+      // Trưởng phòng giờ thấy friend nick cấp dưới).
+      const scope = await getZaloScope(user.id, user.orgId, user.role);
+      const accessibleIds = scope.accessibleIds;
 
       if (accessibleIds.length === 0) {
         return { friends: [], total: 0, counts: {}, page: 1, limit: parseInt(limit, 10) || 25 };
@@ -135,6 +144,8 @@ export async function friendRoutes(app: FastifyInstance) {
         zaloAccountId: { in: accessibleIds },
       };
       if (kind && kind !== 'all') where.relationshipKind = kind;
+      // Filter theo Trạng thái KH per-nick (Friend.statusId). '' = tất cả.
+      if (statusId) where.statusId = statusId;
       if (search.trim()) {
         const q = search.trim();
         const canonicalPhone = normalizePhone(q);
@@ -174,8 +185,12 @@ export async function friendRoutes(app: FastifyInstance) {
       ]);
 
       const counts = Object.fromEntries(countsRaw.map((g) => [g.relationshipKind, g._count]));
+      // PRIVACY 2026-06-11 (audit C7/H11): trưởng phòng cascade thấy nick main cấp dưới
+      // qua getZaloScope → redact preview/alias/PII của Friend thuộc nick main non-owner.
+      const { buildPrivacyContext, redactFriend } = await import('../privacy/redact.js');
+      const privacyCtx = await buildPrivacyContext(request);
       return {
-        friends: friends.map(toFriendDto),
+        friends: friends.map((f) => redactFriend(toFriendDto(f) as any, privacyCtx)),
         total,
         counts,
         page: pageNum,
@@ -314,7 +329,20 @@ export async function friendRoutes(app: FastifyInstance) {
       // ZaloApiError code 216 = no Zalo for phone (zca-js có thể throw thay vì trả empty)
       if (e?.code === 'NOT_CONNECTED' || e?.code === 'RATE_LIMITED') {
         await logEvent('rate_limited', null, e.code);
-        return reply.status(503).send({ error: e.code, detail: e.message });
+        // M55.3 2026-05-30: dịch message tiếng Việt sale-friendly thay tiếng Anh raw.
+        // NOT_CONNECTED = nick CRM của sale chưa kết nối Zalo (không phải KH chặn).
+        // userFriendly = label hiện toast nhỏ cho sale, detail = action message.
+        const isNotConnected = e.code === 'NOT_CONNECTED';
+        return reply.status(503).send({
+          error: e.code,
+          detail: isNotConnected
+            ? 'Nick Zalo của anh chưa kết nối. Vào "Quản lý nick" để kết nối lại, hoặc chuyển sang chat nội bộ với KH.'
+            : 'Nick đã bị Zalo chặn tạm thời (quá nhiều lượt tra cứu). Vui lòng thử lại sau vài phút.',
+          userFriendly: isNotConnected
+            ? 'KH chưa bật tìm kiếm Zalo công khai'
+            : 'Đã đạt giới hạn tra cứu Zalo',
+          suggestVirtualChat: isNotConnected,
+        });
       }
       // Default: treat as not found (Zalo phổ biến throw cho phone lạ)
       await logEvent('no_zalo', null, e?.code ?? null);
@@ -435,23 +463,28 @@ export async function friendRoutes(app: FastifyInstance) {
           where: { zaloAccountId_zaloUidInNick: { zaloAccountId: accountId, zaloUidInNick: userId } },
           select: { contactId: true, friendshipStatus: true },
         });
-        if (convFriend?.contactId && convFriend.friendshipStatus !== 'pending_received') {
-          // Conv UID không phải pending → tìm pending sibling cùng contact + nick
+        // 2026-06-09 (anh báo "Tham số không hợp lệ"): nới resolve. UID từ URL có thể
+        // là UID friendship CŨ, không phải UID lời mời PENDING. Nếu UID gốc KHÔNG phải
+        // pending_received (gồm cả convFriend=null) → tìm pending sibling cùng nick để
+        // accept đúng. Trước fix chỉ resolve khi convFriend tồn tại → bỏ sót case null.
+        if (convFriend?.friendshipStatus !== 'pending_received') {
+          const contactId = convFriend?.contactId;
           const pendingSibling = await prisma.friend.findFirst({
             where: {
               zaloAccountId: accountId,
-              contactId: convFriend.contactId,
               friendshipStatus: 'pending_received',
               zaloUidInNick: { not: userId },
+              ...(contactId ? { contactId } : {}),
             },
-            select: { zaloUidInNick: true, id: true },
+            orderBy: { createdAt: 'desc' },
+            select: { zaloUidInNick: true, id: true, contactId: true },
           });
           if (pendingSibling?.zaloUidInNick) {
             acceptUid = pendingSibling.zaloUidInNick;
             resolvedFrom = userId;
             logger.info(`[friend-op] Resolved pending UID for accept`, {
               accountId, originalUid: userId, actualUid: acceptUid,
-              contactId: convFriend.contactId, siblingFriendId: pendingSibling.id,
+              contactId: pendingSibling.contactId, siblingFriendId: pendingSibling.id,
             });
           }
         }
@@ -496,10 +529,23 @@ export async function friendRoutes(app: FastifyInstance) {
             logger.error(`[friend-op] sendFriendRequest fallback also failed`, {
               accountId, acceptUid, err: sendErr?.message,
             });
-            throw sendErr;
+            // 2026-06-09: báo lỗi NGƯỜI DÙNG HIỂU thay vì "Tham số không hợp lệ".
+            return reply.status(409).send({
+              error: 'Không chấp nhận được lời mời này — có thể khách đã rút lời mời, đã là bạn, hoặc lời mời đã hết hạn. Anh/chị thử tải lại trang rồi kiểm tra lại.',
+              code: 'FRIEND_REQUEST_NOT_ACCEPTABLE',
+            });
           }
         }
-        throw acceptErr;
+        if (statusBefore?.is_friend) {
+          return reply.status(409).send({
+            error: 'Khách này đã là bạn bè rồi — không cần chấp nhận lại.',
+            code: 'ALREADY_FRIEND',
+          });
+        }
+        return reply.status(409).send({
+          error: 'Không chấp nhận được lời mời này — có thể khách đã rút lời mời hoặc lời mời đã hết hạn. Anh/chị thử tải lại trang.',
+          code: 'FRIEND_REQUEST_NOT_ACCEPTABLE',
+        });
       }
     } catch (err) {
       return handleError(reply, err, 'friend-op');
@@ -567,7 +613,7 @@ export async function friendRoutes(app: FastifyInstance) {
   // ── Friend Management ─────────────────────────────────────────────────────
 
   // DELETE .../friends/:userId — remove friend
-  app.delete(`${BASE}/:userId`, async (request: FastifyRequest, reply: FastifyReply) => {
+  app.delete(`${BASE}/:userId`, { preHandler: requireGrant('friend', 'delete') }, async (request: FastifyRequest, reply: FastifyReply) => {
     const { accountId, userId } = request.params as { accountId: string; userId: string };
     const user = request.user!;
     try {
@@ -581,7 +627,7 @@ export async function friendRoutes(app: FastifyInstance) {
   });
 
   // PUT .../friends/:userId/alias — set custom alias { alias }
-  app.put(`${BASE}/:userId/alias`, async (request: FastifyRequest, reply: FastifyReply) => {
+  app.put(`${BASE}/:userId/alias`, { preHandler: requireGrant('friend', 'edit') }, async (request: FastifyRequest, reply: FastifyReply) => {
     const { accountId, userId } = request.params as { accountId: string; userId: string };
     const { alias } = request.body as { alias: string };
     const user = request.user!;
@@ -597,7 +643,7 @@ export async function friendRoutes(app: FastifyInstance) {
   });
 
   // DELETE .../friends/:userId/alias — remove custom alias
-  app.delete(`${BASE}/:userId/alias`, async (request: FastifyRequest, reply: FastifyReply) => {
+  app.delete(`${BASE}/:userId/alias`, { preHandler: requireGrant('friend', 'edit') }, async (request: FastifyRequest, reply: FastifyReply) => {
     const { accountId, userId } = request.params as { accountId: string; userId: string };
     const user = request.user!;
     try {

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * permission-types.ts — Resource × Action matrix định nghĩa
  *
@@ -5,36 +7,43 @@
  * Lock 2026-05-21 trong design doc thanh-rbac-m2-design-20260521.md.
  */
 
-// 7 action columns (giống Getfly)
+// 5 action columns. 'approve'/'pay' (Getfly) đã gỡ 2026-06-20: không có quy trình
+// duyệt/thanh toán trong ZaloCRM nên 2 cột đó chỉ là ô tick vô tác dụng.
 export const ACTIONS = [
   'access',       // Truy cập
   'create',       // Thêm mới
   'edit',         // Chỉnh sửa
   'delete',       // Xóa
-  'approve',      // Duyệt
-  'pay',          // Thanh toán
   'view_all',     // Xem tất cả — KEY FLAG bypass dept scope
 ] as const;
 export type Action = (typeof ACTIONS)[number];
 
-// 15 resources trong ZaloCRM (map từ Getfly + thêm cụ thể cho Zalo domain)
+// 18 resources, GOM THEO NHÓM MÀN HÌNH (2026-06-20) để ma trận phân quyền đọc theo
+// menu — admin gán quyền dễ hơn. Thứ tự ở đây = thứ tự cột dọc trong UI ma trận.
 export const RESOURCES = [
-  'department',         // Quản lý phòng ban
-  'user',               // Quản lý người dùng
-  'permission_group',   // Quản lý quyền
-  'conversation',       // Hội thoại
-  'contact',            // Khách hàng
-  'friend',             // Friends (Zalo per-account)
-  'customer_list',      // Tệp KH
-  'broadcast',          // Chiến dịch
-  'sequence',           // Sequence automation
-  'trigger',            // Trigger automation
-  'block',              // Message block
-  'zalo_account',       // Nick Zalo
-  'webhook',            // Webhook outbound
-  'engagement_score',   // Engagement + Score (metadata)
-  'audit_log',          // Activity / Audit log
-  'settings',           // App settings
+  // ── Hệ thống & tổ chức (menu Cài đặt / Phân quyền) ──
+  'department',         // Quản lý phòng ban   → /settings/rbac/departments
+  'user',               // Quản lý người dùng  → /settings/rbac/users
+  'permission_group',   // Quản lý quyền       → /settings/rbac/permission-groups
+  'settings',           // Cài đặt chung       → /settings/* (org, crm, channels...)
+  'audit_log',          // Nhật ký hành động   → /settings/org/audit
+  // ── Khách hàng & hội thoại (menu chính) ──
+  'contact',            // Khách hàng          → /contacts
+  'friend',             // Bạn bè (Zalo)       → /friends
+  'conversation',       // Tin nhắn / Hội thoại→ /chat
+  'customer_list',      // Tệp khách hàng      → /marketing/lists
+  // ── Marketing / Tự động hoá (menu Marketing) ──
+  'trigger',            // Mục tiêu / Trigger  → /marketing/triggers
+  'sequence',           // Sequence            → /marketing/sequences
+  'broadcast',          // Chiến dịch          → /marketing/broadcasts
+  'block',              // Message Block       → /marketing/blocks
+  'care_session',       // Phiên chăm sóc      → /marketing/care-sessions
+  // ── Kênh & tài nguyên ──
+  'zalo_account',       // Nick Zalo           → /settings/channels/zalo
+  'media',              // Kho phương tiện     → /media
+  'webhook',            // Webhook / API key   → /settings/dev/api
+  // ── Báo cáo ──
+  'engagement_score',   // Engagement + Score  → /reports
 ] as const;
 export type Resource = (typeof RESOURCES)[number];
 
@@ -47,9 +56,9 @@ export const RESOURCE_ACTIONS: Record<Resource, readonly Action[]> = {
   conversation: ['access', 'edit', 'delete', 'view_all'],
   contact: ['access', 'create', 'edit', 'delete', 'view_all'],
   friend: ['access', 'create', 'edit', 'delete', 'view_all'],
-  customer_list: ['access', 'create', 'edit', 'delete', 'approve', 'view_all'],
-  broadcast: ['access', 'create', 'edit', 'delete', 'approve', 'view_all'],
-  sequence: ['access', 'create', 'edit', 'delete', 'approve', 'view_all'],
+  customer_list: ['access', 'create', 'edit', 'delete', 'view_all'],
+  broadcast: ['access', 'create', 'edit', 'delete', 'view_all'],
+  sequence: ['access', 'create', 'edit', 'delete', 'view_all'],
   trigger: ['access', 'create', 'edit', 'delete', 'view_all'],
   block: ['access', 'create', 'edit', 'delete', 'view_all'],
   zalo_account: ['access', 'create', 'edit', 'delete', 'view_all'],
@@ -57,6 +66,11 @@ export const RESOURCE_ACTIONS: Record<Resource, readonly Action[]> = {
   engagement_score: ['access', 'view_all'],
   audit_log: ['access', 'view_all'],
   settings: ['access', 'create', 'edit'],
+  // Phiên chăm sóc — access=xem phiên mình, view_all=xem cả org (scope theo dept tree).
+  care_session: ['access', 'view_all'],
+  // Kho phương tiện — access=xem/dùng kho, create=tải lên/lưu, edit=sửa quyền/tag/watermark,
+  // delete=archive, view_all=xem cả org bỏ qua scope owner (admin/marketing).
+  media: ['access', 'create', 'edit', 'delete', 'view_all'],
 };
 
 // JSON shape lưu trong permission_groups.grants:
@@ -143,15 +157,16 @@ export const DEFAULT_PERMISSION_GROUPS = [
       conversation: viewAll('conversation'),
       contact: viewAll('contact'),
       friend: viewAll('friend'),
-      customer_list: { access: true, view_all: true, create: true, edit: true, approve: true },
-      broadcast: { access: true, view_all: true, create: true, edit: true, approve: true },
-      sequence: { access: true, view_all: true, create: true, edit: true, approve: true },
+      customer_list: { access: true, view_all: true, create: true, edit: true },
+      broadcast: { access: true, view_all: true, create: true, edit: true },
+      sequence: { access: true, view_all: true, create: true, edit: true },
       trigger: viewAll('trigger'),
       block: viewAll('block'),
       zalo_account: viewAll('zalo_account'),
       engagement_score: viewAll('engagement_score'),
       audit_log: viewAll('audit_log'),
       settings: { access: true },
+      media: viewAll('media'), // xem cả kho org
     } as GrantsJson,
   },
   {
@@ -164,15 +179,16 @@ export const DEFAULT_PERMISSION_GROUPS = [
       conversation: { access: true, edit: true, delete: true, view_all: true }, // view_all trong scope dept
       contact: fullCrud('contact'),
       friend: fullCrud('friend'),
-      customer_list: { access: true, create: true, edit: true, delete: true, approve: true, view_all: true },
-      broadcast: { access: true, create: true, edit: true, delete: true, approve: true, view_all: true },
-      sequence: { access: true, create: true, edit: true, approve: true, view_all: true },
+      customer_list: { access: true, create: true, edit: true, delete: true, view_all: true },
+      broadcast: { access: true, create: true, edit: true, delete: true, view_all: true },
+      sequence: { access: true, create: true, edit: true, view_all: true },
       trigger: { access: true, create: true, edit: true, view_all: true },
       block: { access: true, create: true, edit: true, delete: true, view_all: true },
       zalo_account: { access: true, view_all: true },
       engagement_score: viewAll('engagement_score'),
       audit_log: { access: true },
       settings: { access: true },
+      media: { access: true, create: true, edit: true, delete: true, view_all: true }, // full trong scope dept
     } as GrantsJson,
   },
   {
@@ -191,6 +207,7 @@ export const DEFAULT_PERMISSION_GROUPS = [
       zalo_account: { access: true },
       engagement_score: { access: true },
       audit_log: { access: true },
+      media: { access: true, create: true, edit: true }, // kho của mình (scope owner)
     } as GrantsJson,
   },
   {
@@ -206,8 +223,11 @@ export const DEFAULT_PERMISSION_GROUPS = [
       sequence: { access: true },
       trigger: { access: true },
       block: { access: true },
-      zalo_account: { access: true },
+      // 2026-06-09 (Anh chốt): sale tự kết nối nick mới + xóa MỀM nick CỦA MÌNH.
+      // Ownership check ở requireAccountManagement đảm bảo chỉ đụng nick mình owner.
+      zalo_account: { access: true, create: true, delete: true },
       engagement_score: { access: true },
+      media: { access: true, create: true, edit: true }, // kho của mình (scope owner) — sale dùng nhiều nhất
     } as GrantsJson,
   },
   {
@@ -224,6 +244,7 @@ export const DEFAULT_PERMISSION_GROUPS = [
       block: { access: true, create: true, edit: true, delete: true, view_all: true },
       engagement_score: viewAll('engagement_score'),
       audit_log: { access: true },
+      media: { access: true, create: true, edit: true, delete: true, view_all: true }, // tài sản marketing dùng chung
     } as GrantsJson,
   },
   {

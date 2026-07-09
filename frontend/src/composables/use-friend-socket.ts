@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * use-friend-socket.ts — Subscribe Socket.IO `friend:updated` events từ backend.
  *
@@ -14,7 +16,8 @@
  * + cleanup on unmount tránh leak. Multiple subscribers share 1 underlying socket
  * (managed via socket.io-client default single instance).
  */
-import { io, type Socket } from 'socket.io-client';
+import { type Socket } from 'socket.io-client';
+import { createAppSocket } from '@/api/socket';
 import { onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 
@@ -41,7 +44,7 @@ let joinedOrgId: string | null = null;
  */
 function ensureSocket(): Socket {
   if (!socket) {
-    socket = io({ transports: ['websocket', 'polling'] });
+    socket = createAppSocket();
 
     // Auto re-join org room mỗi khi socket connect (init + reconnect)
     socket.on('connect', () => {

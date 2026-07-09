@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * scoring/decay-cron.ts — Daily decay job (silent customer penalty).
  *
@@ -9,6 +11,7 @@
  */
 
 import { prisma } from '../../shared/database/prisma-client.js';
+import { withTenant } from '../../shared/tenant/tenant-context.js';
 import { logger } from '../../shared/utils/logger.js';
 import { logActivity } from '../activity/activity-logger.js';
 import { getScoringConfig } from './config-cache.js';
@@ -39,6 +42,10 @@ export interface DecayJobResult {
  *   - Log activity nếu delta != 0
  */
 export async function runDecayForOrg(orgId: string): Promise<DecayJobResult> {
+  return withTenant(orgId, () => runDecayForOrgInner(orgId));
+}
+
+async function runDecayForOrgInner(orgId: string): Promise<DecayJobResult> {
   const startedAt = Date.now();
   const config = await getScoringConfig(orgId);
 

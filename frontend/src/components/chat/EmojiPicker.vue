@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <v-menu
     v-model="open"
@@ -8,7 +10,7 @@
     location="top"
   >
     <template #activator="{ props: act }">
-      <button class="icon-tool emoji-trigger" v-bind="act" title="Emoji">😊</button>
+      <button class="icon-tool emoji-trigger" v-bind="act" title="Emoji"><SmileIcon :size="18" :stroke-width="1.5" /></button>
     </template>
     <v-card class="emoji-card pa-2">
       <!-- Category tabs -->
@@ -38,6 +40,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { Smile as SmileIcon } from 'lucide-vue-next';
 
 const emit = defineEmits<{ pick: [emoji: string] }>();
 

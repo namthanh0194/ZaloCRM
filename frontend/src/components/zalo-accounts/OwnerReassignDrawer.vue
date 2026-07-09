@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <!--
   OwnerReassignDrawer — Phase 4 ZaloAccounts redesign 2026-05-22.
 
@@ -142,8 +144,11 @@ const errorMsg = ref('');
 
 async function fetchUsers() {
   try {
-    const { data } = await api.get<OrgUser[]>('/users');
-    users.value = data;
+    // BE trả { users: OrgUser[] } chứ không phải array thuần.
+    // Fix 2026-06-02: trước gán data trực tiếp → sort() crash → unmount click handlers.
+    const { data } = await api.get<{ users: OrgUser[] } | OrgUser[]>('/users');
+    const list = Array.isArray(data) ? data : (data as { users: OrgUser[] }).users ?? [];
+    users.value = list;
   } catch (err: any) {
     errorMsg.value = err?.response?.data?.error || 'Không tải được danh sách user';
   }

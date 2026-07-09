@@ -1,9 +1,37 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * Composable wrapping all group management API endpoints.
  * All methods take accountId as first param (from useSelectedAccount).
  */
 import { ref } from 'vue';
 import { api } from '@/api/index';
+
+/** GroupScan lifecycle states returned by the backend. */
+export type GroupScanState = 'queued' | 'running' | 'completed' | 'partial' | 'failed';
+
+export interface GroupScan {
+  id: string;
+  state: GroupScanState;
+  scope: 'selected' | 'all' | string;
+  groupIds: string[];
+  totalGroups: number;
+  scannedGroups: number;
+  memberCount: number;
+  [key: string]: any;
+}
+
+export interface GroupScanMember {
+  id: string;
+  memberUid: string;
+  displayName: string;
+  zaloName: string;
+  avatarUrl: string;
+  isAdmin: boolean;
+  isFriend: boolean;
+  harvestedAt: string;
+  [key: string]: any;
+}
 
 export function useGroups() {
   const groups = ref<any[]>([]);
@@ -14,7 +42,14 @@ export function useGroups() {
   const loading = ref(false);
   const actionLoading = ref(false);
 
+  /* ── Group scan (feature E1) reactive state ── */
+  const scan = ref<GroupScan | null>(null);
+  const scanMembers = ref<GroupScanMember[]>([]);
+  const scanLoading = ref(false);
+  const scanMembersLoading = ref(false);
+
   const base = (accountId: string) => `/zalo-accounts/${accountId}/groups`;
+  const scanBase = (accountId: string) => `/zalo-accounts/${accountId}/group-scans`;
 
   async function fetchGroups(accountId: string) {
     loading.value = true;
@@ -286,6 +321,63 @@ export function useGroups() {
     }
   }
 
+  /* ── Group scan (feature E1) ── */
+
+  /** Kick off a scan. Pass { all: true } to scan every group, or { groupIds }. */
+  async function createScan(
+    accountId: string,
+    payload: { groupIds?: string[]; all?: boolean },
+  ): Promise<GroupScan | null> {
+    scanLoading.value = true;
+    try {
+      const res = await api.post(scanBase(accountId), payload);
+      // Backend bọc trong { scan }. Unwrap (fallback res.data nếu sau này trả phẳng).
+      scan.value = res.data?.scan ?? res.data ?? null;
+      return scan.value;
+    } catch (err) {
+      console.error('Failed to create group scan:', err);
+      return null;
+    } finally {
+      scanLoading.value = false;
+    }
+  }
+
+  /** Poll a scan's current status. Updates `scan` and returns the latest snapshot. */
+  async function fetchScanStatus(accountId: string, scanId: string): Promise<GroupScan | null> {
+    try {
+      const res = await api.get(`${scanBase(accountId)}/${scanId}`);
+      // Backend bọc trong { scan }. Unwrap (fallback res.data nếu trả phẳng).
+      scan.value = res.data?.scan ?? res.data ?? null;
+      return scan.value;
+    } catch (err) {
+      console.error('Failed to fetch scan status:', err);
+      return null;
+    }
+  }
+
+  /** Fetch harvested members for a scan, optionally filtered by friend status. */
+  async function fetchScanMembers(
+    accountId: string,
+    scanId: string,
+    opts: { isFriend?: boolean; page?: number; limit?: number } = {},
+  ): Promise<{ members: GroupScanMember[]; total: number }> {
+    scanMembersLoading.value = true;
+    try {
+      const params: Record<string, any> = {};
+      if (opts.isFriend !== undefined) params.isFriend = opts.isFriend;
+      if (opts.page !== undefined) params.page = opts.page;
+      if (opts.limit !== undefined) params.limit = opts.limit;
+      const res = await api.get(`${scanBase(accountId)}/${scanId}/members`, { params });
+      scanMembers.value = res.data.members ?? [];
+      return { members: scanMembers.value, total: res.data.total ?? scanMembers.value.length };
+    } catch (err) {
+      console.error('Failed to fetch scan members:', err);
+      return { members: [], total: 0 };
+    } finally {
+      scanMembersLoading.value = false;
+    }
+  }
+
   return {
     groups, selectedGroup, members, blocked, pending,
     loading, actionLoading,
@@ -297,5 +389,8 @@ export function useGroups() {
     fetchBlocked, fetchPending,
     getInviteLink, enableInviteLink, disableInviteLink, joinByLink,
     leaveGroup, disperseGroup,
+    // Group scan (feature E1)
+    scan, scanMembers, scanLoading, scanMembersLoading,
+    createScan, fetchScanStatus, fetchScanMembers,
   };
 }

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * video-processor.ts — Native video send for Zalo: ffmpeg detection, thumbnail generation,
  * upload orchestration, and fallback to plain attachment.
@@ -107,7 +109,7 @@ export function parseVideoProbeOutput(raw: string): VideoProbeMetadata {
   };
 }
 
-async function probeVideoFile(filePath: string): Promise<VideoProbeMetadata> {
+export async function probeVideoFile(filePath: string): Promise<VideoProbeMetadata> {
   try {
     const raw = await runBinary('ffprobe', [
       '-v', 'error',

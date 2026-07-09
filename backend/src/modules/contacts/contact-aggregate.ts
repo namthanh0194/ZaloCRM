@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * contact-aggregate.ts — keep Contact's last-message + counter fields fresh.
  *
@@ -11,12 +13,13 @@
  *    once per actually-created Message row (i.e. after a successful create
  *    that did not hit the dedup path).
  */
-import { prisma } from '../../shared/database/prisma-client.js';
+import { prisma, tenantTransaction } from '../../shared/database/prisma-client.js';
 import { logger } from '../../shared/utils/logger.js';
 import { randomUUID } from 'node:crypto';
 import { counterDelta, deriveRelationshipKind } from '../zalo/friend-event-handler.js';
 import { logActivity } from '../activity/activity-logger.js';
 import { zaloPool } from '../zalo/zalo-pool.js';
+import { ensureContactCollaborator } from './contact-scope.js';
 
 const PREVIEW_LIMIT = 200;
 
@@ -234,6 +237,9 @@ export async function applyFriendAggregate(args: AggregateMessageInput): Promise
     const { message } = args;
     const sentAt = message.sentAt;
     const isInbound = message.senderType === 'contact';
+    // Phase Contact Scope Hybrid 2026-05-27 — per-pair preview cho list KH render
+    // theo "view của riêng nick này". Reuse logic makePreview() (line 35).
+    const preview = makePreview(message.content, message.contentType);
 
     // Deferred socket emits — collect inside transaction, flush after commit
     // để tránh emit khi rollback. Mỗi entry sẽ thành 1 'friend:updated' socket event.
@@ -245,7 +251,7 @@ export async function applyFriendAggregate(args: AggregateMessageInput): Promise
       patch: Record<string, unknown>;
     }> = [];
 
-    await prisma.$transaction(async (tx) => {
+    await tenantTransaction(async (tx) => {
       // Friend identity = (zaloAccountId, zaloUidInNick) — externalThreadId của conversation
       // chính là zaloUidInNick (UID per-account của khách qua nick này).
       const existing = await tx.friend.findUnique({
@@ -261,7 +267,8 @@ export async function applyFriendAggregate(args: AggregateMessageInput): Promise
       // mang theo zaloDisplayName. Stub tạo bởi friend-event-handler khi
       // pending_received event đến (KH gửi mời) không có name → Contact stuck "Unknown".
       // Message đầu tiên KH gửi sau khi accept → backfill name (kèm avatar nếu thiếu).
-      if (isInbound && args.contactZaloDisplayName && conv.contactId) {
+      // GUARD blur (anh báo 2026-06-15): không backfill tên nếu display chứa ▒ (đã-blur).
+      if (isInbound && args.contactZaloDisplayName && !args.contactZaloDisplayName.includes('▒') && conv.contactId) {
         const c = await tx.contact.findUnique({
           where: { id: conv.contactId },
           select: { fullName: true, avatarUrl: true },
@@ -302,6 +309,13 @@ export async function applyFriendAggregate(args: AggregateMessageInput): Promise
             lastOutboundAt: !isInbound ? sentAt : null,
             totalInbound:   isInbound  ? 1 : 0,
             totalOutbound: !isInbound ? 1 : 0,
+            // Phase Contact Scope Hybrid 2026-05-27 — preview per-pair từ message đầu tiên
+            lastInboundPreview:    isInbound  ? preview            : null,
+            lastInboundType:       isInbound  ? message.contentType : null,
+            lastInboundMessageId:  isInbound  ? message.id          : null,
+            lastOutboundPreview:   !isInbound ? preview             : null,
+            lastOutboundType:      !isInbound ? message.contentType : null,
+            lastOutboundMessageId: !isInbound ? message.id          : null,
           },
         });
         await tx.contact.update({
@@ -330,6 +344,10 @@ export async function applyFriendAggregate(args: AggregateMessageInput): Promise
       if (isInbound) {
         if (!existing.lastInboundAt || existing.lastInboundAt < sentAt) {
           updates.lastInboundAt = sentAt;
+          // Phase Contact Scope Hybrid 2026-05-27 — per-pair preview set-if-newer
+          updates.lastInboundPreview = preview;
+          updates.lastInboundType = message.contentType;
+          updates.lastInboundMessageId = message.id;
         }
         updates.totalInbound = { increment: 1 };
         // Refresh per-identity Zalo display name + avatar (KH có thể đổi tên).
@@ -342,6 +360,9 @@ export async function applyFriendAggregate(args: AggregateMessageInput): Promise
       } else {
         if (!existing.lastOutboundAt || existing.lastOutboundAt < sentAt) {
           updates.lastOutboundAt = sentAt;
+          updates.lastOutboundPreview = preview;
+          updates.lastOutboundType = message.contentType;
+          updates.lastOutboundMessageId = message.id;
         }
         updates.totalOutbound = { increment: 1 };
       }
@@ -390,6 +411,14 @@ export async function applyFriendAggregate(args: AggregateMessageInput): Promise
           patch: patchForEmit,
         });
       }
+    });
+
+    // Phase Contact Scope Hybrid 2026-05-27 — ensure sale (owner của nick này) là
+    // collaborator của Contact để sale thấy KH trong tab Khách hàng. Best-effort.
+    await ensureContactCollaborator({
+      orgId: conv.orgId,
+      contactId: conv.contactId,
+      zaloAccountId: conv.zaloAccountId,
     });
 
     // Flush deferred socket emits AFTER transaction commit (avoid emitting on rollback)

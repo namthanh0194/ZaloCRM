@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * use-zalo-presence.ts — Phase A: Real-time Zalo online presence.
  *
@@ -11,7 +13,8 @@
  * UI ẩn indicator hoàn toàn (KHÔNG hiển thị "Không rõ").
  */
 import { ref, computed, watch, onUnmounted } from 'vue';
-import { io, type Socket } from 'socket.io-client';
+import { type Socket } from 'socket.io-client';
+import { createAppSocket } from '@/api/socket';
 import { api } from '@/api/index';
 import { useAuthStore } from '@/stores/auth';
 
@@ -30,7 +33,7 @@ const subscribers = new Map<string, (event: { accountId: string; onlines: string
 
 function ensureSocket(): Socket {
   if (!socket) {
-    socket = io({ transports: ['websocket', 'polling'] });
+    socket = createAppSocket();
     socket.on('connect', () => {
       const auth = useAuthStore();
       const orgId = auth.user?.orgId;
@@ -119,7 +122,7 @@ export function useZaloPresence(
     if (!state.value.showStatus) return null; // privacy — hide entirely
     if (state.value.lastOnline === null) return null;
     const mins = Math.floor((Date.now() - state.value.lastOnline) / 60_000);
-    if (state.value.isOnline || mins < 5) return 'Đang online';
+    if (state.value.isOnline || mins < 5) return 'Online';
     if (mins < 60) return `Online ${mins}p trước`;
     const hours = Math.floor(mins / 60);
     if (hours < 24) return `Online ${hours}h trước`;

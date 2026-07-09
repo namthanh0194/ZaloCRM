@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * Composable cho Tệp khách hàng (CustomerList).
  *  - List view: fetchLists (filter status: active/archived/all)
@@ -6,14 +8,6 @@
  */
 import { ref, computed } from 'vue';
 import { api } from '@/api/index';
-
-export interface FbSourceDto {
-  formId: string;
-  formName: string;
-  pageName: string | null;
-  lastLeadAt: string | null;
-  totalFbLeads: number;
-}
 
 export interface CustomerListSummary {
   id: string;
@@ -36,7 +30,16 @@ export interface CustomerListSummary {
   hasZaloEntries: number;
   noZaloEntries: number;
   pendingLookupEntries: number;
-  facebookSource: FbSourceDto | null;
+  // Phase Multi-Source Lead Ads 2026-05-27
+  integrationKey?: string | null;
+  displayInlineFields?: string[] | null;
+  shareableToPool?: boolean;
+  // Phase FB 2-tab 2026-06-10 — list tạo tự động từ FB Lead Form → khoá (chặn xoá/đổi tên).
+  fbLocked?: boolean;
+  // Phase Multi-Source 2026-06-23 — nền tảng có lead trong tệp (['fb-leadads','tiktok-leadgen','zalo-ads']).
+  platforms?: string[];
+  // Lead-notify Nhịp 1 — tệp đang bật tự-giao+báo (badge "Đang chạy" + nút trong tệp).
+  leadNotifyEnabled?: boolean;
 }
 
 export interface MappedRow {
@@ -56,7 +59,10 @@ export type SystemMessageType =
   | 'EMPTY'
   | 'SKIPPED_BY_SALE'
   | 'PHONE_EDITED'
-  | 'ENRICHED_NO_MATCH';
+  | 'ENRICHED_NO_MATCH'
+  // Lead-notify Nhịp 1 — trạng thái tự-giao-sale (cột "Trạng thái giao")
+  | 'ASSIGNED_TO_SALE'
+  | 'ASSIGN_FAILED';
 
 export interface SystemMessage {
   type: SystemMessageType;
@@ -95,22 +101,13 @@ export interface CustomerListEntry {
   status: string;
   errorMessage: string | null;
   enrichedAt: string | null;
-  // Facebook Lead Ads metadata (optional — only populated for FB-source entries)
-  fbLeadgenId?: string | null;
-  fbAdId?: string | null;
-  fbAdName?: string | null;
-  fbAdsetId?: string | null;
-  fbAdsetName?: string | null;
-  fbCampaignId?: string | null;
-  fbCampaignName?: string | null;
-  fbFormId?: string | null;
-  fbFormName?: string | null;
-  fbInboxUrl?: string | null;
-  fbPlatform?: string | null;
-  fbIsOrganic?: boolean | null;
-  fbCustomAnswers?: Array<{ question: string; answer: string }> | null;
   createdAt: string;
   updatedAt: string;
+  // #4 (2026-06-20): số lần SĐT này đã được gắn sequence (mức Cha qua contactId) — read-only
+  sequenceAttachCount?: number;
+  sequenceActiveCount?: number;
+  // #3 (2026-06-20): số lần đã gửi kết bạn cho SĐT này (mức Cha) — read-only
+  friendInviteSentCount?: number;
 }
 
 export interface DryRunResult {
@@ -143,7 +140,12 @@ export function useCustomerLists() {
   const listsStatus = ref<ListStatusFilter>('active');
   const listsSearch = ref('');
   const listsPage = ref(1);
-  const listsLimit = ref(20);
+  const listsLimit = ref(50);
+  // Phase Multi-Source 2026-06-22 — lọc nhóm nguồn server-side + stats band toàn tập (không theo trang).
+  const listsPlatform = ref<'all' | 'leadads' | 'paste'>('all');
+  // Phase Multi-Source 2026-06-23 — lọc theo nền tảng cụ thể (fb-leadads/tiktok-leadgen/zalo-ads/manual).
+  const listsLeadSource = ref('');
+  const listsStats = ref({ totalLists: 0, leadAdsLists: 0, pasteLists: 0, totalEntries: 0, totalHasZalo: 0 });
 
   // Detail state
   const currentList = ref<CustomerListSummary | null>(null);
@@ -154,6 +156,9 @@ export function useCustomerLists() {
   const entrySearch = ref('');
   const entryPage = ref(1);
   const entryLimit = ref(50);
+  // Sắp xếp bảng entries (UI 2026-06-24). Mặc định rowIndex DESC = khách mới thêm nằm trên cùng.
+  const entrySort = ref<string>('rowIndex');
+  const entryDir = ref<'asc' | 'desc'>('desc');
 
   // Selection for bulk
   const selectedEntryIds = ref<Set<string>>(new Set());
@@ -169,10 +174,13 @@ export function useCustomerLists() {
           page: listsPage.value,
           limit: listsLimit.value,
           search: listsSearch.value || undefined,
+          platform: listsPlatform.value !== 'all' ? listsPlatform.value : undefined,
+          leadSource: listsLeadSource.value || undefined,
         },
       });
       lists.value = res.data.lists ?? [];
       listsTotal.value = res.data.total ?? 0;
+      if (res.data.stats) listsStats.value = res.data.stats;
     } catch (err) {
       console.error('[customer-lists] fetchLists failed:', err);
       lists.value = [];
@@ -210,11 +218,15 @@ export function useCustomerLists() {
     sourceType?: string;
     rawText?: string;
     rows?: MappedRow[];
+    // Phase Multi-Source Lead Ads 2026-05-27
+    platform?: string;
+    integrationKey?: string;
+    shareableToPool?: boolean;
   }) {
     try {
       const res = await api.post('/customer-lists', payload);
       await fetchLists();
-      return res.data as { id: string; name: string; totalEntries: number };
+      return res.data as { id: string; name: string; totalEntries?: number; integrationKey?: string };
     } catch (err: any) {
       console.error('[customer-lists] create failed:', err);
       return null;
@@ -288,6 +300,8 @@ export function useCustomerLists() {
           page: entryPage.value,
           limit: entryLimit.value,
           search: entrySearch.value || undefined,
+          sort: entrySort.value,
+          dir: entryDir.value,
         },
       });
       entries.value = res.data.entries ?? [];
@@ -390,6 +404,9 @@ export function useCustomerLists() {
     listsSearch,
     listsPage,
     listsLimit,
+    listsPlatform,
+    listsLeadSource,
+    listsStats,
     fetchLists,
     fetchListById,
     currentList,
@@ -411,6 +428,8 @@ export function useCustomerLists() {
     entrySearch,
     entryPage,
     entryLimit,
+    entrySort,
+    entryDir,
     fetchEntries,
     bulkResolveEntries,
     // selection

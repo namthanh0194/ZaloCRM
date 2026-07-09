@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * Persistent UI state for FriendsView — nick selection + filters + density survive reload.
  *
@@ -13,7 +15,7 @@ import { ref, watch } from 'vue';
 
 const STORAGE_KEY = 'zalocrm.friends.state.v1';
 
-export type FriendKindFilter = 'all' | 'friend' | 'pending_friend' | 'chatting_stranger' | 'ghost';
+export type FriendKindFilter = 'all' | 'none' | 'friend' | 'pending_friend' | 'chatting_stranger' | 'ghost';
 export type DensityMode = 'compact' | 'normal' | 'detailed';
 
 export interface PersistedFriendsState {

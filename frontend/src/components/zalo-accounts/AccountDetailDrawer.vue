@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <div class="drawer-overlay" :class="{ open: modelValue }" @click.self="close">
     <aside class="drawer" :class="{ open: modelValue }">
@@ -17,7 +19,19 @@
           <div class="meta">
             <div class="nm">{{ account.displayName || 'Nick chưa đặt tên' }}</div>
             <div class="uid" v-if="account.zaloUid">UID {{ account.zaloUid }}</div>
-            <div class="uid" v-if="account.phone">{{ maskPhone(account.phone) }}</div>
+            <!-- SĐT nick (lưu ZaloAccount.phone) — sửa thủ công + verify trùng Zalo/tên. -->
+            <div class="phone-line">
+              <template v-if="!editingPhone">
+                <span v-if="account.phone" class="uid">📱 {{ maskPhone(account.phone) }}</span>
+                <span v-else class="uid phone-empty">📱 Chưa có SĐT</span>
+                <button class="phone-edit" @click="startEditPhone">{{ account.phone ? 'Sửa' : 'Thêm' }}</button>
+              </template>
+              <template v-else>
+                <input v-model="phoneInput" class="phone-input" placeholder="0xxxxxxxxx" @keydown.enter.prevent="savePhone(false)" />
+                <button class="phone-save" :disabled="phoneSaving" @click="savePhone(false)">Lưu</button>
+                <button class="phone-cancel" :disabled="phoneSaving" @click="editingPhone = false">Hủy</button>
+              </template>
+            </div>
             <div class="st">
               <span class="status" :class="statusClass(account.liveStatus)">
                 <span class="dot"></span>
@@ -51,6 +65,19 @@
             <div class="sub-muted">sale phụ trách</div>
           </div>
         </div>
+
+        <!-- 2026-06-06 — SDK & Giới hạn hôm nay (thanh quota X/cap theo trần) -->
+        <section v-if="account" class="d-section">
+          <div class="h"><span>⚡ SDK &amp; Giới hạn hôm nay</span></div>
+          <div class="sdk-detail">
+            <div class="sdk-tot">Tổng lượt gọi SDK: <b>{{ formatNum(account.sdkTotal ?? 0) }}</b></div>
+            <div v-for="m in SDK_ROWS" :key="m.cat" class="sdkd-row" :class="sdkClass(m.cat)">
+              <div class="sdkd-lbl">{{ m.ic }} {{ m.lb }}</div>
+              <div class="sdkd-val">{{ formatNum(sdkUsed(m.cat)) }}<small>/{{ formatNum(sdkCap(m.cat)) }}</small></div>
+              <div class="sdkd-bar"><i :style="{ width: sdkPct(m.cat) + '%' }"></i></div>
+            </div>
+          </div>
+        </section>
 
         <!-- Phase metrics layer 2026-05-22 — Số liệu hôm nay -->
         <section v-if="account.metricsToday" class="d-section">
@@ -138,7 +165,7 @@
         <section v-if="account.owner" class="d-section">
           <div class="h">
             <span>Chính chủ (Owner)</span>
-            <a v-if="account.canManage" class="link" @click="$emit('reassign-owner', account)">⚙ Chuyển nhượng</a>
+            <a v-if="authStore.isOwner" class="link" @click="$emit('reassign-owner', account)">⚙ Chuyển nhượng</a>
           </div>
           <div class="owner-row-detail">
             <div class="avatar-mini" :style="{ background: avatarColor(account.owner.fullName || account.owner.email, 0) }">
@@ -199,7 +226,7 @@
               @click="$emit('action', { accountId: account.id, action: 'reconnect' })"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
-              <span class="lbl">Reconnect</span>
+              <span class="lbl">Kết nối lại</span>
             </button>
             <button
               class="action-btn"
@@ -216,11 +243,72 @@
           </div>
         </section>
 
+        <!-- CẦU TELEGRAM (Zalo ↔ Telegram 2 chiều) -->
+        <section v-if="account" class="d-section">
+          <div class="h"><span>Cầu Telegram</span></div>
+
+          <div v-if="tgLoading" class="muted-italic">Đang tải trạng thái…</div>
+
+          <template v-else-if="tgStatus">
+            <div v-if="!tgStatus.botConfigured" class="muted-italic">
+              Chưa cấu hình bot (TELEGRAM_BRIDGE_BOT_TOKEN) — cầu đang tắt ở mức hệ thống.
+            </div>
+
+            <template v-else>
+              <div class="tg-status">
+                <span class="tg-dot" :class="tgStatus.enabled ? 'on' : 'off'"></span>
+                <b>{{ tgStatus.enabled ? 'Đang bật' : 'Chưa bật' }}</b>
+                <span v-if="tgStatus.telegramChatId" class="tg-chat">· group {{ tgStatus.telegramChatId }}</span>
+              </div>
+
+              <div class="actions-grid" style="margin-top:8px">
+                <button
+                  v-if="!tgStatus.enabled"
+                  class="action-btn full"
+                  :disabled="tgProvisioning || !tgStatus.provisionerConfigured || !canEditSettings"
+                  @click="provisionBridge"
+                >
+                  <span class="lbl">{{ tgProvisioning ? 'Đang bật…' : (tgStatus.telegramChatId ? '▶ Bật lại cầu' : 'Bật cầu Telegram') }}</span>
+                </button>
+                <button
+                  v-else
+                  class="action-btn full"
+                  :disabled="tgDisabling || !canEditSettings"
+                  @click="disableBridge"
+                >
+                  <span class="lbl">{{ tgDisabling ? 'Đang tắt…' : '⏸ Tắt cầu Telegram' }}</span>
+                </button>
+                <button class="action-btn full" :disabled="tgLinkLoading" @click="getLinkCode">
+                  <span class="lbl">{{ tgLinkLoading ? 'Đang lấy mã…' : 'Lấy mã liên kết (sale)' }}</span>
+                </button>
+              </div>
+
+              <div v-if="!tgStatus.provisionerConfigured" class="muted-italic" style="margin-top:6px">
+                Chưa cấu hình tài khoản provisioner (TELEGRAM_PROVISIONER_*) — không tự tạo group được.
+              </div>
+              <div v-else-if="!canEditSettings" class="muted-italic" style="margin-top:6px">
+                Cần quyền settings:edit để bật cầu.
+              </div>
+
+              <div v-if="tgLinkCode" class="tg-code">
+                Gõ trong Telegram cho bot: <code>/link {{ tgLinkCode }}</code>
+                <div class="tg-code-hint">(mã hết hạn sau 10 phút)</div>
+              </div>
+            </template>
+          </template>
+
+          <div v-if="tgError" class="tg-err">{{ tgError }}</div>
+        </section>
+
         <!-- DANGER ZONE -->
         <section class="d-section">
           <div class="danger-zone">
             <div class="dz-ttl">⚠ Danger zone</div>
-            <button class="dz-btn" :disabled="account.liveStatus !== 'connected'" @click="$emit('action', { accountId: account.id, action: 'disconnect' })">
+            <button
+              class="dz-btn"
+              :disabled="account.liveStatus !== 'connected'"
+              @click="$emit('action', { accountId: account.id, action: 'disconnect' })"
+            >
               Ngắt kết nối
             </button>
             <button class="dz-btn" @click="$emit('action', { accountId: account.id, action: 'delete' })">
@@ -234,17 +322,80 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, watch } from 'vue';
 import type { EnrichedAccount, UptimeBucket } from '@/composables/use-zalo-accounts-dashboard';
 import UptimeSparkline from './UptimeSparkline.vue';
+import { useAuthStore } from '@/stores/auth';
+import { api } from '@/api/index';
+import { useToast } from '@/composables/use-toast';
+import { useConfirm } from '@/composables/use-confirm';
 
-defineProps<{
+// Fix ③ (2026-06-11): chuyển nhượng nick CHỈ chủ tổ chức (khớp gate BE đã siết role='owner').
+const authStore = useAuthStore();
+const toast = useToast();
+const { confirm } = useConfirm();
+
+// ── Sửa SĐT thủ công (anh hỏi 2026-06-21) ──────────────────────────────────
+const editingPhone = ref(false);
+const phoneInput = ref('');
+const phoneSaving = ref(false);
+function startEditPhone() {
+  phoneInput.value = props.account?.phone ?? '';
+  editingPhone.value = true;
+}
+async function savePhone(force: boolean) {
+  if (!props.account) return;
+  phoneSaving.value = true;
+  try {
+    const { data } = await api.put(`/zalo-accounts/${props.account.id}/phone`, { phone: phoneInput.value, force });
+    (props.account as any).phone = phoneInput.value.trim().replace(/[\s.\-()]/g, '') || null;
+    editingPhone.value = false;
+    toast.push(data?.message || 'Đã lưu SĐT', 'success');
+    emit('refresh');
+  } catch (e: any) {
+    // 409 needsConfirm: SĐT KHÁC tên/uid Zalo (hoặc chưa có Zalo) → hỏi gõ "OK" lưu vẫn.
+    if (e.response?.status === 409 && e.response?.data?.needsConfirm) {
+      const ok = await confirm({
+        title: 'SĐT không khớp Zalo',
+        message: (e.response.data.message || '') + ' Vẫn muốn lưu số này cho nick?',
+        tone: 'danger',
+        requireTypedConfirm: 'OK',
+        confirmText: 'Vẫn lưu',
+        cancelText: 'Hủy',
+      });
+      if (ok) await savePhone(true);
+    } else {
+      toast.push(e.response?.data?.message || 'Lưu SĐT thất bại', 'error');
+    }
+  } finally {
+    phoneSaving.value = false;
+  }
+}
+
+const props = defineProps<{
   modelValue: boolean;
   account: EnrichedAccount | null;
   uptimeCache: Record<string, UptimeBucket[]>;
   relativeTime: (iso: string | null) => string;
   statusLabel: (live: string) => { label: string; color: string };
   uptimeColor: (uptime: number) => 'success' | 'warning' | 'error';
+  // 2026-06-06 — trần hiệu lực để vẽ thanh quota SDK.
+  limitFor?: (nickId: string, category: string) => number;
 }>();
+
+// 2026-06-06 — SDK quota rows trong panel chi tiết.
+const SDK_ROWS = [
+  { cat: 'friend_action', ic: '🤝', lb: 'Gửi kết bạn' },
+  { cat: 'friend_lookup', ic: '🔍', lb: 'Tìm SĐT → UID' },
+  { cat: 'contact_sync', ic: '🔄', lb: 'Đồng bộ danh bạ' },
+  { cat: 'message', ic: '💌', lb: 'Gửi tin nhắn' },
+  { cat: 'reaction', ic: '❤️', lb: 'Thả cảm xúc' },
+  { cat: 'query', ic: '👁️', lb: 'Xem thông tin' },
+];
+function sdkUsed(cat: string): number { return props.account?.sdkCounts?.[cat] ?? 0; }
+function sdkCap(cat: string): number { return props.account && props.limitFor ? props.limitFor(props.account.id, cat) : 0; }
+function sdkPct(cat: string): number { const c = sdkCap(cat); return c > 0 ? Math.min(100, Math.round((sdkUsed(cat) / c) * 100)) : 0; }
+function sdkClass(cat: string): string { const p = sdkPct(cat); return p >= 100 ? 'q-crit' : p >= 70 ? 'q-warn' : 'q-ok'; }
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: boolean): void;
@@ -252,11 +403,83 @@ const emit = defineEmits<{
   (e: 'remove-crew', payload: { accountId: string; accessId: string }): void;
   (e: 'action', payload: { accountId: string; action: 'sync-contacts' | 'sync-history' | 'reconnect' | 'qr-login' | 'edit-proxy' | 'disconnect' | 'delete' }): void;
   (e: 'reassign-owner', account: EnrichedAccount): void;
+  (e: 'refresh'): void;
 }>();
 
 function close() {
   emit('update:modelValue', false);
 }
+
+// ── Cầu Telegram (Zalo ↔ Telegram 2 chiều) ───────────────────────────────────
+interface TgStatus { botConfigured: boolean; provisionerConfigured: boolean; enabled: boolean; telegramChatId: string | null }
+const tgStatus = ref<TgStatus | null>(null);
+const tgLoading = ref(false);
+const tgProvisioning = ref(false);
+const tgDisabling = ref(false);
+const tgLinkCode = ref<string | null>(null);
+const tgLinkLoading = ref(false);
+const tgError = ref<string | null>(null);
+const canEditSettings = computed(() => authStore.canAccess('settings', 'edit'));
+
+async function loadTgStatus() {
+  if (!props.account) return;
+  tgLoading.value = true; tgError.value = null; tgLinkCode.value = null;
+  try {
+    const { data } = await api.get<TgStatus>(`/telegram-bridge/${props.account.id}/status`);
+    tgStatus.value = data;
+  } catch {
+    tgStatus.value = null;
+    tgError.value = 'Không tải được trạng thái cầu Telegram.';
+  } finally {
+    tgLoading.value = false;
+  }
+}
+
+async function provisionBridge() {
+  if (!props.account || tgProvisioning.value) return;
+  tgProvisioning.value = true; tgError.value = null;
+  try {
+    await api.post(`/telegram-bridge/provision/${props.account.id}`);
+    await loadTgStatus();
+  } catch (e: unknown) {
+    tgError.value = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Bật cầu thất bại.';
+  } finally {
+    tgProvisioning.value = false;
+  }
+}
+
+async function getLinkCode() {
+  if (tgLinkLoading.value) return;
+  tgLinkLoading.value = true; tgError.value = null;
+  try {
+    const { data } = await api.post<{ code: string }>('/telegram-bridge/link-code');
+    tgLinkCode.value = data.code;
+  } catch (e: unknown) {
+    tgError.value = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Lấy mã liên kết thất bại.';
+  } finally {
+    tgLinkLoading.value = false;
+  }
+}
+
+async function disableBridge() {
+  if (!props.account || tgDisabling.value) return;
+  tgDisabling.value = true; tgError.value = null;
+  try {
+    await api.post(`/telegram-bridge/disable/${props.account.id}`);
+    await loadTgStatus();
+  } catch (e: unknown) {
+    tgError.value = (e as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Tắt cầu thất bại.';
+  } finally {
+    tgDisabling.value = false;
+  }
+}
+
+// Nạp trạng thái khi mở drawer / đổi nick.
+watch(
+  () => [props.modelValue, props.account?.id],
+  () => { if (props.modelValue && props.account) loadTgStatus(); },
+  { immediate: true },
+);
 
 // Phase metrics layer 2026-05-22
 function formatNum(n: number | null | undefined): string {
@@ -418,6 +641,22 @@ function maskPhone(p: string): string {
 }
 .hero .st { margin-top: 6px }
 
+/* Sửa SĐT thủ công (2026-06-21) */
+.phone-line { display: flex; align-items: center; gap: 6px; margin-top: 2px; flex-wrap: wrap; }
+.phone-empty { color: var(--ink-4, #b0b6bf); }
+.phone-edit, .phone-save, .phone-cancel {
+  font-size: 11px; font-family: inherit; border-radius: 6px; padding: 2px 8px; cursor: pointer;
+  border: 1px solid var(--line, #e5e7eb); background: var(--surface, #fff); color: var(--ink-2, #4b5563);
+}
+.phone-edit:hover { background: var(--surface-3, #f3f4f6); }
+.phone-save { background: var(--brand, #1786be); border-color: var(--brand, #1786be); color: #fff; }
+.phone-save:disabled { opacity: 0.6; cursor: not-allowed; }
+.phone-input {
+  width: 130px; font-size: 12px; font-family: inherit; padding: 3px 8px;
+  border: 1px solid var(--line, #e5e7eb); border-radius: 6px; color: var(--ink, #111827); background: var(--surface, #fff);
+}
+.phone-input:focus { outline: none; border-color: var(--brand, #1786be); }
+
 .status {
   display: inline-flex;
   align-items: center;
@@ -472,6 +711,20 @@ function maskPhone(p: string): string {
 }
 
 .d-section { margin-bottom: 16px }
+/* 2026-06-06 — SDK quota trong panel chi tiết */
+.sdk-detail { display: flex; flex-direction: column; gap: 8px; }
+.sdk-tot { font-size: 13px; color: #4b5563; }
+.sdk-tot b { font-size: 15px; color: #1f2937; }
+.sdkd-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: baseline; }
+.sdkd-lbl { font-size: 12.5px; color: #4b5563; }
+.sdkd-val { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.sdkd-val small { font-weight: 500; color: #9ca3af; }
+.sdkd-bar { grid-column: 1 / -1; height: 5px; background: #f3f4f6; border-radius: 99px; overflow: hidden; }
+.sdkd-bar > i { display: block; height: 100%; border-radius: 99px; background: #2563eb; }
+.sdkd-row.q-warn .sdkd-bar > i { background: #f59e0b; } .sdkd-row.q-warn .sdkd-val { color: #d97706; }
+.sdkd-row.q-crit .sdkd-bar > i { background: #ef4444; } .sdkd-row.q-crit .sdkd-val { color: #dc2626; }
+.sdkd-extra { font-size: 12px; color: #6b7280; margin-top: 2px; }
+.sdkd-extra b { color: #1f2937; }
 .d-section .h {
   font-size: 11px;
   font-weight: 600;
@@ -635,6 +888,31 @@ function maskPhone(p: string): string {
 .action-btn svg { width: 14px; height: 14px; color: #6B7280; flex-shrink: 0 }
 .action-btn .lbl { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
 .action-btn.full { grid-column: 1/-1 }
+
+/* Cầu Telegram */
+.tg-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #374151 }
+.tg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0 }
+.tg-dot.on { background: #10B981 }
+.tg-dot.off { background: #9CA3AF }
+.tg-chat { color: #6B7280 }
+.tg-code {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #1E3A8A;
+}
+.tg-code code {
+  background: #DBEAFE;
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-weight: 600;
+  user-select: all;
+}
+.tg-code-hint { color: #6B7280; font-size: 11px; margin-top: 4px }
+.tg-err { margin-top: 8px; font-size: 12px; color: #B91C1C }
 
 .danger-zone {
   border: 1px dashed #FECACA;

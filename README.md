@@ -1,30 +1,42 @@
-# ZaloCRM v3.3 — Quản lý nhiều tài khoản Zalo cá nhân
+# ZCRM v3.4 — Quản lý nhiều tài khoản Zalo cá nhân
 
-Hệ thống quản lý tập trung nhiều tài khoản Zalo cá nhân trên 1 giao diện web. Chat real-time, gửi ảnh/video/audio/file qua MinIO/S3/R2, Facebook Lead Ingestion, AI assistant, workflow tự động, tích hợp đa nền tảng, analytics nâng cao, PWA mobile.
+Hệ thống quản lý tập trung nhiều tài khoản Zalo cá nhân trên 1 giao diện web. Chat real-time, gửi ảnh/video/audio/file qua MinIO/S3/R2, cầu **Zalo ↔ Telegram** 2 chiều, AI assistant, tích hợp đa nền tảng, analytics nâng cao, PWA mobile.
 
-**GitHub:** [https://github.com/locphamnguyen/ZaloCRM](https://github.com/locphamnguyen/ZaloCRM)
+**Mã nguồn mở:** [github.com/locphamnguyen/ZaloCRM](https://github.com/locphamnguyen/ZaloCRM) — phát hành theo **AGPL-3.0** (dual-license thương mại).
 
-## Ảnh chụp giao diện v3.3
+## Ảnh chụp giao diện
 
-| Dashboard | Facebook Lead |
+| Dashboard | Báo cáo |
 |---|---|
-| ![Dashboard v3.3](docs/release-images/v3.3/01-dashboard-v33.png) | ![Facebook Lead Ingestion](docs/release-images/v3.3/02-facebook-lead-ingestion.png) |
+| ![Dashboard](docs/release-images/v3.4/01-dashboard.png) | ![Báo cáo](docs/release-images/v3.4/07-reports.png) |
 
-| Zalo Accounts | Chat media |
+| Chat | Khách hàng |
 |---|---|
-| ![Zalo Accounts](docs/release-images/v3.3/03-zalo-accounts-redesign.png) | ![Chat media forward](docs/release-images/v3.3/07-chat-media-forward.png) |
+| ![Chat](docs/release-images/v3.4/02-chat.png) | ![Khách hàng](docs/release-images/v3.4/03-contacts.png) |
 
-| Privacy PIN | RBAC / Tệp khách hàng |
+| Nhóm | Lịch hẹn |
 |---|---|
-| ![Privacy PIN](docs/release-images/v3.3/04-privacy-pin.png) | ![Customer Lists](docs/release-images/v3.3/06-customer-lists.png) |
+| ![Nhóm](docs/release-images/v3.4/05-groups.png) | ![Lịch hẹn](docs/release-images/v3.4/06-appointments.png) |
 
-> 📖 Xem hướng dẫn sử dụng đầy đủ tại [docs/HUONG-DAN-NGUOI-DUNG.md](docs/HUONG-DAN-NGUOI-DUNG.md).
-> 📣 Release note v3.3: [docs/announcements/v3.3-release-announcement.md](docs/announcements/v3.3-release-announcement.md). Changelog đầy đủ: [CHANGELOG.md](CHANGELOG.md).
+> 📖 Hướng dẫn cài đặt & triển khai đầy đủ: [docs/HUONG-DAN-TRIEN-KHAI-PRODUCTION-COMMUNITY.md](docs/HUONG-DAN-TRIEN-KHAI-PRODUCTION-COMMUNITY.md).
+> 📣 Changelog đầy đủ (mọi phiên bản): [CHANGELOG.md](CHANGELOG.md).
 
 ## Tính năng
 
+### Mới trong v3.4
+- **Giao diện mới** — Redesign toàn diện UI: layout, theme sáng/tối, responsive desktop/mobile
+- **Giao diện Dashboard mới** — Trang điều hành thiết kế lại, biểu đồ + KPI trực quan hơn
+- **Nâng cao bảo mật** — Access token ngắn + **refresh token rotation**, CSP + security headers, RBAC phòng ban/đội nhóm, audit log, Privacy PIN
+- **Quét nhóm Zalo** — Quét nhóm & danh sách thành viên (GroupMember/GroupScan) bằng worker nền, trong menu Marketing
+- **Bộ báo cáo mới** — Tổng quan điều hành · Vận hành Nick Zalo · Hiệu suất Sale & Team · Tương tác khách hàng · Audit & Sức khoẻ hệ thống · **Phân tích nâng cao**
+- **Cầu Zalo ↔ Telegram** — Mirror tin nhắn **2 chiều** (vào/ra) giữa Zalo và Telegram, kèm **media** (ảnh/video/audio/file, giữ tên file gốc), realtime + badge chống lặp
+- **Chuông "đang theo dõi"** sau tên khách trong chat + **Phạm vi làm việc** (scope thành điều kiện load hội thoại)
+- **AI** — Quản lý API key + model provider per-org ngay trên giao diện
+- **API hoàn chỉnh cho ZCRM Mobile App** — Bộ REST API đầy đủ phục vụ ứng dụng di động (auth, chat, contacts, lịch hẹn, báo cáo, push)
+- **Public REST API** (X-API-Key) + tài liệu API (vi/en) + Postman collection
+- **Mã nguồn mở AGPL-3.0** — Relicense sang AGPL-3.0 (copyleft + §13 SaaS), dual-license thương mại, kèm CONTRIBUTING + DCO
+
 ### Mới trong v3.3
-- **Facebook Lead Ingestion** — Kết nối Meta OAuth/page, webhook verify + HMAC, queue lead, tự khám phá form và tự tạo Customer List theo page/form
 - **Media forward đầy đủ** — Chuyển tiếp hình ảnh, video, audio trong chat thay vì chỉ chuyển tiếp text
 - **Inbound media mirror** — Ảnh/video khách gửi đến được mirror/backfill từ Zalo CDN sang MinIO/S3/R2 để CRM kiểm soát file tốt hơn
 - **Cloudflare R2 support** — `.env.example` có block R2, dùng chung cấu hình S3-compatible với MinIO/Amazon S3
@@ -34,10 +46,8 @@ Hệ thống quản lý tập trung nhiều tài khoản Zalo cá nhân trên 1 
 - **Fix issues #24/#25** — Fallback JSON lỗi từ `getFriendOnlines` và nhận diện message type `webchat`
 
 ### v3.2 (21/05/2026)
-- **Bot-Auto framework** — Blocks, Sequences, Triggers, Broadcasts, Lists, engine gửi bằng Zalo SDK thật
 - **Lead Scoring** — Signal detector, auto-decay, 7 auto tag, stuck lead dashboard, scoring settings
-- **Customer Lists** — Import CSV/Excel, column mapping, inline edit, undo delete, 2-axis status
-- **UI redesigns** — Appointments, Friends, Zalo Accounts, Settings layout, Bot-Auto top-level tab
+- **UI redesigns** — Appointments, Friends, Zalo Accounts, Settings layout
 - **Touch profile + alias sync** — Bổ sung thông tin khách từ SDK và đồng bộ alias Zalo Real ↔ CRM
 
 ### v3.1 (04/2026)
@@ -114,6 +124,23 @@ Hệ thống quản lý tập trung nhiều tài khoản Zalo cá nhân trên 1 
 
 ## Cài đặt mới
 
+### ⚡ Cách nhanh nhất — 1 lệnh (tự động)
+
+**1 lệnh** — tự kiểm tra & cài Docker/Compose/git nếu thiếu, tải/cập nhật mã nguồn, build, migrate (cài mới **hoặc** nâng cấp đều được, tự backup DB):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/locphamnguyen/ZaloCRM/main/scripts/install.sh | bash
+```
+
+> Tự cài vào `~/zcrm` (đổi: `ZCRM_DIR=/srv/zcrm curl ... | bash`). Đã có mã nguồn thì chạy thẳng:
+> ```bash
+> git clone https://github.com/locphamnguyen/ZaloCRM.git && cd ZaloCRM && ./scripts/zalocrm-deploy.sh
+> ```
+
+Truy cập **http://IP-server:3080** → trang `/setup` tạo tổ chức + tài khoản chủ.
+
+### Hoặc thủ công từng bước
+
 ```bash
 git clone https://github.com/locphamnguyen/ZaloCRM.git
 cd ZaloCRM
@@ -124,6 +151,8 @@ docker compose up -d --build
 
 Truy cập **http://IP-server:3080** → Tạo tài khoản admin lần đầu.
 
+> 📘 Hướng dẫn triển khai production đầy đủ: [docs/HUONG-DAN-TRIEN-KHAI-PRODUCTION-COMMUNITY.md](docs/HUONG-DAN-TRIEN-KHAI-PRODUCTION-COMMUNITY.md)
+
 ### Tạo secret keys
 ```bash
 # JWT_SECRET (32+ chars)
@@ -133,9 +162,11 @@ openssl rand -hex 32
 openssl rand -hex 32
 ```
 
-## Nâng cấp từ v3.x lên v3.3
+## Nâng cấp lên v3.4 (từ v3.x)
 
-> ⚠️ **Backup database trước khi nâng cấp.** v3.3 có thêm Facebook Lead Ingestion, Privacy/RBAC/Zalo UI, media forward và object storage mirror. Không commit `.env` thật lên git.
+> 📘 Hướng dẫn triển khai production đầy đủ: [docs/HUONG-DAN-TRIEN-KHAI-PRODUCTION-COMMUNITY.md](docs/HUONG-DAN-TRIEN-KHAI-PRODUCTION-COMMUNITY.md)
+
+> ⚠️ **Backup database trước khi nâng cấp.** v3.4 thêm **cầu Zalo ↔ Telegram** (migration additive an toàn, chỉ thêm bảng/field mới), cùng Privacy/RBAC/Zalo UI, media forward và object storage mirror. Không commit `.env` thật lên git.
 
 ```bash
 # 1. Backup database
@@ -152,21 +183,25 @@ git pull origin main
 #    Nếu dùng Cloudflare R2, dùng endpoint/account/key của R2 trong block S3_*.
 diff .env .env.example
 
-# 4. Rebuild + restart app
+# 4. Rebuild app
 docker compose up -d --build app
 
-# 5. Verify
+# 5. Áp migration (migrate deploy thủ công) rồi restart app
+docker exec zalo-crm-app npx prisma migrate deploy
+docker compose restart app
+
+# 6. Verify
 curl http://localhost:3080/
-docker logs zalo-crm-app --tail 50 | grep -E "facebook|media|storage|listener|cron"
+docker logs zalo-crm-app --tail 50 | grep -E "telegram|media|storage|listener|cron"
 ```
 
-### Biến môi trường cần rà soát ở v3.3
+### Biến môi trường cần rà soát ở v3.4
 
 | Nhóm | Biến cần kiểm tra | Ghi chú |
 |---|---|---|
 | Object storage | `S3_ENDPOINT`, `S3_PUBLIC_URL`, `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` | Dùng được cho MinIO, Amazon S3 hoặc Cloudflare R2 |
 | MinIO local | `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD` | Chỉ dùng khi chạy service MinIO trong Docker Compose |
-| Facebook Lead | Các biến Meta/Facebook trong `.env.example` nếu bật kênh Facebook | Cấu hình app id/secret/webhook theo Meta app |
+| Telegram bridge | `TELEGRAM_BRIDGE_BOT_TOKEN` | (tuỳ chọn) bật cầu Zalo ↔ Telegram, để trống = tắt |
 | Security | `JWT_SECRET`, `ENCRYPTION_KEY`, `DB_PASSWORD` | Không để trống ở production |
 
 ### Cloudflare R2 example
@@ -199,7 +234,7 @@ docker compose up -d --build
 
 ## Nâng cấp từ v3.1 lên v3.2
 
-> ⚠️ **Backup database trước khi nâng cấp.** Schema v3.2 thêm các bảng Phase 7 (Block, Sequence, Trigger, Broadcast, Campaign, Task, CustomerList) và Phase 6 (ScoringConfig, ScoreSignalRule, StageTransitionRule, StuckThreshold, NbaTemplate) + field `Organization.timezone`, `Contact.priorityScore/priorityUpdatedAt`.
+> ⚠️ **Backup database trước khi nâng cấp.** Schema v3.2 thêm các bảng Phase 6 (ScoringConfig, ScoreSignalRule, StageTransitionRule, StuckThreshold, NbaTemplate) + field `Organization.timezone`, `Contact.priorityScore/priorityUpdatedAt`.
 
 ```bash
 # 1. Backup database
@@ -213,20 +248,10 @@ docker compose up -d --build app
 
 # 4. Verify
 curl http://localhost:3080/                                                              # HTTP 200
-docker logs zalo-crm-app --tail 30 | grep -E "broadcast-scheduler|list-enrichment|cron-scheduler"
+docker logs zalo-crm-app --tail 30 | grep -E "scoring|stuck|cron-scheduler"
 ```
 
 ### Tính năng mới v3.2
-
-#### 🤖 Bot-Auto framework (Phase 7) — top-level tab
-| Module | Mô tả |
-|--------|-------|
-| **Blocks** | Reusable content blocks + folders, dùng chung cho sequence/broadcast |
-| **Sequences** | Automated message sequences với cron + stop_on_accept gate |
-| **Triggers** | Event-driven: cron, scheduled_cron, webhook (order_success), birthday, request_friend Zalo SDK |
-| **Broadcasts** | CRUD + scheduler + UI, send batch tới audience |
-| **Lists (Tệp khách hàng)** | Import CSV/Excel với column mapping, inline edit, undo delete, 2-axis status (lifecycle + system) |
-| **Engine** | Action handlers, manual_run, block-bound trigger materializer, real Zalo SDK send |
 
 #### 📊 Lead Scoring (Phase 6) — chấm điểm + phát hiện KH đình trệ
 - Scoring engine: signal detect (inbound/outbound/meeting) + auto decay
@@ -240,14 +265,13 @@ docker logs zalo-crm-app --tail 30 | grep -E "broadcast-scheduler|list-enrichmen
 - **FriendsView** flat per-pair table + kind tabs
 - **ZaloAccountsView** dashboard 2-axis status
 - **Settings layout** overhaul: nav nhóm Personal / Team / CRM / Channels / Dev
-- **Bot-Auto** promoted to top-level primary tab (smax.ai parity)
 - **Responsive overhaul** per Airtable breakpoints
 
 #### ⚙️ Other
 - ContactProfileView, CustomerActivityLogView
 - Touch-profile endpoint: fill gender/phone/birthday/hasZalo từ SDK khi click conv
 - Alias 2-way sync: `Friend.aliasInNick` Zalo Real ↔ CRM (pagination 200/page)
-- Scripts mới: `deploy-local.sh`, `test-phase7-runner.sh`, `test-phase7-setup.sql`
+- Scripts mới: `deploy-local.sh`
 
 ### Rollback về v3.1
 ```bash
@@ -387,7 +411,7 @@ docker exec zalo-crm-db psql -U crmuser -d zalocrm < backup-v2.1-<datetime>.sql
 
 ## API & Webhook
 
-> Hướng dẫn chi tiết: [HUONG-DAN-SU-DUNG.md](HUONG-DAN-SU-DUNG.md)
+> 📖 Hướng dẫn sử dụng đầy đủ (luôn cập nhật mới nhất): **https://docs.locnguyendata.com/**
 
 ### Xác thực API
 ```
@@ -415,11 +439,24 @@ Header: X-API-Key: your-api-key
 
 ## Cộng đồng
 
+### Nhóm hỗ trợ Zalo
+Tham gia nhóm Zalo để được hỗ trợ nhanh, hỏi đáp và cập nhật:
+
+<p align="left">
+  <a href="https://zalo.me/g/lyyt7xg9lynqaitrl26l">
+    <img src="docs/release-images/qr-group-zalo.png" alt="Zalo Group QR" width="200" />
+  </a>
+</p>
+
+- 📲 **Quét QR** bằng app Zalo, hoặc
+- 💬 **Zalo:** [Tham gia nhóm hỗ trợ](https://zalo.me/g/lyyt7xg9lynqaitrl26l)
+
+### Nhóm Telegram
 Tham gia nhóm Telegram để trao đổi, hỏi đáp, nhận thông báo bản phát hành mới:
 
 <p align="left">
   <a href="https://t.me/+KKJ3SJSx6PA3NDE1">
-    <img src="docs/user-guide-images/qr-group-telegram.png" alt="Telegram Group QR" width="200" />
+    <img src="docs/release-images/qr-group-telegram.png" alt="Telegram Group QR" width="200" />
   </a>
 </p>
 
@@ -428,14 +465,14 @@ Tham gia nhóm Telegram để trao đổi, hỏi đáp, nhận thông báo bản
 
 ## Dịch vụ & Hỗ trợ
 
-Bạn cần triển khai ZaloCRM cho doanh nghiệp, custom thêm tính năng riêng, hoặc tích hợp với hệ thống có sẵn? Liên hệ trực tiếp tôi để được tư vấn:
+Bạn cần triển khai ZCRM cho doanh nghiệp, custom thêm tính năng riêng, hoặc tích hợp với hệ thống có sẵn? Liên hệ trực tiếp tôi để được tư vấn:
 
 - 🌐 **Website:** [https://locnguyendata.com](https://locnguyendata.com)
 - 📧 **Email:** [locnt@locnguyendata.com](mailto:locnt@locnguyendata.com)
 - 💬 **Telegram:** [Tham gia group](https://t.me/+KKJ3SJSx6PA3NDE1)
 
 ### Dịch vụ cung cấp
-- **Setup & deploy** ZaloCRM trên server riêng (VPS / dedicated / cloud)
+- **Setup & deploy** ZCRM trên server riêng (VPS / dedicated / cloud)
 - **Customize** giao diện, workflow, AI prompt theo nghiệp vụ doanh nghiệp
 - **Phát triển tính năng mới** theo yêu cầu (CRM module, AI agent, automation, dashboard riêng)
 - **Tích hợp** với hệ thống có sẵn: ERP, CRM khác (HubSpot, Salesforce), payment gateway, kế toán
@@ -444,45 +481,62 @@ Bạn cần triển khai ZaloCRM cho doanh nghiệp, custom thêm tính năng ri
 
 ## Miễn trừ trách nhiệm & Thông báo pháp lý
 
-**ZaloCRM** là dự án mã nguồn mở độc lập, không chính thức, do bên thứ ba phát triển. Dự án **không** liên kết, không được tài trợ, không được chứng nhận và không có bất kỳ mối quan hệ nào với Zalo hoặc Công ty Cổ phần VNG.
+**ZCRM** là dự án mã nguồn mở độc lập, không chính thức, do bên thứ ba phát triển. Dự án **không** liên kết, không được tài trợ, không được chứng nhận và không có bất kỳ mối quan hệ nào với Zalo hoặc Công ty Cổ phần VNG.
 
 "Zalo" là nhãn hiệu đã đăng ký của Công ty Cổ phần VNG. Mọi nhãn hiệu, nhãn hiệu dịch vụ và tên thương mại được nhắc tới trong dự án này thuộc sở hữu của chủ sở hữu tương ứng, được sử dụng duy nhất cho mục đích nhận diện và mô tả.
 
 Phần mềm này được cung cấp **chỉ cho mục đích học tập, nghiên cứu cá nhân và tự động hoá cá nhân hợp pháp**. Đây là công cụ dành cho lập trình viên để khám phá API nhắn tin từ góc độ nghiên cứu.
 
-ZaloCRM được xây dựng trên thư viện mã nguồn mở công khai `zca-js` (giấy phép MIT) thông qua cầu nối CLI `openzca`. **Không có mã nguồn độc quyền nào thuộc về Zalo hoặc VNG được sử dụng trong dự án này.**
+ZCRM được xây dựng trên thư viện mã nguồn mở công khai `zca-js` (giấy phép MIT) thông qua cầu nối CLI `openzca`. **Không có mã nguồn độc quyền nào thuộc về Zalo hoặc VNG được sử dụng trong dự án này.**
 
 Việc sử dụng công cụ tự động hoá **có thể vi phạm Điều khoản Dịch vụ của Zalo** và có thể dẫn tới việc tài khoản bị khoá hoặc hạn chế. Người dùng **chịu hoàn toàn trách nhiệm** đảm bảo việc sử dụng tuân thủ pháp luật hiện hành, các quy định liên quan, và Điều khoản Dịch vụ của Zalo.
 
 Phần mềm được cung cấp **"nguyên trạng" (as is)**, không kèm bất kỳ bảo đảm nào, dù rõ ràng hay ngầm định. Tác giả và những người đóng góp **không chịu trách nhiệm** đối với bất kỳ thiệt hại nào phát sinh từ việc sử dụng phần mềm này.
 
-Khi sử dụng ZaloCRM, bạn xác nhận rằng đã đọc, hiểu và chấp nhận các điều khoản trên, đồng thời tự chịu trách nhiệm và rủi ro khi sử dụng công cụ này.
+Khi sử dụng ZCRM, bạn xác nhận rằng đã đọc, hiểu và chấp nhận các điều khoản trên, đồng thời tự chịu trách nhiệm và rủi ro khi sử dụng công cụ này.
 
 ---
 
 ### Disclaimer & Legal Notice (English)
 
-**ZaloCRM** is an independent, unofficial, third-party open-source project. It is **not** affiliated with, endorsed by, sponsored by, or associated with Zalo or VNG Corporation in any way.
+**ZCRM** is an independent, unofficial, third-party open-source project. It is **not** affiliated with, endorsed by, sponsored by, or associated with Zalo or VNG Corporation in any way.
 
 "Zalo" is a registered trademark of VNG Corporation. All trademarks, service marks, and trade names referenced herein are the property of their respective owners and are used solely for identification and descriptive purposes.
 
 This software is provided **for educational purposes, personal research, and legitimate personal automation only**. It is intended as a developer tool for exploring messaging APIs from a research perspective.
 
-ZaloCRM is built on the publicly available `zca-js` open-source library (MIT license) via the `openzca` CLI bridge. **No proprietary code belonging to Zalo or VNG Corporation is included in this project.**
+ZCRM is built on the publicly available `zca-js` open-source library (MIT license) via the `openzca` CLI bridge. **No proprietary code belonging to Zalo or VNG Corporation is included in this project.**
 
 Using automation tools **may violate Zalo's Terms of Service** and could result in account suspension or restrictions. Users are **solely responsible** for ensuring their use complies with all applicable laws, regulations, and Zalo's Terms of Service.
 
 This software is provided **"as is"**, without warranty of any kind, express or implied. The authors and contributors **shall not be held liable** for any damages arising from the use of this software.
 
-By using ZaloCRM, you acknowledge that you understand and accept these terms and that you use this tool **at your own risk and responsibility**.
+By using ZCRM, you acknowledge that you understand and accept these terms and that you use this tool **at your own risk and responsibility**.
 
 ## Giấy phép
 
-**Apache License 2.0** — Miễn phí sử dụng, chỉnh sửa, phân phối lại cho mọi mục đích cá nhân và thương mại. Xem [LICENSE](LICENSE).
+Copyright © 2026 **Nguyễn Tiến Lộc**.
 
-### Yêu cầu attribution (NOTICE)
+ZCRM là **phần mềm tự do** phát hành theo **GNU Affero General Public License v3.0 (AGPL-3.0)** —
+xem [LICENSE](LICENSE). Mã nguồn công khai: <https://github.com/locphamnguyen/ZaloCRM>.
 
-Theo Apache 2.0 Section 4(d), khi phân phối lại (kể cả phiên bản chỉnh sửa hoặc deploy SaaS), bạn **bắt buộc** giữ file [NOTICE](NOTICE).
+### Copyleft + điều khoản mạng (AGPL §13) — bắt buộc
+Mọi bản **phân phối lại HOẶC cung cấp dưới dạng dịch vụ qua mạng (SaaS)** — kể cả bản đã chỉnh sửa — **bắt buộc**:
+- Phát hành dưới cùng **AGPL-3.0**.
+- **Công khai mã nguồn đầy đủ** (kể cả phần bạn sửa) cho người dùng — gồm cả người dùng truy cập qua mạng.
+- Giữ nguyên thông báo bản quyền + giấy phép.
+
+→ Không ai có thể biến ZCRM thành sản phẩm **đóng/độc quyền** (kể cả host SaaS) mà không mở mã nguồn.
+
+### Giấy phép thương mại (dual-license)
+Nếu bạn muốn dùng ZCRM **không chịu ràng buộc copyleft của AGPL** (vd nhúng vào sản phẩm đóng,
+phân phối bản tuỳ biến không công khai mã, hoặc cung cấp SaaS độc quyền) → mua **giấy phép thương mại**.
+Liên hệ: **locnt@locnguyendata.com**.
+
+### Thương hiệu (Trademark)
+Tên **"ZCRM"**, logo và nhận diện thương hiệu **KHÔNG** được cấp theo AGPL (AGPL/GPL không cấp quyền
+nhãn hiệu). Bạn được fork và phân phối lại mã nguồn theo AGPL, nhưng **không được dùng tên/logo "ZCRM"**
+để đặt tên, quảng bá hay bán bản phái sinh nếu chưa được phép bằng văn bản. Hãy đổi tên thương hiệu cho bản fork của bạn.
 
 ---
 
@@ -491,9 +545,9 @@ Theo Apache 2.0 Section 4(d), khi phân phối lại (kể cả phiên bản ch�
 Xin chân thành cảm ơn:
 - [hsholding](https://github.com/hsholding) — vì những đóng góp ý tưởng, kinh nghiệm thực tế quý báu và codebase giúp đưa các logic và chức năng thiết thực vào sản phẩm
 - [vuongnguyenbinh/ZaloCRM](https://github.com/vuongnguyenbinh/ZaloCRM) — vì những ý tưởng và codebase cho dự án này
-- [darkamenosa/openzca](https://github.com/darkamenosa/openzca) — vì CLI tích hợp Zalo (zca-js wrapper) mà ZaloCRM dùng làm cầu nối tới các tài khoản Zalo
+- [darkamenosa/openzca](https://github.com/darkamenosa/openzca) — vì CLI tích hợp Zalo (zca-js wrapper) mà ZCRM dùng làm cầu nối tới các tài khoản Zalo
 
 
-Trên cơ sở những đóng góp ý tưởng và code của các tác giả trên, tôi xây dựng tiếp và phát triển ZaloCRM thành phiên bản hiện tại.
+Trên cơ sở những đóng góp ý tưởng và code của các tác giả trên, tôi xây dựng tiếp và phát triển ZCRM thành phiên bản hiện tại.
 
 > 📄 Bản gốc giấy phép MIT của 2 dự án source-fork (vuongnguyenbinh + darkamenosa) được lưu trong [THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md).

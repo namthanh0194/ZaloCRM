@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
  * use-privacy-visibility — helper client-side để decide blur cho UI khi
  * server không kịp redact (vd realtime socket message arrive trước context).
@@ -58,6 +60,22 @@ export function usePrivacyVisibility() {
   }
 
   /**
+   * True nếu conv thuộc nick RIÊNG TƯ (privacyMode='main') VÀ người xem là CHÍNH CHỦ nick.
+   * Dùng cho hiển thị TÊN (anh chốt 2026-06-11): trên nick riêng tư của mình, chính chủ
+   * thấy TÊN ZALO THẬT của khách (Contact.fullName) thay vì "tên gợi nhớ" (alias). Người
+   * ngoài (cấp trên/admin) KHÔNG đổi → vẫn ưu tiên alias như cũ.
+   * KHÔNG gắn điều kiện unlocked vì TÊN không phải nội dung tin nhắn (tên là danh tính KH,
+   * theo chính sách anh chốt luôn hiện cho người có quyền xem — chỉ tin nhắn mới blur).
+   */
+  function isOwnerOfPrivateNick(conv: ConvLike | null | undefined): boolean {
+    const myId = currentUserId.value;
+    if (!conv || !myId) return false;
+    const acc = conv.zaloAccount;
+    if (!acc || acc.privacyMode !== 'main') return false;
+    return acc.ownerUserId === myId;
+  }
+
+  /**
    * True nếu user hiện tại được gửi tin nhắn trong conv này.
    * Chặn UI input khi privacy='main' và không phải chính chủ.
    * (Bot/automation không qua UI nên không bị block.)
@@ -91,5 +109,5 @@ export function usePrivacyVisibility() {
     return shouldBlurConv(conv);
   }
 
-  return { shouldBlurConv, canSendInConv, shouldBlurMessage };
+  return { shouldBlurConv, canSendInConv, shouldBlurMessage, isOwnerOfPrivateNick };
 }

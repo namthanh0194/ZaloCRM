@@ -9,20 +9,7 @@
   <div class="tag-crm-bar" v-if="friendId">
     <span class="bar-label"><TagIcon :size="14" :stroke-width="2" /></span>
 
-    <!-- 1. Zalo Real (ưu tiên 1, đầu tiên, READ-ONLY) -->
-    <template v-if="zaloRealTags.length">
-      <span
-        v-for="tag in zaloRealTags"
-        :key="'zalo-' + tag.id"
-        class="t2-tag-pill is-zalo-real"
-        :style="{ '--tag-color': tag.color }"
-        :title="'Tag Zalo Real — đổi/gỡ trên app Zalo, hệ thống tự cập nhật.'"
-      >
-        <ZaloBrandIcon class="t2-pill-zalo-icon" />
-        <span class="t2-pill-text">{{ tag.name }}</span>
-      </span>
-      <span class="tag-divider">|</span>
-    </template>
+    <!-- 1. Zalo Real: Đã hiển thị ở Header chat trên (MessageThread), ẩn ở thanh dưới để tránh trùng lặp -->
 
     <!-- 2. Auto Detect — trạng thái KH (🔥 hoạt động / ⏰ đình trệ / 📅 có hẹn / 🧊 nguội), READ-ONLY.
          2026-06-06: nền THỐNG NHẤT màu VÀNG (giống Lead score). Chữ = bản đậm của tag.color. -->
@@ -134,7 +121,6 @@ import { Tag as TagIcon, X as XIcon, Check as CheckIcon, Settings as SettingsIco
 import { useToast } from '@/composables/use-toast';
 import { useFriendSocket } from '@/composables/use-friend-socket';
 import { refreshTagTaxonomy } from '@/composables/use-tag-taxonomy';
-import ZaloBrandIcon from '@/components/icons/ZaloBrandIcon.vue';
 
 interface TagV2 {
   id: string;
@@ -234,7 +220,7 @@ const ENGAGEMENT_BG = '#3B82F6';
 // Group tags theo source — render order: zalo_real → Auto Detect → Auto Engagement → manual_per_nick
 // /office-hours 2026-06-06: gom auto-tag 3→2 nhóm. BỎ auto_score (Tier) khỏi thanh.
 // 2 nhóm SỐNG (tự cập nhật): Auto Detect (trạng thái) + Auto Engagement (độ chăm 28 ngày).
-const zaloRealTags = computed(() => friendTags.value.filter(ft => ft.tag.source === 'zalo_real').map(ft => ft.tag));
+// const zaloRealTags = computed(() => friendTags.value.filter(ft => ft.tag.source === 'zalo_real').map(ft => ft.tag));
 const detectTags = computed(() => friendTags.value.filter(ft => ft.tag.source === 'auto_detect').map(ft => ft.tag));
 const engagementTags = computed(() => friendTags.value.filter(ft => ft.tag.source === 'auto_engagement').map(ft => ft.tag));
 const manualTags = computed(() => friendTags.value.filter(ft => ft.tag.source === 'manual_per_nick').map(ft => ft.tag));

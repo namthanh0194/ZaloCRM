@@ -21,6 +21,7 @@ import { logger } from '../../shared/utils/logger.js';
 import { getZaloScope, canManageAccount, requireAccountVisible } from './zalo-scope.js';
 import { uptimeWindowBatch } from './status-log-service.js';
 import { revokeAllSessions } from '../privacy/session-service.js';
+import { revokeAllZaloAccessForUser } from './zalo-access-revocation.js';
 import { getNickDayMetricsBatch, type NickDayMetrics } from './nick-metrics-service.js';
 import { ALL_CATEGORIES, DEFAULT_SDK_LIMITS, invalidateLimitCache } from './sdk-limit-service.js';
 import { zaloRateLimiter } from './zalo-rate-limiter.js';
@@ -381,7 +382,7 @@ export async function zaloDashboardRoutes(app: FastifyInstance): Promise<void> {
           update: { permission: 'admin' },
         });
         if (oldOwnerId) {
-          await tx.zaloAccountAccess.deleteMany({ where: { zaloAccountId: id, userId: oldOwnerId } });
+          await revokeAllZaloAccessForUser(tx, oldOwnerId, user.orgId);
         }
         // Phase Privacy v2 2026-05-23: cascade clear internalContactZaloAccountId của owner cũ
         // nếu trỏ tới nick này — sale cũ không còn own → phải re-pick.

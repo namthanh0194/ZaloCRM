@@ -10,6 +10,7 @@ import type { Server } from 'socket.io';
 import { prisma } from '../../shared/database/prisma-client.js';
 import { authMiddleware } from '../auth/auth-middleware.js';
 import { requireZaloAccess } from '../zalo/zalo-access-middleware.js';
+import { requireConversationAccess } from './conversation-access.js';
 import { zaloOps, ZaloOpError } from '../../shared/zalo-operations.js';
 import { zaloPool } from '../zalo/zalo-pool.js';
 import { eventBuffer } from '../../shared/event-buffer.js';
@@ -165,7 +166,7 @@ function handleError(err: unknown, reply: FastifyReply) {
 export async function chatOperationsRoutes(app: FastifyInstance) {
   app.addHook('preHandler', authMiddleware);
 
-  const chatAccess = { preHandler: requireZaloAccess('chat') };
+  const chatAccess = { preHandler: [requireZaloAccess('chat'), requireConversationAccess('chat')] };
 
   // ── POST /reactions ──────────────────────────────────────────────────────────
   app.post('/api/v1/conversations/:id/reactions', chatAccess, async (request: FastifyRequest, reply: FastifyReply) => {

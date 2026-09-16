@@ -83,6 +83,7 @@
         >
           <InboxIcon class="ic" :size="18" :stroke-width="1.9" />
           <span v-if="eventCounts.msgBotNoSale > 0" class="badge red">{{ eventCounts.msgBotNoSale }}</span>
+          <span v-else-if="eventCounts.msgUnanswered > 0" class="badge red">{{ eventCounts.msgUnanswered }}</span>
           <span v-else-if="messageActiveCount > 0" class="badge">{{ messageActiveCount }}</span>
         </button>
 
@@ -524,7 +525,8 @@
           <header class="section-header" :title="TIPS.message" tabindex="0" role="button" :aria-expanded="sectionsOpen.message" @click="toggleSection('message')" @keydown.enter.prevent="toggleSection('message')" @keydown.space.prevent="toggleSection('message')">
             <div class="left"><span class="emoji"><InboxIcon :size="14" :stroke-width="2" /></span>Tin nhắn</div>
             <div class="right">
-              <span v-if="messageActiveCount > 0" class="count-badge">{{ messageActiveCount }}</span>
+              <span v-if="eventCounts.msgUnanswered > 0" class="count-badge red">{{ eventCounts.msgUnanswered }}</span>
+              <span v-else-if="messageActiveCount > 0" class="count-badge">{{ messageActiveCount }}</span>
               <span v-else class="count-badge zero">0</span>
               <span class="chevron"><ChevronDownIcon :size="14" :stroke-width="2" /></span>
             </div>
@@ -1458,7 +1460,17 @@ async function loadEventCounts() {
 // ─── Result count (parent có thể truyền qua prop) ────────
 const resultCount = computed(() => props.resultCount ?? '—');
 
+let countsDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+function onCountsChanged() {
+  if (countsDebounceTimer) clearTimeout(countsDebounceTimer);
+  countsDebounceTimer = setTimeout(() => {
+    loadEventCounts();
+    countsDebounceTimer = null;
+  }, 200);
+}
+
 onMounted(async () => {
+  window.addEventListener('chat:counts-changed', onCountsChanged);
   await Promise.all([
     props.filters.fetchFolders(),
     props.filters.fetchPresets(),
@@ -1466,6 +1478,9 @@ onMounted(async () => {
     loadStatuses(),
     loadEventCounts(),
   ]);
+});
+onUnmounted(() => {
+  window.removeEventListener('chat:counts-changed', onCountsChanged);
 });
 
 // 2026-06-09 — Reload tag + badge "Tin nhắn" khi đổi Phạm vi xem (folder hoặc nick).
@@ -2000,6 +2015,7 @@ watch(
   line-height: 1.4;
 }
 .count-badge.zero { background: #F4F4F7; color: #97A0AC; }
+.count-badge.red { background: #EF4444; color: white; }
 .chevron { color: #97A0AC; font-size: 11px; transition: transform 0.15s; }
 .section.collapsed .chevron { transform: rotate(-90deg); }
 .section.disabled .section-header { cursor: not-allowed; }

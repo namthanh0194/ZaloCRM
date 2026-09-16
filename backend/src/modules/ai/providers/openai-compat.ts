@@ -10,28 +10,32 @@ export async function generateWithOpenaiCompat(
   model: string,
   system: string,
   prompt: string,
-  maxTokens = 600,
+  maxTokens?: number,
   // OpenAI thế hệ mới (gpt-5.x / o-series) bỏ `max_tokens`, đòi `max_completion_tokens`.
   // Qwen/Kimi (compat mode cũ) vẫn dùng `max_tokens` → cho phép caller chọn tên tham số.
   tokenParam: 'max_tokens' | 'max_completion_tokens' = 'max_tokens',
+  timeoutMs = 180_000,
 ) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 60_000);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
+    const payload: Record<string, unknown> = {
+      model,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: prompt },
+      ],
+    };
+    if (maxTokens !== undefined && maxTokens !== null) {
+      payload[tokenParam] = maxTokens;
+    }
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
         authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: prompt },
-        ],
-        [tokenParam]: maxTokens,
-      }),
+      body: JSON.stringify(payload),
       signal: controller.signal,
     });
 

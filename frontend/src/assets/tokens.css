@@ -141,5 +141,5 @@
 
 /* Body sets light scrollbar that matches Smax */
 .smax-app, .smax-app * {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
 }

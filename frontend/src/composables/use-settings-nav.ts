@@ -132,6 +132,7 @@ export const SETTINGS_GROUPS: SettingsGroup[] = [
       { id: 'system-notifications', label: 'Thông báo hệ thống', icon: 'mdi-bell-cog-outline', route: '/settings/org/system-notifications', permission: 'admin', resource: 'settings', aliases: ['system notify', 'thông báo', 'zalo notify', 'uid', 'check live'] },
       { id: 'ai-assistant', label: 'Trợ lý AI', icon: 'mdi-robot-outline', route: '/settings/crm/ai-assistant', permission: 'admin', resource: 'settings', aliases: ['ai', 'tro ly', 'virtual chat', 'gemini', 'prompt'] },
       { id: 'api', label: 'API & Webhook', icon: 'mdi-api', route: '/settings/dev/api', permission: 'owner', resource: 'webhook', aliases: ['webhook', 'api key', 'dev'] },
+      { id: 'system-upgrade', label: 'Nâng cấp hệ thống', icon: 'mdi-database-sync-outline', route: '/settings/system-upgrade', permission: 'owner', aliases: ['migration', 'migrate', 'database', 'cập nhật'] },
     ],
   },
 ];

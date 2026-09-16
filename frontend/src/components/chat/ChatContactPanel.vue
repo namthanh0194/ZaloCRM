@@ -490,13 +490,54 @@
       </div>
     </div>
 
-    <!-- ════════ TAB AI (placeholder) ════════ -->
-    <div v-if="mainTab === 'ai'" class="main-tab-body">
-      <div class="main-tab-placeholder">
-        <div class="mtp-icon">✨</div>
-        <h3>Trợ lý AI Bất động sản</h3>
-        <p>Hỏi đáp về sản phẩm, dự án BĐS, giá, ưu đãi để tư vấn KH.</p>
-        <div class="mtp-coming">🚧 Đang phát triển — kết nối knowledge base BĐS HS Holding</div>
+    <!-- ════════ TAB AI — Knowledge Base Repu Digital ════════ -->
+    <div v-if="mainTab === 'ai'" class="main-tab-body main-tab-body--no-padding main-tab-ai-container">
+      <div class="ai-assistant-chat">
+        <div class="ai-chat-header">
+          <div class="ai-brand-badge">🤖 Repu Digital AI</div>
+          <div class="ai-chat-desc">Tra cứu nhanh dịch vụ Digital Marketing, Martech & Automation để tư vấn KH.</div>
+        </div>
+
+        <div class="ai-messages-box">
+          <div v-if="aiChatMessages.length === 0" class="ai-chat-empty">
+            <div class="empty-sparkle">✨</div>
+            <strong>Hỏi đáp cùng Trợ lý Repu Digital</strong>
+            <p>Nhập câu hỏi bên dưới để tra cứu dịch vụ, giải pháp công nghệ hoặc soạn câu trả lời cho khách.</p>
+          </div>
+
+          <div
+            v-for="(msg, idx) in aiChatMessages"
+            :key="idx"
+            class="ai-bubble-row"
+            :class="msg.role"
+          >
+            <div class="ai-bubble">
+              <div class="ai-bubble-content">{{ msg.content }}</div>
+              <div v-if="msg.role === 'assistant'" class="ai-bubble-actions">
+                <button class="ai-copy-btn" @click="copyAiMessage(msg.content)">
+                  📋 Sao chép
+                </button>
+              </div>
+            </div>
+          </div>
+          <div v-if="aiQueryLoading" class="ai-typing">⏳ Trợ lý Repu Digital đang soạn câu trả lời...</div>
+        </div>
+
+        <div class="ai-input-box">
+          <textarea
+            v-model="aiUserQuery"
+            rows="2"
+            placeholder="Hỏi về dịch vụ, giải pháp Martech, chi phí..."
+            @keydown.enter.exact.prevent="sendAiQuery"
+          ></textarea>
+          <button
+            class="ai-send-btn"
+            :disabled="aiQueryLoading || !aiUserQuery.trim()"
+            @click="sendAiQuery"
+          >
+            Gửi
+          </button>
+        </div>
       </div>
     </div>
 
@@ -896,6 +937,38 @@ function removeExtraPhone(idx: number) {
 // AutomationCardList tự fetch /api/v1/contacts/:cid/automation-status
 // + tự poll 30s với Page Visibility API. Modal "+ Gắn thêm luồng" qua AddFlowModal.
 const automationCardListRef = ref<InstanceType<typeof AutomationCardList> | null>(null);
+
+type AiChatMessage = { role: 'user' | 'assistant'; content: string };
+const aiChatMessages = ref<AiChatMessage[]>([]);
+const aiUserQuery = ref('');
+const aiQueryLoading = ref(false);
+
+async function sendAiQuery() {
+  const q = aiUserQuery.value.trim();
+  if (!q || aiQueryLoading.value) return;
+  aiChatMessages.value.push({ role: 'user', content: q });
+  aiUserQuery.value = '';
+  aiQueryLoading.value = true;
+  try {
+    const res = await api.post<{ ok: boolean; answer: string }>('/ai/knowledge/ask', {
+      question: q,
+      conversationId: props.conversationId,
+    }, { timeout: 180000 });
+    aiChatMessages.value.push({ role: 'assistant', content: res.data.answer || 'Không có phản hồi' });
+  } catch (err: any) {
+    aiChatMessages.value.push({
+      role: 'assistant',
+      content: '❌ Lỗi: ' + (err?.response?.data?.error || err?.message || 'Không thể kết nối AI'),
+    });
+  } finally {
+    aiQueryLoading.value = false;
+  }
+}
+
+function copyAiMessage(text: string) {
+  navigator.clipboard.writeText(text);
+  alert('Đã sao chép câu trả lời của AI!');
+}
 const showAddFlowModal = ref(false);
 
 function openAddFlowModal(): void {
@@ -2233,6 +2306,40 @@ async function onRegenerateHandoff() {
   line-height: 1.5;
   margin: 0 0 16px;
 }
+
+.main-tab-ai-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.ai-assistant-chat {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+.ai-chat-header { padding: 12px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+.ai-brand-badge { font-weight: 700; font-size: 14px; color: #1e3a8a; margin-bottom: 4px; }
+.ai-chat-desc { font-size: 12px; color: #64748b; }
+.ai-messages-box { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.ai-chat-empty { text-align: center; padding: 24px 12px; color: #64748b; }
+.ai-chat-empty .empty-sparkle { font-size: 28px; margin-bottom: 8px; }
+.ai-bubble-row { display: flex; }
+.ai-bubble-row.user { justify-content: flex-end; }
+.ai-bubble-row.assistant { justify-content: flex-start; }
+.ai-bubble { max-width: 88%; padding: 8px 12px; border-radius: 10px; font-size: 13px; line-height: 1.5; }
+.ai-bubble-row.user .ai-bubble { background: #2563eb; color: #fff; }
+.ai-bubble-row.assistant .ai-bubble { background: #f1f5f9; color: #1e293b; border: 1px solid #e2e8f0; }
+.ai-bubble-actions { margin-top: 6px; display: flex; justify-content: flex-end; }
+.ai-copy-btn { background: none; border: none; color: #2563eb; cursor: pointer; font-size: 11px; font-weight: 600; padding: 2px 4px; }
+.ai-typing { font-size: 12px; color: #64748b; font-style: italic; }
+.ai-input-box { padding: 10px; border-top: 1px solid #e2e8f0; display: flex; gap: 8px; background: #fff; }
+.ai-input-box textarea { flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; font-size: 13px; font-family: inherit; resize: none; }
+.ai-send-btn { padding: 0 14px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.ai-send-btn:disabled { background: #94a3b8; cursor: not-allowed; }
 .mtp-coming {
   display: inline-block;
   padding: 6px 12px;

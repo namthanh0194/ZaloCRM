@@ -91,5 +91,6 @@ export async function createMediaMessage(input: CreateMediaMessageInput) {
       sentAt: new Date(),
       repliedByUserId: input.repliedByUserId,
     },
+    include: { repliedBy: { select: { id: true, fullName: true, email: true } } },
   });
 }

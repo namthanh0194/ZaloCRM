@@ -13,7 +13,12 @@ import {
   resolveProviderApiKey,
   setProviderApiKey,
   setProviderBaseUrl,
+  createCustomProvider,
+  updateCustomProvider,
+  deleteCustomProvider,
 } from './provider-registry.js';
+import { generateWithOpenaiCompat } from './providers/openai-compat.js';
+import { generateText } from './ai-service.js';
 import { listProviderModels, invalidateModelCache } from './providers/list-models.js';
 import { logger } from '../../shared/utils/logger.js';
 import { prisma } from '../../shared/database/prisma-client.js';
@@ -94,19 +99,235 @@ export async function aiRoutes(app: FastifyInstance) {
     }
   });
 
+  app.post('/api/v1/ai/providers/test', { preHandler: requireGrant('settings', 'edit') }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const body = (request.body ?? {}) as { baseUrl?: string; apiKey?: string; model?: string; apiType?: string };
+      const rawBaseUrl = (body.baseUrl || '').trim().replace(/\/$/, '');
+      const apiKey = (body.apiKey || '').trim();
+      const model = (body.model || '').trim();
+      const apiType = body.apiType || 'chat_completions';
+      if (!rawBaseUrl || !apiKey) {
+        return reply.status(400).send({ error: 'Base URL và API key là bắt buộc để kiểm tra' });
+      }
+      if (model) {
+        const endpointPath = apiType === 'responses' ? '/responses' : '/chat/completions';
+        const completionsUrl = rawBaseUrl.endsWith(endpointPath)
+          ? rawBaseUrl
+          : rawBaseUrl.endsWith('/v1')
+            ? `${rawBaseUrl}${endpointPath}`
+            : `${rawBaseUrl}/v1${endpointPath}`;
+        await generateWithOpenaiCompat(completionsUrl, apiKey, model, 'You are a test assistant.', 'ping', undefined);
+        return { ok: true, message: `Kết nối thành công với model "${model}"` };
+      }
+      const modelsUrl = rawBaseUrl.endsWith('/v1') ? `${rawBaseUrl}/models` : `${rawBaseUrl}/v1/models`;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15_000);
+      try {
+        const res = await fetch(modelsUrl, {
+          headers: { authorization: `Bearer ${apiKey}` },
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          const errBody = await res.text().catch(() => '');
+          throw new Error(`HTTP ${res.status}: ${errBody.slice(0, 150)}`);
+        }
+        const data = (await res.json()) as { data?: Array<{ id?: string }> };
+        const modelCount = data.data?.length ?? 0;
+        return { ok: true, message: `Kết nối thành công! Tìm thấy ${modelCount} models.` };
+      } finally {
+        clearTimeout(timeout);
+      }
+    } catch (err) {
+      logger.warn('[ai] Test connection fail: %s', (err as Error).message);
+      return reply.status(400).send({ error: `Kiểm tra thất bại: ${(err as Error).message}` });
+    }
+  });
+
+  // ════════ KNOWLEDGE BASE ROUTES ════════
+  app.get('/api/v1/ai/knowledge', async (request: FastifyRequest) => {
+    const orgId = request.user!.orgId;
+    try {
+      return await prisma.aiKnowledgeDocument.findMany({
+        where: { orgId },
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch (err) {
+      logger.warn('[ai] Knowledge table maybe not migrated yet: %s', (err as Error).message);
+      return [];
+    }
+  });
+
+  app.post('/api/v1/ai/knowledge', { preHandler: requireGrant('settings', 'edit') }, async (request: FastifyRequest, reply: FastifyReply) => {
+    const orgId = request.user!.orgId;
+    const body = (request.body ?? {}) as { title?: string; content?: string; isActive?: boolean };
+    const title = (body.title || '').trim();
+    const content = (body.content || '').trim();
+    if (!title || !content) {
+      return reply.status(400).send({ error: 'Tiêu đề và nội dung tài liệu là bắt buộc' });
+    }
+    try {
+      const doc = await prisma.aiKnowledgeDocument.create({
+        data: {
+          orgId,
+          title,
+          content,
+          isActive: body.isActive ?? true,
+        },
+      });
+      return reply.status(201).send(doc);
+    } catch (err) {
+      logger.error('[ai] Create knowledge doc error: %s', (err as Error).message);
+      return reply.status(500).send({ error: (err as Error).message });
+    }
+  });
+
+  app.put('/api/v1/ai/knowledge/:id', { preHandler: requireGrant('settings', 'edit') }, async (request: FastifyRequest, reply: FastifyReply) => {
+    const orgId = request.user!.orgId;
+    const { id } = request.params as { id: string };
+    const body = (request.body ?? {}) as { title?: string; content?: string; isActive?: boolean };
+    try {
+      const doc = await prisma.aiKnowledgeDocument.findFirst({ where: { id, orgId } });
+      if (!doc) return reply.status(404).send({ error: 'Không tìm thấy tài liệu' });
+      const updated = await prisma.aiKnowledgeDocument.update({
+        where: { id },
+        data: {
+          ...(body.title !== undefined ? { title: body.title.trim() } : {}),
+          ...(body.content !== undefined ? { content: body.content.trim() } : {}),
+          ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
+        },
+      });
+      return updated;
+    } catch (err) {
+      return reply.status(500).send({ error: (err as Error).message });
+    }
+  });
+
+  app.delete('/api/v1/ai/knowledge/:id', { preHandler: requireGrant('settings', 'edit') }, async (request: FastifyRequest, reply: FastifyReply) => {
+    const orgId = request.user!.orgId;
+    const { id } = request.params as { id: string };
+    try {
+      const doc = await prisma.aiKnowledgeDocument.findFirst({ where: { id, orgId } });
+      if (!doc) return reply.status(404).send({ error: 'Không tìm thấy tài liệu' });
+      await prisma.aiKnowledgeDocument.delete({ where: { id } });
+      return { ok: true };
+    } catch (err) {
+      return reply.status(500).send({ error: (err as Error).message });
+    }
+  });
+
+  // ════════ KNOWLEDGE BASE ASK / QUERY FOR SIDEBAR CHAT ════════
+  app.post('/api/v1/ai/knowledge/ask', async (request: FastifyRequest, reply: FastifyReply) => {
+    const orgId = request.user!.orgId;
+    const body = (request.body ?? {}) as { question?: string; conversationId?: string };
+    const question = (body.question || '').trim();
+    if (!question) {
+      return reply.status(400).send({ error: 'Vui lòng nhập câu hỏi' });
+    }
+    try {
+      const aiCfg = await prisma.aiConfig.findUnique({ where: { orgId } });
+      const provider = aiCfg?.provider || 'openai';
+      const model = aiCfg?.model || 'combozalo';
+      const [apiKey, baseUrl] = await Promise.all([
+        resolveProviderApiKey(orgId, provider),
+        getProviderBaseUrl(orgId, provider),
+      ]);
+
+      let docs: Array<{ title: string; content: string }> = [];
+      try {
+        docs = await prisma.aiKnowledgeDocument.findMany({
+          where: { orgId, isActive: true },
+          select: { title: true, content: true },
+          take: 10,
+          orderBy: { updatedAt: 'desc' },
+        });
+      } catch {
+        // ignore if not migrated yet
+      }
+
+      const knowledgeContext = docs.length > 0
+        ? docs.map((d, idx) => `[Tài liệu ${idx + 1}: ${d.title}]\n${d.content}`).join('\n\n')
+        : `Repu Digital là công ty chuyên cung cấp các dịch vụ Digital Marketing, tư vấn giải pháp công nghệ Martech (Công nghệ tiếp thị) và tự động hóa doanh nghiệp (Automation Solutions) tại Việt Nam.`;
+
+      const systemPrompt = `Bạn là Trợ lý AI Repu Digital - hỗ trợ nhân viên tư vấn khách hàng.
+Hãy dựa vào cơ sở tri thức dưới đây để trả lời câu hỏi của nhân viên hoặc soạn tin nhắn trả lời khách hàng một cách chuyên nghiệp, chính xác và lịch sự.
+Nếu không có đủ thông tin trong tài liệu, hãy thành thật nêu rõ hoặc gợi ý liên hệ thêm bộ phận chuyên môn của Repu Digital.
+
+=== CƠ SỞ TRI THỨC (REPU DIGITAL) ===
+${knowledgeContext}
+=======================================`;
+
+      const answer = await generateText(
+        provider,
+        apiKey,
+        model,
+        systemPrompt,
+        question,
+        undefined,
+        baseUrl,
+      );
+
+      return { ok: true, answer };
+    } catch (err) {
+      logger.error('[ai] Knowledge ask error: %s', (err as Error).message);
+      return reply.status(500).send({ error: (err as Error).message || 'Không thể lấy câu trả lời từ AI' });
+    }
+  });
+
+  app.post('/api/v1/ai/providers', { preHandler: requireGrant('settings', 'edit') }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const body = (request.body ?? {}) as { name?: string; slug?: string; baseUrl?: string; model?: string; apiKey?: string };
+      const provider = await createCustomProvider({
+        orgId: request.user!.orgId,
+        name: body.name || '',
+        slug: body.slug || '',
+        baseUrl: body.baseUrl || '',
+        model: body.model || '',
+        apiKey: body.apiKey || '',
+      });
+      invalidateModelCache(request.user!.orgId, provider.slug);
+      return reply.status(201).send({ ok: true, id: provider.slug });
+    } catch (err) {
+      logger.error('[ai] Create provider error:', err);
+      return reply.status(400).send({ error: (err as Error).message || 'Failed to create provider' });
+    }
+  });
+
   /* Set/xoá API key + base URL của 1 provider (per-org). apiKey rỗng = xoá → fallback .env. */
   app.put('/api/v1/ai/providers/:id', { preHandler: requireGrant('settings', 'edit') }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const orgId = request.user!.orgId;
       const { id } = request.params as { id: string };
-      const body = (request.body ?? {}) as { apiKey?: string | null; baseUrl?: string | null };
-      if (body.apiKey !== undefined) await setProviderApiKey(orgId, id, body.apiKey?.trim() || null);
-      if (body.baseUrl !== undefined) await setProviderBaseUrl(orgId, id, body.baseUrl ?? null);
+      const body = (request.body ?? {}) as { apiKey?: string | null; baseUrl?: string | null; name?: string; model?: string; isActive?: boolean };
+      if (body.name !== undefined || body.model !== undefined || body.isActive !== undefined) {
+        await updateCustomProvider(orgId, id, {
+          name: body.name,
+          baseUrl: body.baseUrl ?? undefined,
+          model: body.model,
+          apiKey: body.apiKey ?? undefined,
+          isActive: body.isActive,
+        });
+      } else {
+        if (body.apiKey !== undefined) await setProviderApiKey(orgId, id, body.apiKey?.trim() || null);
+        if (body.baseUrl !== undefined) await setProviderBaseUrl(orgId, id, body.baseUrl ?? null);
+      }
       invalidateModelCache(orgId, id);
       return { ok: true };
     } catch (err) {
       logger.error('[ai] Update provider error:', err);
       return reply.status(400).send({ error: (err as Error).message || 'Failed to update provider' });
+    }
+  });
+
+  app.delete('/api/v1/ai/providers/:id', { preHandler: requireGrant('settings', 'edit') }, async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const orgId = request.user!.orgId;
+      const { id } = request.params as { id: string };
+      await deleteCustomProvider(orgId, id);
+      invalidateModelCache(orgId, id);
+      return { ok: true };
+    } catch (err) {
+      logger.error('[ai] Delete provider error:', err);
+      return reply.status(400).send({ error: (err as Error).message || 'Failed to delete provider' });
     }
   });
 

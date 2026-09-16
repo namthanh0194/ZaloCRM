@@ -11,6 +11,7 @@ import { usePrivacyStore } from '@/stores/privacy';
 import { useWorkScope } from '@/composables/use-work-scope';
 import { classifyIncoming } from '@/composables/work-scope-logic';
 import { useToast } from '@/composables/use-toast';
+import { useChatNotification } from '@/composables/use-chat-notification';
 
 interface ZaloAccount {
   id: string;
@@ -50,6 +51,9 @@ interface ConversationMessage {
   id?: string;
   zaloMsgId?: string | null;
   editedAt?: string | null;
+  repliedByUserId?: string | null;
+  repliedBy?: { id: string; fullName: string | null; email?: string | null } | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface ReplyMessageRef {
@@ -301,6 +305,7 @@ function mergeConvListPreserveDetail(
 }
 
 export function useChat() {
+  const chatNotification = useChatNotification();
   const authStore = useAuthStore();
   const privacyStore = usePrivacyStore();
   function currentUserIdForPrivacy(): string | null { return authStore.user?.id ?? null; }
@@ -655,6 +660,14 @@ export function useChat() {
   async function selectConversation(convId: string) {
     selectedConvId.value = convId;
     clearAiState();
+    const curIdx = conversations.value.findIndex(c => c.id === convId);
+    if (curIdx !== -1 && (conversations.value[curIdx].unreadCount ?? 0) > 0) {
+      conversations.value.splice(curIdx, 1, {
+        ...conversations.value[curIdx],
+        unreadCount: 0,
+      });
+      window.dispatchEvent(new CustomEvent("chat:counts-changed"));
+    }
     // Nếu conv không có trong list (filter loại ra HOẶC vừa tạo mới qua
     // ensure-conversation từ dialog) → refresh list để MessageThread render được.
     // selectedConv = computed find trong list — list rỗng = blank UI.
@@ -702,6 +715,9 @@ export function useChat() {
         await api.post(`/conversations/${convId}/mark-read`);
         const conv = conversations.value.find(c => c.id === convId);
         if (conv) conv.unreadCount = 0;
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('chat:counts-changed'));
+        }
       } catch {
         // Ignore mark-read errors
       }
@@ -756,6 +772,24 @@ export function useChat() {
         if (!messages.value.find(m => m.id === res.data.id)) {
           insertMessageSorted(res.data);
         }
+      }
+      const convIdx = conversations.value.findIndex(c => c.id === conversationId);
+      if (convIdx !== -1) {
+        const curConv = conversations.value[convIdx];
+        const updatedConv = {
+          ...curConv,
+          lastMessageAt: res.data.sentAt || new Date().toISOString(),
+          messages: [res.data, ...(curConv.messages || []).slice(0, 1)],
+          unreadCount: 0,
+          isReplied: true,
+        };
+        if (convIdx > 0) {
+          conversations.value.splice(convIdx, 1);
+          conversations.value.unshift(updatedConv);
+        } else {
+          conversations.value.splice(convIdx, 1, updatedConv);
+        }
+        window.dispatchEvent(new CustomEvent("chat:counts-changed"));
       }
     } catch (err) {
       console.error('Failed to send message:', err);
@@ -857,17 +891,32 @@ export function useChat() {
         }
       }
 
+      if (data.message.senderType !== 'self') {
+        chatNotification.notifyIncomingMessage({
+          senderName: data.message.senderName || undefined,
+          content: data.message.content || undefined,
+          conversationId: data.conversationId,
+          messageId: data.message.id,
+        });
+      }
+
       // (b) OUT-OF-SCOPE (và không phải thread đang mở) → CHỈ đếm badge "N tin nick khác",
       // KHÔNG cho vào cột 2. Đây là chỗ "không load tin nick khác vào UI".
       if (cls.bumpBadge && data.accountId) {
         const m = new Map(outOfScopeCounts.value);
         m.set(data.accountId, (m.get(data.accountId) ?? 0) + 1);
         outOfScopeCounts.value = m;
-        return; // KHÔNG optimistic cột-2, KHÔNG scheduleConvSync, KHÔNG dispatch
+        if (data.message.senderType !== 'self' && typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('chat:counts-changed'));
+        }
+        return; // KHÔNG optimistic cột-2, KHÔNG scheduleConvSync
       }
       // Tin in-scope nhưng không updateColumn2 (vd thread đang mở out-of-scope): cũng dừng
       // optimistic cột-2 để không kéo conv ngoài scope lên list.
       if (!cls.updateColumn2) {
+        if (data.message.senderType !== 'self' && typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('chat:counts-changed'));
+        }
         return;
       }
 
@@ -893,16 +942,21 @@ export function useChat() {
           }
           updatedContact.lastActivity = data.message.sentAt;
         }
-        const isOpen = cur.id === selectedConvId.value;
+        const isSelf = data.message.senderType === 'self';
+        const isCurrentlyOpen = selectedConvId.value === data.conversationId;
+        if (isCurrentlyOpen && !isSelf) {
+          api.post(`/conversations/${data.conversationId}/mark-read`).catch(() => {});
+        }
         const conv = {
           ...cur,
           contact: updatedContact,
           lastMessageAt: data.message.sentAt,
           // preview tin mới nhất ngay
           messages: [data.message, ...(cur.messages || [])].slice(0, 1),
-          unreadCount: (data.message.senderType !== 'self' && !isOpen)
-            ? (cur.unreadCount ?? 0) + 1
-            : cur.unreadCount,
+          unreadCount: (isSelf || isCurrentlyOpen)
+            ? 0
+            : (cur.unreadCount ?? 0) + 1,
+          isReplied: isSelf ? true : false,
         } as typeof cur;
         // Ghi đè bằng object mới + đẩy lên top. idx>0 → move; idx===0 (conv đang ở đầu,
         // vd conv đang mở) → vẫn replace tại chỗ để row re-render với object mới.
@@ -912,6 +966,11 @@ export function useChat() {
         } else {
           conversations.value.splice(idx, 1, conv);
         }
+      } else {
+        void fetchConversations({ bypassCache: true });
+      }
+      if (data.message.senderType !== 'self' && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('chat:counts-changed'));
       }
       // Debounce sync from server: chỉ fetch sau 3s im lặng → reconcile state
       // (tránh chạy mỗi tin → lag list khi nhận burst).

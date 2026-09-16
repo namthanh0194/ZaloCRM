@@ -90,7 +90,11 @@ export async function listProviderModels(
       models = await listGemini(baseUrl, apiKey);
       break;
     default:
-      throw new Error(`Unknown provider: ${provider}`);
+      models = await listOpenaiCompat(
+        baseUrl.endsWith('/v1') ? baseUrl : `${baseUrl}/v1`,
+        apiKey,
+        '/models',
+      );
   }
 
   cache.set(cacheKey, { at: Date.now(), models });

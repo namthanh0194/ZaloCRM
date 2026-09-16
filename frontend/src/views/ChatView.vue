@@ -54,6 +54,7 @@
         @update:filters="onFiltersUpdate"
         @conversation-moved="onConversationMoved"
         @conversation-deleted="onConversationDeleted"
+        @conversation-restored="onConversationRestored"
         @compose-opened="onComposeOpened"
         @follow-changed="onFollowChanged"
       >
@@ -351,7 +352,7 @@ const conversationCounts = computed(() => {
   let unread = 0, unanswered = 0, stuck = 0, ready = 0, individual = 0, group = 0;
   for (const c of conversations.value) {
     const cc = c as any;
-    if ((cc.unreadCount || 0) > 0) unread++;
+    unread += (cc.unreadCount || 0);
     if (cc.isReplied === false) unanswered++;
     if (cc.friendship?.stuckSince != null) stuck++;
     if ((cc.contact?.leadScore || 0) >= 80) ready++;
@@ -544,6 +545,13 @@ function onConversationDeleted(id: string) {
   if (selectedConvId.value === id) {
     router.push({ name: 'Chat' }).catch(() => {});
   }
+  fetchConversations({ bypassCache: true });
+  void refreshPriorityUnread();
+}
+
+function onConversationRestored(id: string) {
+  const idx = conversations.value.findIndex((c) => c.id === id);
+  if (idx !== -1) conversations.value.splice(idx, 1);
   fetchConversations({ bypassCache: true });
   void refreshPriorityUnread();
 }

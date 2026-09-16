@@ -1,11 +1,11 @@
 {
   "name": "zalo-sales-crm-backend",
-  "version": "3.4.0",
+  "version": "3.6.0",
   "description": "Zalo Sales CRM Backend API",
   "main": "dist/app.js",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/app.ts",
+    "dev": "tsx --env-file=.env watch src/app.ts",
     "build": "tsc",
     "start": "node dist/app.js",
     "db:migrate": "prisma migrate dev",

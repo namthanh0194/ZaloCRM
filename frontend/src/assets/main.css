@@ -1,4 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Roboto+Mono:wght@400;500;600&display=swap');
+:root {
+  --v-font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --v-font-heading: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
 
 /* ════════════════════════════════════════════════════════════
    Global app styles — Smax design language (mockup chat-smax-v3).
@@ -11,7 +15,7 @@ html, body {
   padding: 0;
   height: 100%;
   overflow: hidden; /* khoá cuộn cấp trang — chỉ vùng tin nhắn/list bên trong cuộn (fix 2026-06-14) */
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Plus Jakarta Sans", Roboto, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   scroll-behavior: smooth;
   background: var(--smax-grey-100);
   color: var(--smax-text);

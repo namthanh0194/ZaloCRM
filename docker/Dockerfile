@@ -41,6 +41,7 @@ COPY --from=backend-builder /app/backend/prisma.config.ts /app/prisma.config.ts
 COPY --from=backend-builder /app/backend/package.json /app/package.json
 # Scripts dev/ops (seed demo, migrate helpers) — chạy bằng `docker exec ... npx tsx scripts/...`.
 COPY --from=backend-builder /app/backend/scripts    /app/scripts
+COPY --from=backend-builder /app/backend/src/modules/system-upgrade/migration-release-manifest.ts /app/src/modules/system-upgrade/migration-release-manifest.ts
 COPY --from=frontend-builder /app/frontend/dist     /app/static
 
 RUN mkdir -p /var/lib/zalo-crm/files

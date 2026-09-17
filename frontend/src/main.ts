@@ -16,6 +16,7 @@ import '@fontsource/inter/800.css';
 import '@fontsource/roboto-mono/400.css';
 import '@fontsource/roboto-mono/500.css';
 import '@fontsource/roboto-mono/600.css';
+import './design-system/tokens/index.css';
 import './assets/tokens.css';
 import './assets/main.css';
 import './assets/rbac-page.css';

@@ -614,7 +614,7 @@ onMounted(load);
 .loading-pill {
   padding: 4px 10px;
   background: #f1f5f9;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 12px;
   color: #64748b;
 }
@@ -624,9 +624,9 @@ onMounted(load);
   gap: 16px;
 }
 .toggle-card {
-  background: #fff;
+  background: var(--color-surface);
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 14px;
 }
 .toggle-row {
@@ -639,9 +639,9 @@ onMounted(load);
 .toggle-label { font-weight: 600; font-size: 13px; }
 .toggle-hint { font-size: 11px; color: #64748b; margin-top: 2px; }
 .info-card {
-  background: #fff;
+  background: var(--color-surface);
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 12px 14px;
 }
 .info-row {
@@ -655,9 +655,9 @@ onMounted(load);
 .info-value.low-quota { color: #b91c1c; }
 
 .field-group {
-  background: #fff;
+  background: var(--color-surface);
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 14px;
 }
 .field-label {
@@ -682,7 +682,7 @@ onMounted(load);
   min-height: 380px;
   padding: 12px;
   border: 1px solid #e2e8f0;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
   font-size: 12px;
   line-height: 1.6;
@@ -694,7 +694,7 @@ onMounted(load);
   width: 100%;
   padding: 8px 12px;
   border: 1px solid #e2e8f0;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
 }
@@ -707,10 +707,10 @@ onMounted(load);
 }
 .btn-primary {
   padding: 8px 16px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: none;
   background: #3b82f6;
-  color: #fff;
+  color: var(--color-on-primary);
   font-weight: 600;
   cursor: pointer;
   font-size: 13px;
@@ -718,9 +718,9 @@ onMounted(load);
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 .btn-secondary {
   padding: 8px 16px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid #e2e8f0;
-  background: #fff;
+  background: var(--color-surface);
   color: #64748b;
   font-weight: 500;
   cursor: pointer;
@@ -728,9 +728,9 @@ onMounted(load);
 }
 .btn-danger-ghost {
   padding: 8px 16px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid #fecaca;
-  background: #fff;
+  background: var(--color-surface);
   color: #b91c1c;
   font-weight: 500;
   cursor: pointer;
@@ -753,7 +753,7 @@ onMounted(load);
 .provider-table-wrap {
   overflow-x: auto;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 .provider-table {
   width: 100%;
@@ -825,9 +825,9 @@ onMounted(load);
 .form-select {
   padding: 8px 10px;
   border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
-  background: #fff;
+  background: var(--color-surface);
 }
 .api-key-row {
   display: flex;
@@ -840,7 +840,7 @@ onMounted(load);
   padding: 8px 14px;
   background: #f1f5f9;
   border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
@@ -850,7 +850,7 @@ onMounted(load);
 }
 .test-feedback {
   padding: 8px 12px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 12px;
 }
 .test-feedback.ok {
@@ -865,7 +865,7 @@ onMounted(load);
 }
 .btn-cancel {
   padding: 8px 16px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: none;
   background: transparent;
   color: #64748b;
@@ -880,7 +880,7 @@ onMounted(load);
 .provider-form input:not([type="checkbox"]) {
   padding: 8px 10px;
   border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
 }
 .provider-form .toggle-row {
@@ -915,7 +915,7 @@ onMounted(load);
 .model-input {
   padding: 4px 8px;
   border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
 }
 .compact-button {
@@ -926,7 +926,7 @@ onMounted(load);
   width: 100%;
   padding: 8px 10px;
   border: 1px solid #cbd5e1;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
   font-family: inherit;
 }
@@ -942,8 +942,8 @@ onMounted(load);
   z-index: 1000;
 }
 .modal-body {
-  background: #fff;
-  border-radius: 8px;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
   width: 480px;
   max-width: 90vw;
   max-height: 80vh;

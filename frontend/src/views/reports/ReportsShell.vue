@@ -28,3 +28,13 @@ const tabs = [
   { to: '/reports/audit', icon: 'mdi-shield-check-outline', label: 'Audit & Hệ thống' },
 ];
 </script>
+
+<style scoped>
+.rpt-shell {
+  color: var(--color-text);
+}
+
+.rpt-subnav {
+  border-bottom-color: var(--color-border);
+}
+</style>

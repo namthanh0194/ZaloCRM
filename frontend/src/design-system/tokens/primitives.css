@@ -1,0 +1,26 @@
+/* ZaloCRM Design System - primitive values only. Do not consume from pages. */
+:root {
+  --z-blue-50: #e4f1f8;
+  --z-blue-100: #cfe2ec;
+  --z-blue-400: #5bb8e5;
+  --z-blue-500: #1786be;
+  --z-blue-600: #0f6fa0;
+  --z-blue-700: #0b5880;
+  --z-navy-700: #0e445a;
+  --z-navy-900: #06222f;
+  --z-slate-50: #f7f9fc;
+  --z-slate-100: #f1f4f9;
+  --z-slate-200: #e7eaf0;
+  --z-slate-300: #d4d8de;
+  --z-slate-500: #6b7488;
+  --z-slate-700: #475066;
+  --z-slate-900: #141a24;
+  --z-white: #ffffff;
+  --z-green-50: #e7f7ef;
+  --z-green-500: #12b76a;
+  --z-amber-50: #fdf3e2;
+  --z-amber-500: #f5a524;
+  --z-red-50: #fdeceb;
+  --z-red-500: #f04438;
+  --z-purple-500: #8b5cf6;
+}

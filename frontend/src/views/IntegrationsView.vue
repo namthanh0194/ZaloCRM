@@ -1,10 +1,11 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
-  <div>
+  <PageShell :padded="false">
+    <div>
     <div class="d-flex align-center mb-4">
       <h1 class="text-h4">
-        <v-icon class="mr-2" style="color: #00F2FF;">mdi-connection</v-icon>
+        <v-icon class="mr-2" color="primary">mdi-connection</v-icon>
         Tích hợp
       </h1>
       <v-spacer />
@@ -130,13 +131,15 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-  </div>
+    </div>
+  </PageShell>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { api } from '@/api';
 import { formatInOrgTz } from '@/composables/use-org-timezone';
+import { PageShell } from '@/design-system';
 
 interface SyncLog {
   id: string;
@@ -196,12 +199,12 @@ function typeIcon(type: string) {
 
 function typeColor(type: string) {
   const map: Record<string, string> = {
-    google_sheets: '#0F9D58',
-    telegram: '#0088cc',
-    facebook: '#1877F2',
-    zapier: '#FF4A00',
+    google_sheets: 'success',
+    telegram: 'info',
+    facebook: 'primary',
+    zapier: 'warning',
   };
-  return map[type] ?? '#666';
+  return map[type] ?? 'secondary';
 }
 
 function typeLabel(type: string) {

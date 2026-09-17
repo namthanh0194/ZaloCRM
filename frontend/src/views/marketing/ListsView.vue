@@ -248,7 +248,7 @@
                       <v-list-item-title style="color: var(--text-muted)">Khoá (FB Form)</v-list-item-title>
                     </v-list-item>
                     <v-list-item v-else @click="onDelete(list.id)" prepend-icon="mdi-delete-outline" class="danger">
-                      <v-list-item-title style="color: var(--error)">Xoá tệp</v-list-item-title>
+                      <v-list-item-title style="color: var(--color-danger)">Xoá tệp</v-list-item-title>
                     </v-list-item>
                   </v-list>
                 </v-menu>
@@ -431,32 +431,32 @@ function progressPct(l: CustomerListSummary, kind: 'valid' | 'invalid' | 'dup'):
    CSS-only override cho phần custom: status-tabs, key-chip, bar split,
    num-cell màu. Token hoá toàn bộ — KHÔNG hardcode hex lạ.
    ════════════════════════════════════════════════════════════ */
-.lists-view { background: var(--surface-2); min-height: 100%; }
+.lists-view { background: var(--color-bg); min-height: 100%; }
 
 /* stats band — 5 cột thay vì 4 mặc định */
 .mkt-stats.stats-5 { grid-template-columns: repeat(5, 1fr); }
 .mstat.clickable { text-align: left; cursor: pointer; transition: border-color .12s, background .12s; }
-.mstat.clickable:hover { border-color: var(--brand-soft); }
-.mstat.clickable.on { border-color: var(--brand); background: var(--brand-softer); }
+.mstat.clickable:hover { border-color: var(--color-primary-subtle); }
+.mstat.clickable.on { border-color: var(--color-primary); background: var(--color-primary-subtle); }
 .mstat .ml { display: inline-flex; align-items: center; gap: 4px; }
 
 /* ───── Status tabs ───── */
 .status-tabs {
   display: flex; align-items: center; gap: 4px;
-  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md);
+  background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg);
   padding: 6px; margin-bottom: 14px;
 }
 .status-tab {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 7px 12px; border-radius: var(--r-xs);
+  padding: 7px 12px; border-radius: var(--radius-sm);
   background: transparent; border: none; cursor: pointer;
-  font-size: 12.5px; font-weight: 500; color: var(--ink-2);
+  font-size: 12.5px; font-weight: 500; color: var(--color-text-secondary);
 }
-.status-tab:hover { background: var(--surface-3); color: var(--ink); }
-.status-tab.active { background: var(--ink); color: #fff; }
+.status-tab:hover { background: var(--color-surface-secondary); color: var(--color-text); }
+.status-tab.active { background: var(--color-text); color: #fff; }
 .status-tab .count {
-  background: var(--surface-3); color: var(--ink-2);
-  padding: 0 6px; border-radius: var(--r-pill);
+  background: var(--color-surface-secondary); color: var(--color-text-secondary);
+  padding: 0 6px; border-radius: var(--radius-pill);
   font-size: 10.5px; font-weight: 700;
 }
 .status-tab.active .count { background: rgba(255,255,255,.18); color: #fff; }
@@ -468,9 +468,9 @@ function progressPct(l: CustomerListSummary, kind: 'valid' | 'invalid' | 'dup'):
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; margin-top: 12px; padding: 2px;
 }
-.lists-pager .pager-info { font-size: 12.5px; color: var(--ink-3); }
+.lists-pager .pager-info { font-size: 12.5px; color: var(--color-text-muted); }
 .lists-pager .pager-ctrls { display: flex; align-items: center; gap: 8px; }
-.lists-pager .pager-cur { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.lists-pager .pager-cur { font-size: 12px; font-weight: 600; color: var(--color-text-secondary); }
 .lists-pager .btn[disabled] { opacity: .45; cursor: not-allowed; }
 
 /* ───── Table ───── */
@@ -480,8 +480,8 @@ function progressPct(l: CustomerListSummary, kind: 'valid' | 'invalid' | 'dup'):
 .list-name-cell { display: flex; align-items: center; gap: 10px; min-width: 0; }
 /* .tev trong theme scope dưới .tgt — định nghĩa base ở đây cho icon folder 32px */
 .list-name-cell .tev {
-  width: 32px; height: 32px; border-radius: var(--r-sm); flex: none;
-  background: var(--brand-soft); color: var(--brand);
+  width: 32px; height: 32px; border-radius: var(--radius-md); flex: none;
+  background: var(--color-primary-subtle); color: var(--color-primary);
   display: flex; align-items: center; justify-content: center;
 }
 .list-name-cell .nst { min-width: 0; }
@@ -497,63 +497,63 @@ function progressPct(l: CustomerListSummary, kind: 'valid' | 'invalid' | 'dup'):
 }
 .num-cell.green { color: #157f3c; }
 .num-cell.amber { color: #b45309; }
-.num-cell.blue { color: var(--brand-700); }
-.num-cell.muted { color: var(--ink-4); font-weight: 400; }
+.num-cell.blue { color: var(--color-primary-active); }
+.num-cell.muted { color: var(--color-text-disabled); font-weight: 400; }
 
 /* progress bar — reuse .bar, split thành 3 đoạn ok/warn/bad */
 .progress-cell { min-width: 120px; }
 .bar.split { display: flex; }
 .bar.split > i { display: block; height: 100%; }
-.bar.split .ok { background: var(--success); }
-.bar.split .warn { background: var(--warning); }
-.bar.split .bad { background: var(--error); }
+.bar.split .ok { background: var(--color-success); }
+.bar.split .warn { background: var(--color-warning); }
+.bar.split .bad { background: var(--color-danger); }
 
 /* key-chip (mã đồng bộ) — mono pill */
 .key-chip {
   display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px;
   font-family: var(--mono); font-weight: 600;
-  font-size: 11px; background: var(--surface-3); color: var(--ink);
-  border-radius: var(--r-xs); letter-spacing: .5px;
+  font-size: 11px; background: var(--color-surface-secondary); color: var(--color-text);
+  border-radius: var(--radius-sm); letter-spacing: .5px;
 }
-.key-chip.unrouted { background: var(--error-soft); color: #b42318; }
+.key-chip.unrouted { background: var(--color-danger-subtle); color: #b42318; }
 
 /* ───── Badge Nguồn (nền tảng) ───── */
 .src-badge {
   display: inline-flex; align-items: center; gap: 3px;
   padding: 2px 8px; margin-right: 4px;
-  font-size: 11px; font-weight: 600; border-radius: var(--r-pill);
-  background: var(--surface-3); color: var(--ink-2); white-space: nowrap;
+  font-size: 11px; font-weight: 600; border-radius: var(--radius-pill);
+  background: var(--color-surface-secondary); color: var(--color-text-secondary); white-space: nowrap;
 }
 .src-badge.src-fb     { background: #e7f0fb; color: #1666c9; }
 .src-badge.src-tiktok { background: #f1f1f4; color: #111827; }
 .src-badge.src-zalo   { background: #e6f2fd; color: #0068ff; }
 .src-badge.src-google { background: #fdeceb; color: #c5221f; }
-.src-badge.src-manual { background: var(--surface-3); color: var(--ink-3); }
-.src-badge.src-leadads { background: var(--brand-soft); color: var(--brand-700); }
+.src-badge.src-manual { background: var(--color-surface-secondary); color: var(--color-text-muted); }
+.src-badge.src-leadads { background: var(--color-primary-subtle); color: var(--color-primary-active); }
 
 /* dropdown lọc nền tảng — dùng .field sm sẵn có */
 .src-filter select {
   border: none; background: transparent; outline: none;
-  font-size: 12.5px; color: var(--ink); cursor: pointer; padding-right: 4px;
+  font-size: 12.5px; color: var(--color-text); cursor: pointer; padding-right: 4px;
 }
 
-.muted { color: var(--ink-4); font-size: 12px; }
+.muted { color: var(--color-text-disabled); font-size: 12px; }
 
 .row-actions { text-align: right; white-space: nowrap; }
 .row-actions .btn { margin-left: 2px; }
-.go-arrow { background: var(--brand-soft); color: var(--brand-700); }
+.go-arrow { background: var(--color-primary-subtle); color: var(--color-primary-active); }
 .go-arrow:hover { background: #d6e8f5; }
 
 /* empty state — reuse .empty từ theme + heading riêng */
 .empty {
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: var(--r-lg); padding: 56px 24px; margin-top: 4px;
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl); padding: 56px 24px; margin-top: 4px;
 }
-.empty .v-icon { color: var(--ink-4); }
-.empty h3 { margin: 12px 0 6px; color: var(--ink); font-size: 16px; font-weight: 700; }
-.empty p { margin: 0; font-size: 13px; color: var(--ink-3); }
+.empty .v-icon { color: var(--color-text-disabled); }
+.empty h3 { margin: 12px 0 6px; color: var(--color-text); font-size: 16px; font-weight: 700; }
+.empty p { margin: 0; font-size: 13px; color: var(--color-text-muted); }
 /* Lead-notify Nhịp 1 — badge "Đang chạy" trên tệp đang bật tự-báo */
-.ln-badge { display: inline-flex; align-items: center; gap: 5px; margin-left: 7px; padding: 1px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 700; color: var(--success, #12b76a); background: var(--success-soft, #e7f7ef); vertical-align: middle; }
-.ln-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success, #12b76a); animation: ln-pulse 1.4s ease-in-out infinite; }
+.ln-badge { display: inline-flex; align-items: center; gap: 5px; margin-left: 7px; padding: 1px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 700; color: var(--color-success, #12b76a); background: var(--color-success-subtle, #e7f7ef); vertical-align: middle; }
+.ln-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-success, #12b76a); animation: ln-pulse 1.4s ease-in-out infinite; }
 @keyframes ln-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .4; transform: scale(.8); } }
 </style>

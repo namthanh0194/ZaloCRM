@@ -830,11 +830,11 @@ async function onOpenChat() {
 .section-label {
   display: flex; align-items: center; gap: 5px;
   font-size: 11.5px; font-weight: 600;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   text-transform: uppercase; letter-spacing: 0.3px;
   margin-bottom: 6px;
 }
-.hint-warn { color: var(--smax-warning); text-transform: none; font-weight: 500; }
+.hint-warn { color: var(--color-warning); text-transform: none; font-weight: 500; }
 .nick-chip-row {
   display: flex; gap: 6px;
   flex-wrap: wrap;
@@ -842,20 +842,20 @@ async function onOpenChat() {
 .nick-chip {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 4px 10px 4px 5px;
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
   border: 1.5px solid transparent;
   border-radius: 18px;
   font-size: 12.5px; font-weight: 500;
-  color: var(--smax-text);
+  color: var(--color-text);
   cursor: pointer;
   font-family: inherit;
   transition: all 0.12s;
 }
-.nick-chip:hover { background: var(--smax-grey-50); border-color: var(--smax-grey-300); }
+.nick-chip:hover { background: var(--color-surface-secondary); border-color: var(--color-border-strong); }
 .nick-chip.active {
-  background: var(--smax-primary-soft);
-  border-color: var(--smax-primary);
-  color: var(--smax-primary);
+  background: var(--color-primary-subtle);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
   font-weight: 600;
 }
 .nick-chip .nick-name {
@@ -863,7 +863,7 @@ async function onOpenChat() {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .nick-count {
-  color: var(--smax-grey-300);
+  color: var(--color-border-strong);
   font-weight: 400;
   text-transform: none;
   letter-spacing: 0;
@@ -874,11 +874,11 @@ async function onOpenChat() {
 .nick-selected-chip {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 6px 6px 6px 8px;
-  background: var(--smax-primary-soft);
-  border: 1.5px solid var(--smax-primary);
+  background: var(--color-primary-subtle);
+  border: 1.5px solid var(--color-primary);
   border-radius: 20px;
   font-size: 13px; font-weight: 600;
-  color: var(--smax-primary);
+  color: var(--color-primary);
 }
 .nick-selected-chip .nick-name {
   max-width: 200px;
@@ -889,9 +889,9 @@ async function onOpenChat() {
   border: none; background: rgba(255,255,255,0.6);
   border-radius: 50%; cursor: pointer;
   font-size: 16px; line-height: 1;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
 }
-.nick-clear:hover { background: white; color: var(--smax-error); }
+.nick-clear:hover { background: white; color: var(--color-danger); }
 
 .nick-option {
   display: flex; align-items: center; gap: 10px;
@@ -901,7 +901,7 @@ async function onOpenChat() {
 .nick-option-body { flex: 1; min-width: 0; }
 .nick-option-name {
   font-weight: 500; font-size: 13.5px;
-  color: var(--smax-text);
+  color: var(--color-text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
@@ -913,48 +913,48 @@ async function onOpenChat() {
 .result-list {
   max-height: 420px;
   overflow-y: auto;
-  border: 1px solid var(--smax-grey-200);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: var(--smax-grey-50);
+  background: var(--color-surface-secondary);
 }
-.result-section + .result-section { border-top: 1px solid var(--smax-grey-200); }
+.result-section + .result-section { border-top: 1px solid var(--color-border); }
 .result-section-title {
   display: flex; align-items: center; gap: 6px;
   padding: 6px 10px;
   font-size: 11px; font-weight: 600;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   text-transform: uppercase; letter-spacing: 0.3px;
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
 }
 .row-card {
   width: 100%;
   display: flex; align-items: flex-start; gap: 10px;
   padding: 9px 11px;
-  background: var(--smax-bg);
+  background: var(--color-surface);
   border: none;
-  border-bottom: 1px solid var(--smax-grey-100);
+  border-bottom: 1px solid var(--color-bg);
   cursor: pointer; text-align: left;
   font-family: inherit;
 }
 .row-card:last-child { border-bottom: none; }
-.row-card:hover { background: var(--smax-grey-50); }
-.row-card.active { background: var(--smax-primary-soft); }
+.row-card:hover { background: var(--color-surface-secondary); }
+.row-card.active { background: var(--color-primary-subtle); }
 .row-card--contact { background: rgba(33,150,243,0.03); }
 .row-card--lookup { background: rgba(255,145,0,0.05); }
 .row-body { flex: 1; min-width: 0; }
 .row-name {
   font-weight: 600; font-size: 13px;
-  color: var(--smax-text);
+  color: var(--color-text);
   display: flex; align-items: center; gap: 6px;
 }
 .row-meta, .row-keys {
-  font-size: 11px; color: var(--smax-grey-700);
+  font-size: 11px; color: var(--color-text-secondary);
   display: flex; flex-wrap: wrap; gap: 8px;
   margin-top: 2px;
 }
 .row-meta .uid, .key {
   font-family: ui-monospace, monospace;
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
   padding: 0 4px; border-radius: 3px;
   font-size: 10.5px;
 }
@@ -962,7 +962,7 @@ async function onOpenChat() {
 .meta-status { font-weight: 600; }
 .row-tags { display: inline-flex; gap: 3px; }
 .tag-mini {
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
   padding: 0 5px; border-radius: 8px;
   font-size: 10px;
 }
@@ -975,19 +975,19 @@ async function onOpenChat() {
 }
 .badge-warn { background: rgba(255,145,0,0.18); color: #ef6c00; }
 .badge-ok   { background: rgba(0,200,83,0.15);  color: #00897b; }
-.badge-new  { background: var(--smax-warning, #ff9100); color: white; }
+.badge-new  { background: var(--color-warning, #ff9100); color: white; }
 
 .lookup-trigger {
   display: block; width: 100%;
   padding: 12px;
-  background: var(--smax-primary-soft);
-  color: var(--smax-primary);
-  border: 1px dashed var(--smax-primary);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  border: 1px dashed var(--color-primary);
   border-radius: 8px;
   font-size: 12.5px; font-weight: 600;
   cursor: pointer; font-family: inherit;
 }
-.lookup-trigger:hover { background: var(--smax-primary); color: white; }
+.lookup-trigger:hover { background: var(--color-primary); color: white; }
 .lookup-trigger:disabled { opacity: 0.5; cursor: not-allowed; }
 .trigger-hint {
   font-size: 10px; font-weight: 400;
@@ -1055,13 +1055,13 @@ async function onOpenChat() {
 
 .commit-options {
   background: rgba(33,150,243,0.05);
-  border-left: 3px solid var(--smax-primary);
+  border-left: 3px solid var(--color-primary);
   padding: 8px 12px;
   border-radius: 4px;
 }
 .commit-title {
   font-size: 12px; font-weight: 600;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   margin-bottom: 4px;
 }
 </style>

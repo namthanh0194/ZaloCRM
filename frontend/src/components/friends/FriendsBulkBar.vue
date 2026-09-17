@@ -29,7 +29,7 @@ defineEmits<{
 <style scoped>
 .bulk-bar {
   padding: 8px 20px;
-  background: var(--brand);
+  background: var(--color-primary);
   color: #fff;
   display: flex;
   align-items: center;

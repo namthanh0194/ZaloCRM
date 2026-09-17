@@ -1,0 +1,46 @@
+/* Semantic API consumed by shared primitives, patterns, and migrated pages. */
+:root,
+[data-theme='light'] {
+  --color-primary: var(--z-blue-500);
+  --color-primary-hover: var(--z-blue-600);
+  --color-primary-active: var(--z-blue-700);
+  --color-primary-subtle: var(--z-blue-50);
+  --color-on-primary: var(--z-white);
+  --color-bg: var(--z-slate-50);
+  --color-surface: var(--z-white);
+  --color-surface-secondary: var(--z-slate-100);
+  --color-surface-hover: var(--z-slate-50);
+  --color-surface-active: var(--z-blue-50);
+  --color-overlay: rgb(20 26 36 / 52%);
+  --color-text: var(--z-slate-900);
+  --color-text-secondary: var(--z-slate-700);
+  --color-text-muted: var(--z-slate-500);
+  --color-text-disabled: #97a0b3;
+  --color-text-inverse: var(--z-white);
+  --color-border: var(--z-slate-200);
+  --color-border-strong: #cdd4e0;
+  --color-border-focus: var(--z-blue-500);
+  --color-success: var(--z-green-500);
+  --color-success-subtle: var(--z-green-50);
+  --color-warning: var(--z-amber-500);
+  --color-warning-subtle: var(--z-amber-50);
+  --color-danger: var(--z-red-500);
+  --color-danger-subtle: var(--z-red-50);
+  --color-info: var(--z-blue-500);
+  --color-info-subtle: var(--z-blue-50);
+}
+
+/* The current product ships light mode only. This reserves the dark contract. */
+[data-theme='dark'] {
+  --color-bg: #111827;
+  --color-surface: #181d26;
+  --color-surface-secondary: #1f2937;
+  --color-surface-hover: #273244;
+  --color-surface-active: #173c52;
+  --color-text: #f8fafc;
+  --color-text-secondary: #cbd5e1;
+  --color-text-muted: #94a3b8;
+  --color-text-disabled: #64748b;
+  --color-border: #334155;
+  --color-border-strong: #475569;
+}

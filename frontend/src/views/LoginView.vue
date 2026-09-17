@@ -160,10 +160,10 @@ async function handleLogin() {
   max-width: 880px;
   min-height: 460px;
   margin: 0 16px;
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 24px 60px -12px rgba(6, 34, 47, 0.28), 0 8px 24px -8px rgba(6, 34, 47, 0.18);
+  box-shadow: var(--auth-card-shadow);
 }
 
 /* Banner cột trái đã tách sang component LoginBrandBanner.vue (DRY). */
@@ -178,11 +178,11 @@ async function handleLogin() {
 }
 .form-inner { width: 100%; max-width: 340px; }
 .form-title {
-  font-size: 24px; font-weight: 700; color: #0e445a;
+  font-size: 24px; font-weight: 700; color: var(--auth-brand-start);
   margin: 0 0 4px;
 }
 .form-sub {
-  font-size: 13.5px; color: #6b7884;
+  font-size: 13.5px; color: var(--auth-text-muted);
   margin: 0 0 26px;
 }
 .login-btn { font-weight: 600; letter-spacing: 0.3px; margin-top: 2px; }
@@ -205,6 +205,6 @@ async function handleLogin() {
 /* Phòng hờ: ép màu chữ input đọc được trên card trắng, kể cả khi thiết bị dark-mode
    (đi cùng color-scheme:light ở style.css). */
 .login-card :deep(.v-field__input),
-.login-card :deep(input) { color: #0e445a; }
-.login-card :deep(.v-field__input::placeholder) { color: #94a3b0; opacity: 1; }
+.login-card :deep(input) { color: var(--auth-brand-start); }
+.login-card :deep(.v-field__input::placeholder) { color: var(--auth-placeholder); opacity: 1; }
 </style>

@@ -52,8 +52,8 @@ watch(
   justify-content: center;
   align-items: center;
   padding: 40px 32px;
-  background: linear-gradient(160deg, #0e445a 0%, #06222f 100%);
-  color: #fff;
+  background: linear-gradient(160deg, var(--auth-brand-start) 0%, var(--auth-brand-end) 100%);
+  color: var(--color-text-inverse);
   overflow: hidden;
   text-align: center;
 }
@@ -82,11 +82,11 @@ watch(
 .brand-product {
   margin-top: 6px;
   font-size: 13px; font-weight: 600; letter-spacing: 3px;
-  color: #6fc5ea; text-transform: uppercase;
+  color: var(--auth-accent); text-transform: uppercase;
 }
 .brand-divider {
   width: 44px; height: 3px; border-radius: 2px;
-  background: linear-gradient(90deg, #1786be, #6fc5ea);
+  background: linear-gradient(90deg, var(--color-primary), var(--auth-accent));
   margin: 22px 0 16px;
 }
 .brand-slogan {

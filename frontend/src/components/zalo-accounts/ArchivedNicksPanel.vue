@@ -159,32 +159,32 @@ function fmtDate(iso: string | null): string {
 <style scoped>
 .anp { padding: 4px 2px; }
 .anp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-.anp-head h3 { margin: 0; font-size: 15px; font-weight: 700; color: var(--ink, #111827); }
+.anp-head h3 { margin: 0; font-size: 15px; font-weight: 700; color: var(--color-text, #111827); }
 .anp-refresh {
-  font-size: 12px; font-family: inherit; border: 1px solid var(--line, #e5e7eb); background: var(--surface, #fff);
-  color: var(--ink-2, #4b5563); border-radius: 7px; padding: 4px 10px; cursor: pointer;
+  font-size: 12px; font-family: inherit; border: 1px solid var(--color-border, #e5e7eb); background: var(--color-surface, #fff);
+  color: var(--color-text-secondary, #4b5563); border-radius: 7px; padding: 4px 10px; cursor: pointer;
 }
-.anp-refresh:hover:not(:disabled) { background: var(--surface-3, #f3f4f6); }
-.anp-hint { font-size: 12px; color: var(--ink-3, #6b7280); margin: 0 0 12px; line-height: 1.5; }
-.anp-empty { padding: 32px; text-align: center; color: var(--ink-4, #9ca3af); font-size: 13px; }
+.anp-refresh:hover:not(:disabled) { background: var(--color-surface-secondary, #f3f4f6); }
+.anp-hint { font-size: 12px; color: var(--color-text-muted, #6b7280); margin: 0 0 12px; line-height: 1.5; }
+.anp-empty { padding: 32px; text-align: center; color: var(--color-text-disabled, #9ca3af); font-size: 13px; }
 
 .anp-tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .anp-tbl th {
-  text-align: left; font-weight: 600; color: var(--ink-3, #6b7280); font-size: 11.5px;
-  padding: 8px 10px; border-bottom: 1px solid var(--line, #e5e7eb); white-space: nowrap;
+  text-align: left; font-weight: 600; color: var(--color-text-muted, #6b7280); font-size: 11.5px;
+  padding: 8px 10px; border-bottom: 1px solid var(--color-border, #e5e7eb); white-space: nowrap;
 }
-.anp-tbl td { padding: 9px 10px; border-bottom: 1px solid var(--line-soft, #f1f3f5); color: var(--ink, #111827); vertical-align: middle; }
+.anp-tbl td { padding: 9px 10px; border-bottom: 1px solid var(--color-border-subtle, #f1f3f5); color: var(--color-text, #111827); vertical-align: middle; }
 .ta-c { text-align: center; }
 .ta-r { text-align: right; }
 
 .anp-nick { display: flex; align-items: center; gap: 9px; }
 .anp-av {
-  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; background: var(--brand, #1786be); color: #fff;
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; background: var(--color-primary, #1786be); color: #fff;
   display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;
 }
 .anp-nm { font-weight: 600; }
-.anp-uid { font-size: 11px; color: var(--ink-4, #9ca3af); font-family: Menlo, Consolas, monospace; }
-.anp-data { white-space: nowrap; color: var(--ink-2, #4b5563); }
+.anp-uid { font-size: 11px; color: var(--color-text-disabled, #9ca3af); font-family: Menlo, Consolas, monospace; }
+.anp-data { white-space: nowrap; color: var(--color-text-secondary, #4b5563); }
 
 .anp-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
 .anp-badge.ok { background: #dcfce7; color: #15803d; }
@@ -192,10 +192,10 @@ function fmtDate(iso: string | null): string {
 
 .anp-btn {
   font-size: 12px; font-family: inherit; border-radius: 7px; padding: 4px 10px; cursor: pointer; margin-left: 6px;
-  border: 1px solid var(--line, #e5e7eb); background: var(--surface, #fff);
+  border: 1px solid var(--color-border, #e5e7eb); background: var(--color-surface, #fff);
 }
 .anp-btn:disabled { opacity: 0.55; cursor: not-allowed; }
-.anp-btn.restore { border-color: var(--brand, #1786be); color: var(--brand, #1786be); }
+.anp-btn.restore { border-color: var(--color-primary, #1786be); color: var(--color-primary, #1786be); }
 .anp-btn.restore:hover:not(:disabled) { background: #eaf6fb; }
 .anp-btn.purge { border-color: #fca5a5; color: #dc2626; }
 .anp-btn.purge:hover:not(:disabled) { background: #fef2f2; }

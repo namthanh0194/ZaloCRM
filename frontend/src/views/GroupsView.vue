@@ -1,7 +1,8 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
-  <div class="d-flex flex-column h-100">
+  <PageShell :padded="false" :scrollable="false">
+    <div class="d-flex flex-column h-100">
     <!-- Toolbar -->
     <div class="d-flex align-center pa-4 pb-2 gap-3">
       <h1 class="text-h5 mr-2">Nhóm Zalo</h1>
@@ -128,7 +129,8 @@
     <v-snackbar v-model="snack.show" :color="snack.color" timeout="3000" location="bottom end">
       {{ snack.message }}
     </v-snackbar>
-  </div>
+    </div>
+  </PageShell>
 </template>
 
 <script setup lang="ts">
@@ -137,6 +139,7 @@ import { useRouter } from 'vue-router';
 import { api } from '@/api/index';
 import { useSelectedAccount } from '@/composables/use-selected-account';
 import { useGroups } from '@/composables/use-groups';
+import { PageShell } from '@/design-system';
 import { usePolls } from '@/composables/use-polls';
 import GroupList from '@/components/groups/group-list.vue';
 import GroupDetailPanel from '@/components/groups/group-detail-panel.vue';

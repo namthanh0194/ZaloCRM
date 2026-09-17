@@ -9,7 +9,8 @@
    (partial = roster + cảnh báo "quét 1 phần")
 -->
 <template>
-  <div class="d-flex flex-column h-100">
+  <PageShell :padded="false" :scrollable="false">
+    <div class="d-flex flex-column h-100">
     <!-- Toolbar: account picker + back to groups -->
     <div class="d-flex align-center pa-4 pb-2 gap-3">
       <div>
@@ -320,13 +321,15 @@
     <v-snackbar v-model="snack.show" :color="snack.color" timeout="3000" location="bottom end">
       {{ snack.message }}
     </v-snackbar>
-  </div>
+    </div>
+  </PageShell>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useSelectedAccount } from '@/composables/use-selected-account';
 import { useGroups, type GroupScanMember } from '@/composables/use-groups';
+import { PageShell } from '@/design-system';
 
 const { accounts, selectedAccountId, selectAccount, loading: accountLoading } = useSelectedAccount();
 
@@ -518,16 +521,16 @@ onBeforeUnmount(stopPolling);
 </script>
 
 <style scoped>
-.gap-1 { gap: 4px; }
-.gap-2 { gap: 8px; }
-.gap-3 { gap: 12px; }
-.gap-4 { gap: 16px; }
-.border-b { border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
-.border-t { border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)); }
+.gap-1 { gap: var(--space-1); }
+.gap-2 { gap: var(--space-2); }
+.gap-3 { gap: var(--space-3); }
+.gap-4 { gap: var(--space-4); }
+.border-b { border-bottom: 1px solid var(--color-border); }
+.border-t { border-top: 1px solid var(--color-border); }
 .sticky-bar {
   position: sticky;
   bottom: 0;
-  background: rgb(var(--v-theme-surface));
+  background: var(--color-surface);
   z-index: 1;
 }
 .stat-grid {

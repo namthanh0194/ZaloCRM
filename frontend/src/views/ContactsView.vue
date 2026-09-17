@@ -189,7 +189,7 @@
         :title="s.filter ? 'Bấm để lọc theo ' + s.label : ''"
         @click="s.filter && toggleStatFilter(s)"
       >
-        <span class="sdot" :style="{ background: STAT_DOT[s.key] || 'var(--ink-4)' }"></span>
+        <span class="sdot" :style="{ background: STAT_DOT[s.key] || 'var(--color-text-disabled)' }"></span>
         {{ s.label }}: <span class="stat-num">{{ s.value ?? 0 }}</span>
       </div>
     </div>
@@ -931,8 +931,8 @@ interface StatBox { key: string; icon: string; label: string; value: number | un
 const activeStatKey = ref<string | null>(null);
 // Màu chấm KPI (thay emoji — line/dot HS theme).
 const STAT_DOT: Record<string, string> = {
-  total: 'var(--ink-3, #6b7488)', withNick: 'var(--success, #12b76a)', active7d: 'var(--warning, #f5a524)',
-  newToday: 'var(--brand, #1786be)', highScore: '#f5a524', multiClaim: 'var(--purple, #8b5cf6)', noZalo: 'var(--error, #f04438)',
+  total: 'var(--color-text-muted, #6b7488)', withNick: 'var(--color-success, #12b76a)', active7d: 'var(--color-warning, #f5a524)',
+  newToday: 'var(--color-primary, #1786be)', highScore: '#f5a524', multiClaim: 'var(--crm-accent-purple, #8b5cf6)', noZalo: 'var(--color-danger, #f04438)',
 };
 const statBoxes = computed<StatBox[]>(() => [
   { key: 'total', icon: '📋', label: 'Tổng KH', value: stats.value.total ?? total.value },
@@ -1273,7 +1273,7 @@ function chipBg(hex: string | null | undefined): string {
   return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},0.15)`;
 }
 function chipFg(hex: string | null | undefined): string {
-  return hex || 'var(--smax-grey-700)';
+  return hex || 'var(--color-text-secondary)';
 }
 function ageOf(c: Contact): number | null {
   const cy = new Date().getFullYear();
@@ -1575,13 +1575,13 @@ watch(
 
 .smax-contacts-page {
   padding: 13px 18px 13px;
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
   /* Flex column: page-header + toolbar + stats + scroll-wrap (flex: 1).
      Height fixed = viewport - topnav → scroll-wrap takes remaining vertical
      space + own scroll (V + H) → toolbar/stats stay above khi scroll bảng. */
   display: flex;
   flex-direction: column;
-  height: calc(100vh - var(--smax-topnav-h, 52px));
+  height: calc(100vh - var(--layout-topnav-height, 52px));
   overflow: hidden;
 }
 .smax-contacts-page > .page-header,
@@ -1605,13 +1605,13 @@ watch(
   font-size: 20px; font-weight: 600;
 }
 .subtitle {
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   margin-bottom: 11px;
   font-size: 13px;
 }
 .legend {
   display: flex; flex-wrap: wrap; gap: 11px;
-  font-size: 12px; color: var(--smax-grey-700);
+  font-size: 12px; color: var(--color-text-secondary);
   margin-bottom: 11px;
 }
 .legend-item { display: inline-flex; align-items: center; gap: 4px; }
@@ -1622,7 +1622,7 @@ watch(
 
 /* ════════ Toolbar ════════ */
 .toolbar {
-  background: var(--smax-bg);
+  background: var(--color-surface);
   border-radius: 7px;
   padding: 9px 11px;
   margin-bottom: 9px;
@@ -1636,20 +1636,20 @@ watch(
 .toolbar-search {
   flex: 1; min-width: 240px;
   padding: 7px 11px;
-  border: 1px solid var(--smax-grey-300);
+  border: 1px solid var(--color-border-strong);
   border-radius: 6px;
-  background: var(--smax-bg);
+  background: var(--color-surface);
 }
-.toolbar-search:focus { outline: none; border-color: var(--smax-primary); }
+.toolbar-search:focus { outline: none; border-color: var(--color-primary); }
 .toolbar select,
 .toolbar .date-input {
   padding: 7px 11px;
-  border: 1px solid var(--smax-grey-300);
+  border: 1px solid var(--color-border-strong);
   border-radius: 6px;
-  background: var(--smax-bg);
+  background: var(--color-surface);
 }
 .toolbar .date-input { max-width: 140px; }
-.date-separator { color: var(--smax-grey-700); font-size: 12px; }
+.date-separator { color: var(--color-text-secondary); font-size: 12px; }
 .spacer { flex: 1 0 auto; }
 
 /* Toolbar Row 2: date + advanced toggle — compact, secondary visual weight */
@@ -1657,45 +1657,45 @@ watch(
   padding: 6px 11px;
   margin-top: -6px;  /* dính vào row 1 */
   margin-bottom: 9px;
-  background: var(--smax-grey-50);
+  background: var(--color-surface-hover);
   font-size: 12px;
 }
 .row2-label {
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   font-weight: 600;
   font-size: 11.5px;
 }
 .btn-advanced {
   padding: 5px 10px;
-  border: 1px dashed var(--smax-primary);
+  border: 1px dashed var(--color-primary);
   background: transparent;
-  color: var(--smax-primary);
+  color: var(--color-primary);
   border-radius: 6px;
   cursor: pointer;
   font-size: 12px;
   font-family: inherit;
   display: inline-flex; align-items: center; gap: 4px;
 }
-.btn-advanced.on { background: var(--smax-primary-soft); border-style: solid; }
-.btn-advanced:hover { background: var(--smax-primary-soft); }
+.btn-advanced.on { background: var(--color-primary-subtle); border-style: solid; }
+.btn-advanced:hover { background: var(--color-primary-subtle); }
 .btn-clear {
   padding: 4px 10px;
-  border: 1px solid var(--smax-grey-300);
+  border: 1px solid var(--color-border-strong);
   background: transparent;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   border-radius: 6px;
   cursor: pointer;
   font-size: 12px;
   font-family: inherit;
 }
-.btn-clear:hover { color: var(--smax-error); border-color: var(--smax-error); }
+.btn-clear:hover { color: var(--color-danger); border-color: var(--color-danger); }
 
 /* Advanced panel: collapse mở dưới row 2, grid 4 cột group filter */
 /* 2026-06-03 fix: panel lọc nâng cao gọn — grid 4 cột đều, mỗi group 1 ô,
    label thường (không uppercase rời rạc), date không full-width thừa chỗ. */
 .advanced-panel {
-  background: var(--smax-grey-50);
-  border: 1px solid var(--smax-grey-200);
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
   border-radius: 7px;
   padding: 12px 14px;
   margin-bottom: 9px;
@@ -1706,23 +1706,23 @@ watch(
 }
 .adv-group {
   display: flex; flex-direction: column; gap: 5px;
-  background: var(--smax-bg);
-  border: 1px solid var(--smax-grey-200);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 8px 10px;
 }
 .adv-group label {
   font-size: 11px; font-weight: 600;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   letter-spacing: 0.1px;
 }
 .adv-group select,
 .score-input-mini,
 .adv-group .date-input {
   padding: 6px 9px;
-  border: 1px solid var(--smax-grey-300);
+  border: 1px solid var(--color-border-strong);
   border-radius: 6px;
-  background: var(--smax-bg);
+  background: var(--color-surface);
   font-size: 12.5px;
   font-family: inherit;
   width: 100%;
@@ -1735,54 +1735,54 @@ watch(
 .adv-wide .date-input { min-width: 0; }
 .adv-inline .date-input, .score-input-mini { flex: 1; min-width: 0; }
 .score-input-mini { text-align: center; }
-.adv-group .dash { color: var(--smax-grey-400); font-size: 13px; flex-shrink: 0; }
+.adv-group .dash { color: var(--color-text-muted); font-size: 13px; flex-shrink: 0; }
 /* tiêu đề panel */
-.adv-panel-title { grid-column: 1 / -1; font-size: 11px; font-weight: 700; color: var(--smax-grey-700); text-transform: uppercase; letter-spacing: .4px; margin-bottom: -2px; }
-.toggle-inline { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--smax-grey-700); cursor: pointer; padding: 6px 10px; border-radius: 6px; }
+.adv-panel-title { grid-column: 1 / -1; font-size: 11px; font-weight: 700; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: .4px; margin-bottom: -2px; }
+.toggle-inline { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--color-text-secondary); cursor: pointer; padding: 6px 10px; border-radius: 6px; }
 .toggle-inline:hover { background: rgba(0,0,0,0.04); }
 .toggle-inline input { cursor: pointer; }
 .status-edit-chip { cursor: pointer; }
 .status-edit-chip:hover { filter: brightness(1.1); }
-.score-input { width: 50px; padding: 2px 4px; font-size: 11.5px; text-align: center; border: 1px solid var(--smax-grey-300); border-radius: 4px; }
-.score-input:focus { outline: 2px solid var(--smax-primary, #00f2ff); }
-.alias-input { width: 100%; min-width: 140px; padding: 3px 6px; font-size: 12px; border: 1px solid var(--smax-grey-300); border-radius: 4px; background: transparent; }
-.alias-input:focus { outline: 1.5px solid var(--smax-primary, #00f2ff); background: var(--surface); }
-.alias-input::placeholder { color: var(--smax-grey-400); font-style: italic; }
+.score-input { width: 50px; padding: 2px 4px; font-size: 11.5px; text-align: center; border: 1px solid var(--color-border-strong); border-radius: 4px; }
+.score-input:focus { outline: 2px solid var(--color-primary, #00f2ff); }
+.alias-input { width: 100%; min-width: 140px; padding: 3px 6px; font-size: 12px; border: 1px solid var(--color-border-strong); border-radius: 4px; background: transparent; }
+.alias-input:focus { outline: 1.5px solid var(--color-primary, #00f2ff); background: var(--color-surface); }
+.alias-input::placeholder { color: var(--color-text-muted); font-style: italic; }
 .status-picker-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1100; display: flex; align-items: center; justify-content: center; }
-.status-picker { background: var(--smax-bg); border-radius: 10px; padding: 16px 20px; min-width: 320px; max-width: 480px; }
+.status-picker { background: var(--color-surface); border-radius: 10px; padding: 16px 20px; min-width: 320px; max-width: 480px; }
 .status-picker h4 { margin: 0 0 12px; font-size: 14px; }
 .status-picker-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .status-picker-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border: 1px solid transparent; border-radius: 6px; cursor: pointer; font-weight: 500; text-align: left; }
-.status-picker-item.active { border-color: var(--smax-primary, #00f2ff); }
+.status-picker-item.active { border-color: var(--color-primary, #00f2ff); }
 .status-picker-item:hover { filter: brightness(1.05); }
 .order-num { font-size: 10px; opacity: 0.5; font-family: monospace; }
-.btn-close { width: 100%; padding: 8px; background: var(--smax-grey-100); border: 1px solid var(--smax-grey-200); border-radius: 6px; cursor: pointer; }
+.btn-close { width: 100%; padding: 8px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 6px; cursor: pointer; }
 .btn {
   padding: 7px 13px;
-  border: 1px solid var(--smax-primary);
-  background: var(--smax-bg);
-  color: var(--smax-primary);
+  border: 1px solid var(--color-primary);
+  background: var(--color-surface);
+  color: var(--color-primary);
   border-radius: 6px;
   cursor: pointer;
   display: inline-flex; align-items: center; gap: 5px;
 }
-.btn:hover { background: var(--smax-primary-soft); }
+.btn:hover { background: var(--color-primary-subtle); }
 .btn-primary {
-  background: var(--smax-primary);
-  color: var(--surface);
+  background: var(--color-primary);
+  color: var(--color-surface);
 }
-.btn-primary:hover { background: var(--smax-primary-hover); }
+.btn-primary:hover { background: var(--color-primary-hover); }
 /* 2026-06-05 — nút "Thêm KH Nhanh" trên toolbar (thay FAB), viền primary nhẹ. */
 .btn-quick-add {
-  background: var(--smax-primary-soft);
-  color: var(--smax-primary);
-  border-color: var(--smax-primary);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
   font-weight: 600;
 }
-.btn-quick-add:hover { background: var(--smax-primary); color: var(--surface); }
+.btn-quick-add:hover { background: var(--color-primary); color: var(--color-surface); }
 .btn-badge {
-  background: var(--smax-error);
-  color: var(--surface);
+  background: var(--color-danger);
+  color: var(--color-surface);
   border-radius: 9px;
   padding: 1px 6px;
   font-size: 10px; font-weight: 600;
@@ -1792,7 +1792,7 @@ watch(
 /* ════════ Stats ════════ (2026-06-03 design-review #5: nén gọn + vách ngăn nhẹ) */
 .stats-row {
   display: flex; gap: 0; flex-wrap: wrap;
-  background: var(--smax-bg);
+  background: var(--color-surface);
   padding: 7px 6px;
   border-radius: 7px;
   margin-bottom: 9px;
@@ -1802,19 +1802,19 @@ watch(
   display: flex; align-items: center; gap: 4px;
   font-size: 12.5px;
   padding: 3px 12px;
-  border-right: 1px solid var(--smax-grey-100);
+  border-right: 1px solid var(--color-bg);
   border-radius: 5px;
 }
 .stat-box:last-child { border-right: none; }
 .stat-box.clickable { cursor: pointer; transition: background .12s; }
-.stat-box.clickable:hover { background: var(--smax-grey-100); }
-.stat-box.active { background: var(--smax-primary-soft); }
-.stat-box.active .stat-num { color: var(--smax-primary); }
+.stat-box.clickable:hover { background: var(--color-bg); }
+.stat-box.active { background: var(--color-primary-subtle); }
+.stat-box.active .stat-num { color: var(--color-primary); }
 /* 2026-06-03: menu ⚙ Công cụ + lọc tương tác trong advanced */
 .tools-emoji { font-size: 16px; width: 22px; display: inline-block; text-align: center; }
 .stat-num {
   font-weight: 700;
-  color: var(--smax-primary);
+  color: var(--color-primary);
   margin-left: 2px;
 }
 
@@ -1829,7 +1829,7 @@ watch(
    - 2K 2560+: table fit thừa space.
    Sticky vertical bind nên work ổn ở mọi viewport. */
 .scroll-wrap {
-  background: var(--smax-bg);
+  background: var(--color-surface);
   border-radius: 7px;
   overflow: auto; /* both axes scroll inside wrap */
   flex: 1; min-height: 0; /* fill remaining vertical space của page flex column */
@@ -1854,12 +1854,12 @@ watch(
 /* Sticky thead Cha pin trong scroll-wrap (top: 0 vì wrap có own scroll, không
    phải page scroll). CHỈ direct descendant > > > tránh leak xuống child-table. */
 .smax-table > thead > tr > th {
-  background: var(--smax-grey-50);
-  border-bottom: 1px solid var(--smax-grey-200);
+  background: var(--color-surface-hover);
+  border-bottom: 1px solid var(--color-border);
   padding: 9px 8px;
   text-align: left;
   font-weight: 600;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   white-space: nowrap;
   font-size: 11.5px;
   text-transform: uppercase;
@@ -1873,17 +1873,17 @@ watch(
   position: static;
 }
 .smax-table tbody tr.master-row {
-  border-bottom: 1px solid var(--smax-grey-100);
+  border-bottom: 1px solid var(--color-bg);
   cursor: pointer; /* click anywhere toggle expand */
 }
-.smax-table tbody tr.master-row:hover { background: var(--smax-grey-50); }
+.smax-table tbody tr.master-row:hover { background: var(--color-surface-hover); }
 .smax-table tbody tr.master-row.open {
-  background: var(--smax-primary-soft);
+  background: var(--color-primary-subtle);
 }
 /* Border-left accent qua box-shadow inset trên CELL ĐẦU (avoid position:relative
    trên <tr> — gây Chrome recalc table cell widths khi row open). */
 .smax-table tbody tr.master-row.open > td:first-child {
-  box-shadow: inset 3px 0 0 var(--smax-primary);
+  box-shadow: inset 3px 0 0 var(--color-primary);
 }
 .smax-table td {
   /* 2026-06-03 design-review #2: giảm padding ngang 11→8 cho bảng đỡ chật ở 1366 */
@@ -1945,27 +1945,27 @@ watch(
   background: transparent; border: none;
   cursor: pointer;
   font-size: 14px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   padding: 0; width: 22px; height: 22px;
 }
-.expand-btn:hover { color: var(--smax-primary); }
+.expand-btn:hover { color: var(--color-primary); }
 
 .avatar.avatar-customer {
   width: 32px; height: 32px;
   border-radius: 50%;
   background: linear-gradient(135deg, #90caf9, #1976d2);
   display: flex; align-items: center; justify-content: center;
-  color: var(--surface); font-weight: 600; font-size: 13px;
+  color: var(--color-surface); font-weight: 600; font-size: 13px;
 }
 .avatar.avatar-customer.is-female {
   background: linear-gradient(135deg, #f48fb1, #c2185b);
 }
 
-.name-text { font-weight: 500; color: var(--smax-text); }
-.name-sub { font-size: 11px; color: var(--smax-grey-700); }
+.name-text { font-weight: 500; color: var(--color-text); }
+.name-sub { font-size: 11px; color: var(--color-text-secondary); }
 .cell-strong { font-weight: 500; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cell-preview {
-  font-size: 11.5px; color: var(--smax-grey-700);
+  font-size: 11.5px; color: var(--color-text-secondary);
   max-width: 100%;
   /* 2026-06-05 (Anh chốt) — cột nhắn cuối hẹp 30% → cho preview XUỐNG 2 DÒNG
      (tận dụng dòng dưới đang trống) thay vì 1 dòng ellipsis. Quá 2 dòng vẫn ... */
@@ -1977,7 +1977,7 @@ watch(
   line-height: 15px;       /* 2026-06-05 (Anh chốt) — preview mỗi dòng 15px (dòng 2+3) */
   word-break: break-word;
 }
-.empty { color: var(--smax-grey-300); }
+.empty { color: var(--color-border-strong); }
 
 .tag-cell { display: flex; flex-wrap: wrap; gap: 4px; }
 .chip {
@@ -1986,11 +1986,11 @@ watch(
   font-size: 10.5px; font-weight: 500;
   white-space: nowrap;
 }
-.chip-success { background: rgba(0,200,83,0.12); color: var(--success); }
-.chip-warning { background: rgba(255,145,0,0.15); color: var(--warning); }
-.chip-info    { background: rgba(33,150,243,0.12); color: var(--info); }
-.chip-grey    { background: rgba(90,100,120,0.10); color: var(--smax-grey-700); }
-.chip-error   { background: rgba(255,82,82,0.12); color: var(--error); }
+.chip-success { background: rgba(0,200,83,0.12); color: var(--color-success); }
+.chip-warning { background: rgba(255,145,0,0.15); color: var(--color-warning); }
+.chip-info    { background: rgba(33,150,243,0.12); color: var(--color-info); }
+.chip-grey    { background: rgba(90,100,120,0.10); color: var(--color-text-secondary); }
+.chip-error   { background: rgba(255,82,82,0.12); color: var(--color-danger); }
 .chip-multi-nick {
   background: linear-gradient(135deg, rgba(124,77,255,0.14), rgba(33,150,243,0.10));
   color: #4527a0;
@@ -2000,8 +2000,8 @@ watch(
 }
 /* "Cùng chăm (N)" badge — vàng cam theo Airtable signature (anh chốt 2026-05-28) */
 .chip-cung-cham {
-  background: var(--warning-soft);
-  color: var(--warning);
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
   border: 1px solid #F59E0B66;
   margin-left: 6px;
   font-weight: 600;
@@ -2028,52 +2028,52 @@ watch(
 
 .action-cell { display: flex; gap: 4px; }
 .row-action-btn {
-  background: var(--smax-bg);
-  border: 1px solid var(--smax-grey-300);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
   border-radius: 5px;
   padding: 3px 7px;
   cursor: pointer;
   font-size: 12px;
 }
-.row-action-btn:hover { background: var(--smax-primary-soft); border-color: var(--smax-primary); color: var(--smax-primary); }
+.row-action-btn:hover { background: var(--color-primary-subtle); border-color: var(--color-primary); color: var(--color-primary); }
 /* Nút "Xem hồ sơ" — action chính, nổi bật hơn icon button */
 .view-profile-btn {
-  background: var(--smax-primary-soft);
-  border-color: var(--smax-primary);
-  color: var(--smax-primary);
+  background: var(--color-primary-subtle);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
   font-weight: 600;
   white-space: nowrap;
 }
-.view-profile-btn:hover { background: var(--smax-primary); color: var(--surface); }
+.view-profile-btn:hover { background: var(--color-primary); color: var(--color-surface); }
 
 .child-wrap td {
-  background: var(--smax-grey-50);
+  background: var(--color-surface-hover);
   padding: 9px 17px;
-  border-bottom: 1px solid var(--smax-grey-200);
+  border-bottom: 1px solid var(--color-border);
 }
 .child-empty {
   font-size: 12px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   font-style: italic;
   padding: 9px;
 }
 .child-mock-banner {
   font-size: 11px;
   background: rgba(255,145,0,0.10);
-  color: var(--warning);
+  color: var(--color-warning);
   padding: 5px 9px;
   border-radius: 5px;
   margin-bottom: 9px;
 }
 .child-mock-banner code {
-  background: var(--surface);
+  background: var(--color-surface);
   padding: 1px 5px; border-radius: 4px;
   font-size: 10.5px;
 }
 .child-table {
   width: 100%;
   border-collapse: collapse;
-  background: var(--smax-bg);
+  background: var(--color-surface);
   border-radius: 7px;
   overflow: hidden;
 }
@@ -2083,15 +2083,15 @@ watch(
   text-transform: uppercase;
   letter-spacing: 0.3px;
   padding: 7px 9px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   font-weight: 600;
   text-align: left;
-  border-bottom: 1px solid var(--smax-grey-200);
+  border-bottom: 1px solid var(--color-border);
 }
 .child-table tbody td {
   padding: 7px 9px;
   font-size: 12px;
-  border-bottom: 1px solid var(--smax-grey-100);
+  border-bottom: 1px solid var(--color-bg);
   vertical-align: top;
 }
 .child-table tbody tr.winner {
@@ -2100,9 +2100,9 @@ watch(
 .child-table tbody tr.more-row td {
   text-align: center;
   font-size: 11px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   font-style: italic;
-  background: var(--smax-grey-50);
+  background: var(--color-surface-hover);
 }
 
 .winner-badge {
@@ -2119,20 +2119,20 @@ watch(
   border-radius: 50%;
   background: linear-gradient(135deg, #ffb74d, #f57c00);
   display: flex; align-items: center; justify-content: center;
-  color: var(--surface); font-weight: 600; font-size: 10px;
+  color: var(--color-surface); font-weight: 600; font-size: 10px;
   flex-shrink: 0;
 }
 .two-line {
   display: flex; flex-direction: column; gap: 1px;
   min-width: 0;
 }
-.line1 { font-weight: 500; color: var(--smax-text); font-size: 12px; }
-.line2 { font-size: 10.5px; color: var(--smax-grey-700); }
-.line1.empty { color: var(--smax-grey-300); font-style: italic; font-weight: 400; }
+.line1 { font-weight: 500; color: var(--color-text); font-size: 12px; }
+.line2 { font-size: 10.5px; color: var(--color-text-secondary); }
+.line1.empty { color: var(--color-border-strong); font-style: italic; font-weight: 400; }
 .uid {
   font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
   font-size: 10px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   word-break: break-all;
 }
 
@@ -2169,35 +2169,35 @@ watch(
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--ink-4);
-  color: var(--surface);
+  background: var(--color-text-disabled);
+  color: var(--color-surface);
   font-size: 9px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--surface);
+  border: 2px solid var(--color-surface);
   box-shadow: 0 0 0 1px #e2e8f0;
   margin-left: -6px;
   text-transform: uppercase;
 }
 .ccs-avatar:first-child { margin-left: 0; }
 .ccs-avatar.ccs-primary {
-  border: 2px solid var(--warning);
+  border: 2px solid var(--color-warning);
   box-shadow: 0 0 0 1px #fbbf24;
 }
 .ccs-more {
   font-size: 10px;
-  color: var(--ink-3);
+  color: var(--color-text-muted);
   margin-left: 2px;
-  background: var(--surface-3);
+  background: var(--color-surface-secondary);
   padding: 1px 5px;
   border-radius: 8px;
   font-weight: 600;
 }
 .ccs-count {
   font-size: 10px;
-  color: var(--ink-2);
+  color: var(--color-text-secondary);
   margin-left: 4px;
   white-space: nowrap;
 }
@@ -2206,17 +2206,17 @@ watch(
 .gender-row {
   font-size: 16px;
   line-height: 1.1;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
 }
 .gender-age {
   font-size: 11px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   margin-top: 1px;
 }
 
 .chip-orange-soft {
   background: rgba(255,167,38,0.18);
-  color: var(--warning);
+  color: var(--color-warning);
 }
 
 .w-220 { width: 220px; }
@@ -2230,22 +2230,22 @@ watch(
   text-transform: uppercase;
   white-space: nowrap;
 }
-.chip-conv--on  { background: rgba(0,200,83,0.12);  color: var(--success); }
-.chip-conv--off { background: rgba(0,0,0,0.06);     color: var(--ink-4);    }
+.chip-conv--on  { background: rgba(0,200,83,0.12);  color: var(--color-success); }
+.chip-conv--off { background: rgba(0,0,0,0.06);     color: var(--color-text-disabled);    }
 
 /* Zalo identity columns (optional, toggle via ⚙ Cột) */
 .uid-cell {
   font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
   font-size: 11px;
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
   padding: 2px 6px;
   border-radius: 4px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   word-break: break-all;
 }
 .chip-multi {
   background: rgba(13, 71, 161, 0.10);
-  color: var(--info);
+  color: var(--color-info);
   font-size: 10.5px;
   padding: 1px 7px;
   border-radius: 9px;
@@ -2256,14 +2256,14 @@ watch(
 .empty-state {
   text-align: center;
   padding: 38px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   font-style: italic;
 }
 
 .pagination {
   display: flex; align-items: center; justify-content: center; gap: 11px;
   margin-top: 13px;
-  font-size: 13px; color: var(--smax-grey-700);
+  font-size: 13px; color: var(--color-text-secondary);
 }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -2290,8 +2290,8 @@ watch(
   white-space: nowrap;
   letter-spacing: 0.02em;
 }
-.role-primary { background: var(--brand-soft); color: var(--brand); }
-.role-collab  { background: var(--warning-soft); color: var(--warning); }
+.role-primary { background: var(--color-primary-subtle); color: var(--color-primary); }
+.role-collab  { background: var(--color-warning-subtle); color: var(--color-warning); }
 
 /* ═══════════════════════════════════════════════════════════════════════════
  * Phase Dual View 2026-05-28 — Toggle 2 view modes + Master-Detail layout
@@ -2301,8 +2301,8 @@ watch(
 /* View toggle button group */
 .view-toggle {
   display: inline-flex;
-  background: var(--smax-grey-50, var(--surface-2));
-  border: 1px solid var(--smax-grey-200, var(--line));
+  background: var(--color-surface-hover, var(--color-bg));
+  border: 1px solid var(--color-border, var(--color-border));
   border-radius: 8px;
   padding: 3px;
   gap: 2px;
@@ -2314,7 +2314,7 @@ watch(
   padding: 6px 12px;
   font-size: 12.5px;
   font-weight: 500;
-  color: var(--smax-grey-600, var(--ink-2));
+  color: var(--color-text-secondary, var(--color-text-secondary));
   cursor: pointer;
   border-radius: 5px;
   font-family: inherit;
@@ -2327,17 +2327,17 @@ watch(
 /* 2026-06-05 (Anh: active/hover chưa phân biệt) — hover nền trắng+viền, active nền
    primary chữ trắng → nổi bật rõ trạng thái đang chọn. */
 .view-btn:hover:not(.active) {
-  background: var(--surface);
-  color: var(--smax-primary);
+  background: var(--color-surface);
+  color: var(--color-primary);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 .view-btn.active {
-  background: var(--smax-primary);
-  color: var(--surface);
+  background: var(--color-primary);
+  color: var(--color-surface);
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 104, 255, 0.30);
 }
-.view-btn.active:hover { background: var(--smax-primary-hover, #0052cc); color: var(--surface); }
+.view-btn.active:hover { background: var(--color-primary-hover, #0052cc); color: var(--color-surface); }
 
 
 .zalo-pill {
@@ -2354,18 +2354,18 @@ watch(
   overflow: hidden;
 }
 .zalo-pill.zalo-yes {
-  background: var(--success-soft);
-  color: var(--success);
+  background: var(--color-success-subtle);
+  color: var(--color-success);
   border: 1px solid #86efac;
 }
 .zalo-pill.zalo-no {
-  background: var(--error-soft);
-  color: var(--error);
+  background: var(--color-danger-subtle);
+  color: var(--color-danger);
   border: 1px solid #fca5a5;
 }
 .zalo-pill.zalo-unknown {
-  background: var(--surface-3);
-  color: var(--ink-2);
+  background: var(--color-surface-secondary);
+  color: var(--color-text-secondary);
   border: 1px dashed #cbd5e1;
 }
 
@@ -2388,8 +2388,8 @@ watch(
 }
 
 .detail-pane {
-  border-left: 1px solid var(--smax-grey-200, var(--line));
-  background: var(--surface);
+  border-left: 1px solid var(--color-border, var(--color-border));
+  background: var(--color-surface);
   min-height: 0;
   overflow: hidden;
   display: flex;
@@ -2456,7 +2456,7 @@ watch(
 /* Highlight active row khi detail-open */
 .smax-table.mode-shrunk tbody tr.master-row.detail-active {
   background: #fef9e7;
-  border-left: 3px solid var(--smax-coral, #aa2d00);
+  border-left: 3px solid var(--color-danger, #aa2d00);
 }
 
 /* M55.2 2026-05-30 — Flash row 2.5s khi focus param trigger (Mở chi tiết từ dialog) */
@@ -2464,8 +2464,8 @@ watch(
   animation: row-flash-anim 2.5s ease-out;
 }
 @keyframes row-flash-anim {
-  0%   { background: var(--warning-soft); box-shadow: inset 0 0 0 2px var(--warning); }
-  40%  { background: var(--warning-soft); box-shadow: inset 0 0 0 2px var(--warning); }
+  0%   { background: var(--color-warning-subtle); box-shadow: inset 0 0 0 2px var(--color-warning); }
+  40%  { background: var(--color-warning-subtle); box-shadow: inset 0 0 0 2px var(--color-warning); }
   100% { background: transparent; box-shadow: inset 0 0 0 2px transparent; }
 }
 
@@ -2502,7 +2502,7 @@ watch(
   border-radius: 9999px;
   border: 1px solid #181d26;
   background: #181d26;
-  color: var(--surface);
+  color: var(--color-surface);
   font-family: inherit;
   font-size: 14px;
   font-weight: 500;
@@ -2545,17 +2545,17 @@ watch(
   margin-left: 4px;
   vertical-align: middle;
 }
-.gtag-inline.gtag-male { background: rgba(30, 136, 229, 0.13); color: var(--info); }
+.gtag-inline.gtag-male { background: rgba(30, 136, 229, 0.13); color: var(--color-info); }
 .gtag-inline.gtag-female { background: rgba(233, 30, 99, 0.12); color: #c2185b; }
-.age-inline { font-size: 11px; color: var(--smax-grey-700); margin-left: 4px; font-weight: 500; }
+.age-inline { font-size: 11px; color: var(--color-text-secondary); margin-left: 4px; font-weight: 500; }
 
 /* SĐT multi-line */
 .phones-cell { display: flex; flex-direction: column; gap: 1px; }
-.phone-cell.phone-main { font-weight: 600; color: var(--smax-text); }
-.phone-extra { font-size: 11px; color: var(--smax-grey-700); font-variant-numeric: tabular-nums; }
+.phone-cell.phone-main { font-weight: 600; color: var(--color-text); }
+.phone-extra { font-size: 11px; color: var(--color-text-secondary); font-variant-numeric: tabular-nums; }
 .phone-extra .phone-lbl {
-  font-size: 9px; color: var(--smax-grey-400);
-  background: var(--smax-grey-100); border-radius: 4px;
+  font-size: 9px; color: var(--color-text-muted);
+  background: var(--color-bg); border-radius: 4px;
   padding: 0 4px; margin-left: 4px;
 }
 
@@ -2566,16 +2566,16 @@ watch(
 .assist-av {
   width: 20px; height: 20px; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
-  color: var(--surface); font-size: 9px; font-weight: 600;
-  border: 1.5px solid var(--surface); margin-left: -6px;
+  color: var(--color-surface); font-size: 9px; font-weight: 600;
+  border: 1.5px solid var(--color-surface); margin-left: -6px;
 }
 .assist-av:first-child { margin-left: 0; }
-.assist-lbl { font-size: 10px; color: var(--smax-grey-700); }
+.assist-lbl { font-size: 10px; color: var(--color-text-secondary); }
 
 /* KH no-Zalo (Chưa tìm / Không tìm thấy) — nền cam rất nhạt phân biệt, vẫn đang chăm sóc */
 .smax-table tbody tr.master-row.row-no-zalo { background: rgba(255, 145, 0, 0.035); }
 .smax-table tbody tr.master-row.row-no-zalo:hover { background: rgba(255, 145, 0, 0.07); }
-.smax-table tbody tr.master-row.row-no-zalo.open { background: var(--smax-primary-soft); }
+.smax-table tbody tr.master-row.row-no-zalo.open { background: var(--color-primary-subtle); }
 
 /* ═══════════ BẢNG KH — LAYOUT SẠCH (rewrite 2026-06-04) ═══════════
    Gốc rễ các bug cũ: avatar (cột riêng) + tên (cột riêng) = 2 <td> với vertical-align
@@ -2585,8 +2585,8 @@ watch(
 
 /* ô caret (cột 1) */
 .cl-caret-cell { text-align: center; padding-left: 2px; padding-right: 2px; }
-.cl-caret { width: 16px; height: 18px; line-height: 18px; padding: 0; background: none; border: 0; cursor: pointer; color: var(--smax-grey-700); font-size: 11px; }
-.cl-caret:hover { color: var(--smax-primary); }
+.cl-caret { width: 16px; height: 18px; line-height: 18px; padding: 0; background: none; border: 0; cursor: pointer; color: var(--color-text-secondary); font-size: 11px; }
+.cl-caret:hover { color: var(--color-primary); }
 
 /* ô Tên (gộp avatar + tên, colspan 2) — flex 1 hàng, avatar pin top dòng tên */
 .cl-name { display: flex; align-items: flex-start; gap: 7px; }
@@ -2602,41 +2602,41 @@ watch(
 .cl-name-stack--master .chip-cung-cham { margin: 0; }
 .cl-name-line { display: flex; align-items: center; gap: 4px; min-width: 0; min-height: 26px; }
 .fr-row .cl-name-line { min-height: 22px; }
-.cl-nm { font-weight: 500; color: var(--smax-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.cl-name-sub { font-size: 11px; color: var(--smax-grey-700); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cl-nm { font-weight: 500; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.cl-name-sub { font-size: 11px; color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gtag { flex: 0 0 auto; font-size: 11px; font-weight: 600; border-radius: 7px; padding: 0 5px; }
-.gtag-male { background: rgba(30,136,229,.13); color: var(--info); }
+.gtag-male { background: rgba(30,136,229,.13); color: var(--color-info); }
 .gtag-female { background: rgba(233,30,99,.12); color: #c2185b; }
-.age-inline { flex: 0 0 auto; font-size: 11px; color: var(--smax-grey-700); font-weight: 500; }
+.age-inline { flex: 0 0 auto; font-size: 11px; color: var(--color-text-secondary); font-weight: 500; }
 
 /* Có Zalo? pill — KHÔNG tràn sang Action (box-sizing + max-width + overflow) */
 .cl-zalo { overflow: hidden; }
 .zpill { display: inline-flex; align-items: center; gap: 2px; box-sizing: border-box; max-width: 100%; font-size: 10px; line-height: 1; font-weight: 600; padding: 3px 5px; border-radius: 9999px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.zpill-yes { background: var(--success-soft); color: var(--success); border: 1px solid #86efac; }
-.zpill-no { background: var(--error-soft); color: var(--error); border: 1px solid #fca5a5; }
-.zpill-wait { background: var(--surface-3); color: var(--ink-2); border: 1px dashed #cbd5e1; }
+.zpill-yes { background: var(--color-success-subtle); color: var(--color-success); border: 1px solid #86efac; }
+.zpill-no { background: var(--color-danger-subtle); color: var(--color-danger); border: 1px solid #fca5a5; }
+.zpill-wait { background: var(--color-surface-secondary); color: var(--color-text-secondary); border: 1px dashed #cbd5e1; }
 /* badge KB hàng con dùng .zpill + màu .kb-c-* */
-.kb-c-yes { background: rgba(0,200,83,.15); color: var(--success); border: 1px solid #86efac; }
-.kb-c-pending { background: rgba(255,145,0,.16); color: var(--warning); border: 1px solid #fcd9a5; }
-.kb-c-info { background: rgba(33,150,243,.14); color: var(--info); border: 1px solid #90caf9; }
-.kb-c-off { background: var(--smax-grey-100); color: var(--ink-4); border: 1px solid var(--smax-grey-300); }
+.kb-c-yes { background: rgba(0,200,83,.15); color: var(--color-success); border: 1px solid #86efac; }
+.kb-c-pending { background: rgba(255,145,0,.16); color: var(--color-warning); border: 1px solid #fcd9a5; }
+.kb-c-info { background: rgba(33,150,243,.14); color: var(--color-info); border: 1px solid #90caf9; }
+.kb-c-off { background: var(--color-bg); color: var(--color-text-disabled); border: 1px solid var(--color-border-strong); }
 
 /* Action — nút icon fixed-width, không tràn */
 .cl-action { display: flex; gap: 4px; }
-.cl-btn { box-sizing: border-box; height: 26px; padding: 0 8px; border: 1px solid var(--smax-grey-300); border-radius: 5px; background: var(--surface); font-size: 12px; line-height: 24px; white-space: nowrap; cursor: pointer; color: var(--smax-grey-700); }
-.cl-btn:hover { border-color: var(--smax-primary); color: var(--smax-primary); }
-.cl-btn-profile { background: var(--smax-primary-soft); border-color: var(--smax-primary); color: var(--smax-primary); font-weight: 600; }
-.cl-btn-profile:hover { background: var(--smax-primary); color: var(--surface); }
+.cl-btn { box-sizing: border-box; height: 26px; padding: 0 8px; border: 1px solid var(--color-border-strong); border-radius: 5px; background: var(--color-surface); font-size: 12px; line-height: 24px; white-space: nowrap; cursor: pointer; color: var(--color-text-secondary); }
+.cl-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.cl-btn-profile { background: var(--color-primary-subtle); border-color: var(--color-primary); color: var(--color-primary); font-weight: 600; }
+.cl-btn-profile:hover { background: var(--color-primary); color: var(--color-surface); }
 .fr-row .cl-btn { width: 22px; height: 22px; padding: 0; text-align: center; line-height: 20px; }
 .fr-row .cl-action { gap: 3px; }
-.cl-btn-primary { background: var(--smax-primary); color: var(--surface); border-color: var(--smax-primary); }
-.cl-btn-primary:hover { background: var(--smax-primary); color: var(--surface); }
+.cl-btn-primary { background: var(--color-primary); color: var(--color-surface); border-color: var(--color-primary); }
+.cl-btn-primary:hover { background: var(--color-primary); color: var(--color-surface); }
 
 /* ───────── HÀNG CON (fr-row) — gióng cột với cha ───────── */
-.deck-head-row > td { padding: 5px 8px 5px 28px; background: var(--smax-grey-50); font-size: 10.5px; font-weight: 700; letter-spacing: .03em; color: var(--smax-primary); border-bottom: 1px solid var(--smax-grey-200); }
-.exp-loading > td, .exp-empty > td { background: var(--smax-grey-50); }
-.fr-row { background: var(--smax-grey-50); font-size: 12px; }
-.fr-row:hover { background: var(--brand-softer); }
+.deck-head-row > td { padding: 5px 8px 5px 28px; background: var(--color-surface-hover); font-size: 10.5px; font-weight: 700; letter-spacing: .03em; color: var(--color-primary); border-bottom: 1px solid var(--color-border); }
+.exp-loading > td, .exp-empty > td { background: var(--color-surface-hover); }
+.fr-row { background: var(--color-surface-hover); font-size: 12px; }
+.fr-row:hover { background: var(--color-primary-subtle); }
 /* 2026-06-05 v7 (Anh chốt bố trí 3 dòng = 25+15+15) — CHIỀU CAO HÀNG CỐ ĐỊNH.
    Cách đúng: mỗi td bọc nội dung trong khung 55px cố định + overflow ẩn.
    Dùng `td { height: 67px }` (min) + max-height ép trần. ROOT của lệch trước đây:
@@ -2656,7 +2656,7 @@ watch(
 .fr-row > td {
   padding: 6px 6px; vertical-align: top; height: 69px; overflow: hidden;
   border-bottom: 0;
-  box-shadow: inset 0 -1px 0 0 var(--smax-grey-200);
+  box-shadow: inset 0 -1px 0 0 var(--color-border);
 }
 /* ROOT CAUSE (đo browse): span ".empty" (dấu "—" cột KH/Sale nhắn cuối + Tags
    khi rỗng) tự cao 81px → kéo hàng lên 95px. Ép cứng cao 25px (= dòng 1) để cột
@@ -2677,67 +2677,67 @@ watch(
    FIX: giữ 1px (cùng độ dày → avatar mọi nick cùng top), màu đậm hơn để vẫn phân cách. */
 /* is-last: đáy đậm hơn (phân cách block nick cuối ↔ KH cha kế) — dùng box-shadow
    cho nhất quán + sắc nét như các nick khác (không bị half-pixel). */
-.fr-row.is-last > td { border-bottom: 0; box-shadow: inset 0 -1px 0 0 var(--line); }
-.fr-row.is-last .fr-name { box-shadow: inset 3px 0 0 var(--smax-grey-300), inset 0 -1px 0 0 var(--line); }
-.fr-row.is-last.kb-yes .fr-name { box-shadow: inset 3px 0 0 var(--smax-success), inset 0 -1px 0 0 var(--line); }
-.fr-row.is-last.kb-pending .fr-name { box-shadow: inset 3px 0 0 var(--smax-warning), inset 0 -1px 0 0 var(--line); }
-.fr-row.is-last.kb-info .fr-name { box-shadow: inset 3px 0 0 var(--smax-info), inset 0 -1px 0 0 var(--line); }
-.fr-row.is-last.kb-off .fr-name { box-shadow: inset 3px 0 0 var(--ink-4), inset 0 -1px 0 0 var(--line); }
+.fr-row.is-last > td { border-bottom: 0; box-shadow: inset 0 -1px 0 0 var(--color-border); }
+.fr-row.is-last .fr-name { box-shadow: inset 3px 0 0 var(--color-border-strong), inset 0 -1px 0 0 var(--color-border); }
+.fr-row.is-last.kb-yes .fr-name { box-shadow: inset 3px 0 0 var(--color-success), inset 0 -1px 0 0 var(--color-border); }
+.fr-row.is-last.kb-pending .fr-name { box-shadow: inset 3px 0 0 var(--color-warning), inset 0 -1px 0 0 var(--color-border); }
+.fr-row.is-last.kb-info .fr-name { box-shadow: inset 3px 0 0 var(--color-info), inset 0 -1px 0 0 var(--color-border); }
+.fr-row.is-last.kb-off .fr-name { box-shadow: inset 3px 0 0 var(--color-text-disabled), inset 0 -1px 0 0 var(--color-border); }
 
 /* accent rail = inset shadow trái trên ô Tên (KHÔNG cột riêng → gióng cột chuẩn) */
 /* 2026-06-05 v11 — fr-name cần CẢ rail trái (3px màu KB) VÀ đường đáy (-1px) trong
    1 box-shadow (rule này specificity > .fr-row>td nên phải tự gộp, không kế thừa). */
-.fr-name { box-shadow: inset 3px 0 0 var(--smax-grey-300), inset 0 -1px 0 0 var(--smax-grey-200); }
-.fr-row.kb-yes .fr-name { box-shadow: inset 3px 0 0 var(--smax-success), inset 0 -1px 0 0 var(--smax-grey-200); }
-.fr-row.kb-pending .fr-name { box-shadow: inset 3px 0 0 var(--smax-warning), inset 0 -1px 0 0 var(--smax-grey-200); }
-.fr-row.kb-info .fr-name { box-shadow: inset 3px 0 0 var(--smax-info), inset 0 -1px 0 0 var(--smax-grey-200); }
-.fr-row.kb-off .fr-name { box-shadow: inset 3px 0 0 var(--ink-4), inset 0 -1px 0 0 var(--smax-grey-200); }
+.fr-name { box-shadow: inset 3px 0 0 var(--color-border-strong), inset 0 -1px 0 0 var(--color-border); }
+.fr-row.kb-yes .fr-name { box-shadow: inset 3px 0 0 var(--color-success), inset 0 -1px 0 0 var(--color-border); }
+.fr-row.kb-pending .fr-name { box-shadow: inset 3px 0 0 var(--color-warning), inset 0 -1px 0 0 var(--color-border); }
+.fr-row.kb-info .fr-name { box-shadow: inset 3px 0 0 var(--color-info), inset 0 -1px 0 0 var(--color-border); }
+.fr-row.kb-off .fr-name { box-shadow: inset 3px 0 0 var(--color-text-disabled), inset 0 -1px 0 0 var(--color-border); }
 
 .fr-nm { font-size: 12.5px; font-weight: 600; }
 .fr-trophy { flex: 0 0 auto; color: #f9a825; font-size: 11px; }
-.fr-chatdot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--smax-success); }
-.fr-chatdot.off { background: var(--smax-grey-300); }
+.fr-chatdot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--color-success); }
+.fr-chatdot.off { background: var(--color-border-strong); }
 /* 2026-06-05 (Anh chốt) — ô "tên nhớ" KHÔNG tràn: giới hạn trong cột Tên,
    max-width gọn, viền hover mảnh không đẩy layout (đã có border 1px sẵn nên
    hover chỉ đổi màu border → không nhảy width). overflow ellipsis 1 dòng. */
 .fr-alias {
   width: 100%; max-width: 150px; min-width: 0; box-sizing: border-box;
   border: 1px solid transparent; border-radius: 5px; padding: 1px 5px;
-  font: inherit; font-size: 11px; background: transparent; color: var(--smax-text);
+  font: inherit; font-size: 11px; background: transparent; color: var(--color-text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.fr-alias::placeholder { color: var(--smax-grey-400); font-style: italic; }
-.fr-alias:hover { border-color: var(--smax-grey-300); background: var(--surface); }
-.fr-alias:focus { outline: none; border-color: var(--smax-primary); background: var(--surface); }
-.fr-sync-hint { font-size: 10px; color: var(--info); white-space: nowrap; cursor: help; }
+.fr-alias::placeholder { color: var(--color-text-muted); font-style: italic; }
+.fr-alias:hover { border-color: var(--color-border-strong); background: var(--color-surface); }
+.fr-alias:focus { outline: none; border-color: var(--color-primary); background: var(--color-surface); }
+.fr-sync-hint { font-size: 10px; color: var(--color-info); white-space: nowrap; cursor: help; }
 .fr-status-btn { border: 0; cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fr-score { width: 34px; box-sizing: border-box; text-align: center; padding: 2px; border: 1px solid transparent; border-radius: 5px; font: inherit; font-weight: 700; font-size: 11.5px; -moz-appearance: textfield; }
 .fr-score::-webkit-outer-spin-button, .fr-score::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.fr-score:hover, .fr-score:focus { border-color: var(--smax-grey-300); background: var(--surface); outline: none; }
-.fr-score.chip-success { background: rgba(0,200,83,.15); color: var(--success); }
-.fr-score.chip-warning { background: rgba(255,145,0,.15); color: var(--warning); }
-.fr-score.chip-error { background: rgba(255,61,0,.13); color: var(--error); }
-.fr-became, .fr-sale { display: block; font-size: 11px; color: var(--smax-grey-700); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fr-score:hover, .fr-score:focus { border-color: var(--color-border-strong); background: var(--color-surface); outline: none; }
+.fr-score.chip-success { background: rgba(0,200,83,.15); color: var(--color-success); }
+.fr-score.chip-warning { background: rgba(255,145,0,.15); color: var(--color-warning); }
+.fr-score.chip-error { background: rgba(255,61,0,.13); color: var(--color-danger); }
+.fr-became, .fr-sale { display: block; font-size: 11px; color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* 2026-06-05 (Anh chốt) — text UID/GlobalId/Username friend row: click để copy. */
 .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; }
 .fr-copy {
   display: inline-block; max-width: 100%;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  cursor: pointer; color: var(--smax-grey-700);
-  border-bottom: 1px dashed var(--smax-grey-300);
+  cursor: pointer; color: var(--color-text-secondary);
+  border-bottom: 1px dashed var(--color-border-strong);
 }
-.fr-copy:hover { color: var(--smax-primary); border-bottom-color: var(--smax-primary); }
-.fr-copy:active { color: var(--smax-primary); }
+.fr-copy:hover { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+.fr-copy:active { color: var(--color-primary); }
 .fr-io { font-size: 12px; white-space: nowrap; }
 .fr-io b { font-weight: 700; }
 /* Friend Tag chip (cột Tags hàng con) */
 .fr-row .ftag { display: inline-flex; align-items: center; gap: 2px; padding: 1px 6px; border-radius: 8px; font-size: 9.5px; font-weight: 600; border: 1px solid; white-space: nowrap; }
-.fr-row .ft-zalo { background: #fff8f0; border-color: #ff9800; color: var(--warning); }
-.fr-row .ft-manual { background: #f0f7ff; border-color: #42a5f5; color: var(--info); }
+.fr-row .ft-zalo { background: #fff8f0; border-color: #ff9800; color: var(--color-warning); }
+.fr-row .ft-manual { background: #f0f7ff; border-color: #42a5f5; color: var(--color-info); }
 .fr-row .ft-auto { background: #faf3fc; border-color: #ce93d8; color: #6a1b9a; }
-.fr-row .ft-score { background: rgba(0,200,83,.08); border-color: #66bb6a; color: var(--success); }
-.fr-row .ft-sync { background: var(--smax-grey-100); border-color: var(--smax-grey-300); color: var(--smax-grey-700); }
-.child-empty { padding: 9px 13px; font-size: 12px; color: var(--smax-grey-700); }
+.fr-row .ft-score { background: rgba(0,200,83,.08); border-color: #66bb6a; color: var(--color-success); }
+.fr-row .ft-sync { background: var(--color-bg); border-color: var(--color-border-strong); color: var(--color-text-secondary); }
+.child-empty { padding: 9px 13px; font-size: 12px; color: var(--color-text-secondary); }
 
 /* ═══════════ P3 markup redesign — HS theme header / filter / KPI (2026-06-17) ═══════════ */
 /* line-icon (Lucide-style stroke SVG) */
@@ -2748,45 +2748,45 @@ watch(
 .page-header-row { align-items: center; }
 .ph-title { display: flex; align-items: center; gap: 11px; }
 .ph-title h1 { margin: 0; }
-.count-pill { display: inline-flex; align-items: center; gap: 5px; background: var(--brand-soft);
-  color: var(--brand-700); padding: 4px 11px; border-radius: var(--r-pill, 999px);
+.count-pill { display: inline-flex; align-items: center; gap: 5px; background: var(--color-primary-subtle);
+  color: var(--color-primary-active); padding: 4px 11px; border-radius: var(--radius-pill, 999px);
   font-size: 12px; font-weight: 700; line-height: 1; }
 .count-pill .lc { width: 13px; height: 13px; }
 
 /* Header actions: 1 primary + segmented utility cluster */
 .header-actions { gap: 10px; }
 .header-actions .btn-primary { display: inline-flex; align-items: center; gap: 7px; height: 38px;
-  padding: 0 16px; border-radius: var(--r-sm, 8px); background: var(--brand); border: 1px solid var(--brand);
+  padding: 0 16px; border-radius: var(--radius-md, 8px); background: var(--color-primary); border: 1px solid var(--color-primary);
   color: #fff; font-weight: 700; font-size: 13px; box-shadow: 0 1px 2px rgba(16,24,40,.06); cursor: pointer; }
-.header-actions .btn-primary:hover { background: var(--brand-600); border-color: var(--brand-600); }
-.seg-cluster { display: inline-flex; align-items: stretch; border: 1px solid var(--line);
-  border-radius: var(--r-sm, 8px); overflow: hidden; background: var(--surface); }
+.header-actions .btn-primary:hover { background: var(--color-primary-hover); border-color: var(--color-primary-hover); }
+.seg-cluster { display: inline-flex; align-items: stretch; border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px); overflow: hidden; background: var(--color-surface); }
 .seg-btn { display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 13px;
-  border: 0; border-right: 1px solid var(--line); background: transparent; color: var(--ink-2);
+  border: 0; border-right: 1px solid var(--color-border); background: transparent; color: var(--color-text-secondary);
   font-weight: 600; font-size: 12.5px; cursor: pointer; font-family: inherit; }
-.seg-btn:hover { background: var(--surface-3); color: var(--ink); }
-.seg-btn.on { background: var(--brand-soft); color: var(--brand-700); }
+.seg-btn:hover { background: var(--color-surface-secondary); color: var(--color-text); }
+.seg-btn.on { background: var(--color-primary-subtle); color: var(--color-primary-active); }
 .seg-cluster .view-toggle { display: inline-flex; align-items: stretch; background: transparent;
   border: 0; padding: 0; margin: 0; border-radius: 0; }
 .seg-cluster .view-btn { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 13px;
-  border: 0; border-right: 1px solid var(--line); background: transparent; color: var(--ink-3);
+  border: 0; border-right: 1px solid var(--color-border); background: transparent; color: var(--color-text-muted);
   font-weight: 600; font-size: 12.5px; cursor: pointer; font-family: inherit; }
 .seg-cluster .view-btn:last-child { border-right: 0; }
-.seg-cluster .view-btn.active { background: var(--brand); color: #fff; }
-.seg-btn .btn-badge, .seg-cluster .btn-badge { background: var(--brand); color: #fff; }
+.seg-cluster .view-btn.active { background: var(--color-primary); color: #fff; }
+.seg-btn .btn-badge, .seg-cluster .btn-badge { background: var(--color-primary); color: #fff; }
 
 /* Filter toolbar → search box + pill selects */
 .toolbar.toolbar-primary { gap: 9px; align-items: center; }
-.tb-search { display: flex; align-items: center; gap: 8px; background: var(--surface-2);
-  border: 1px solid var(--line); border-radius: var(--r-pill, 999px); padding: 0 14px;
-  flex: 1 1 240px; min-width: 200px; max-width: 440px; color: var(--ink-4); height: 38px;
+.tb-search { display: flex; align-items: center; gap: 8px; background: var(--color-bg);
+  border: 1px solid var(--color-border); border-radius: var(--radius-pill, 999px); padding: 0 14px;
+  flex: 1 1 240px; min-width: 200px; max-width: 440px; color: var(--color-text-disabled); height: 38px;
   transition: border-color .12s, box-shadow .12s; }
-.tb-search:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); color: var(--brand); }
+.tb-search:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-subtle); color: var(--color-primary); }
 .tb-search .toolbar-search { border: 0 !important; background: none !important; outline: none;
-  flex: 1; min-width: 0; font-size: 13px; color: var(--ink); height: 100%; padding: 0; max-width: none; }
-.toolbar.toolbar-primary select { height: 36px; border: 1px solid var(--line); border-radius: var(--r-pill, 999px);
-  background: var(--surface); color: var(--ink-2); font-weight: 600; font-size: 12.5px; padding: 0 14px; cursor: pointer; }
-.toolbar.toolbar-primary select:hover { border-color: var(--brand); color: var(--ink); }
+  flex: 1; min-width: 0; font-size: 13px; color: var(--color-text); height: 100%; padding: 0; max-width: none; }
+.toolbar.toolbar-primary select { height: 36px; border: 1px solid var(--color-border); border-radius: var(--radius-pill, 999px);
+  background: var(--color-surface); color: var(--color-text-secondary); font-weight: 600; font-size: 12.5px; padding: 0 14px; cursor: pointer; }
+.toolbar.toolbar-primary select:hover { border-color: var(--color-primary); color: var(--color-text); }
 
 /* KPI stats — colored dot instead of emoji */
 .sdot { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; }

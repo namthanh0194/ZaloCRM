@@ -58,6 +58,6 @@ onMounted(load);
 .sdk-page-head { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 18px; }
 .sdk-page-head .ico { width: 44px; height: 44px; border-radius: 12px; background: #eff6ff; display: grid; place-items: center; font-size: 22px; flex: none; }
 .sdk-page-head h1 { font-size: 19px; font-weight: 700; margin: 0 0 4px; }
-.sdk-page-head p { font-size: 13px; color: #6B7785; margin: 0; line-height: 1.55; }
-.sdk-page-loading { padding: 28px; text-align: center; color: #97A0AC; }
+.sdk-page-head p { font-size: 13px; color: var(--color-text-secondary, #6B7785); margin: 0; line-height: 1.55; }
+.sdk-page-loading { padding: 28px; text-align: center; color: var(--color-text-muted, #97A0AC); }
 </style>

@@ -22,7 +22,7 @@
     <!-- Trạng thái KH — lọc theo Status thật của org (Friend.statusId per-nick) -->
     <div class="care-wrap">
       <button class="chip" :class="{ on: !!careStatus }" @click="toggleCareDropdown">
-        <span v-if="selectedStatus" class="dot" :style="{ background: selectedStatus.color || 'var(--ink-4)' }" />
+        <span v-if="selectedStatus" class="dot" :style="{ background: selectedStatus.color || 'var(--color-text-disabled)' }" />
         <span>{{ selectedStatus ? selectedStatus.name : 'Trạng thái KH' }}</span>
         <span class="caret" :class="{ clear: !!careStatus }" @click.stop="careStatus ? onCarePick('') : toggleCareDropdown()">{{ careStatus ? '✕' : '▾' }}</span>
       </button>
@@ -33,7 +33,7 @@
           :key="st.id"
           :class="{ active: careStatus === st.id }"
           @click="onCarePick(st.id)"
-        ><span class="dot" :style="{ background: st.color || 'var(--ink-4)' }" />{{ st.name }}</button>
+        ><span class="dot" :style="{ background: st.color || 'var(--color-text-disabled)' }" />{{ st.name }}</button>
         <div v-if="!statuses.length" class="care-empty">Chưa cài Trạng thái KH</div>
       </div>
     </div>
@@ -90,8 +90,8 @@ function onCarePick(v: string) {
 /* HS Holding theme — filter bar dạng .kpill (token brand #1786be) */
 .filter-bar {
   padding: 10px 22px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -102,82 +102,82 @@ function onCarePick(v: string) {
 .kind-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
 .kind-tab {
   display: inline-flex; align-items: center; gap: 7px;
-  padding: 6px 12px; border-radius: var(--r-pill);
-  background: var(--surface); border: 1px solid var(--line);
+  padding: 6px 12px; border-radius: var(--radius-pill);
+  background: var(--color-surface); border: 1px solid var(--color-border);
   font-size: 12.5px; font-weight: 600; cursor: pointer;
-  color: var(--ink-2);
+  color: var(--color-text-secondary);
   font-family: inherit;
   transition: all .12s;
 }
-.kind-tab:hover { border-color: var(--brand); color: var(--ink); }
+.kind-tab:hover { border-color: var(--color-primary); color: var(--color-text); }
 .kind-tab .dot { width: 7px; height: 7px; border-radius: 50%; }
 .kind-tab .num {
   font-family: var(--mono, ui-monospace, monospace);
-  background: var(--surface-3); color: var(--ink-3);
-  padding: 0 7px; border-radius: var(--r-pill);
+  background: var(--color-surface-secondary); color: var(--color-text-muted);
+  padding: 0 7px; border-radius: var(--radius-pill);
   font-size: 11px; font-weight: 700;
 }
 /* Active pill — màu theo kind (giống .kpill.on[data-k] của theme) */
 .kind-tab.active { color: #fff; border-color: transparent; }
 .kind-tab.active .dot { display: none; }
 .kind-tab.active .num { background: rgba(255,255,255,.22); color: #fff; }
-.kind-tab.active[data-k="all"]               { background: var(--ink); }
+.kind-tab.active[data-k="all"]               { background: var(--color-text); }
 .kind-tab.active[data-k="none"]              { background: var(--chip-purple, #8b5cf6); }
-.kind-tab.active[data-k="friend"]            { background: var(--success); }
-.kind-tab.active[data-k="pending_friend"]    { background: var(--warning); }
-.kind-tab.active[data-k="chatting_stranger"] { background: var(--info); }
+.kind-tab.active[data-k="friend"]            { background: var(--color-success); }
+.kind-tab.active[data-k="pending_friend"]    { background: var(--color-warning); }
+.kind-tab.active[data-k="chatting_stranger"] { background: var(--color-info); }
 .kind-tab.active[data-k="ghost"]             { background: #6b7488; }
 
-.divider { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
+.divider { width: 1px; height: 22px; background: var(--color-border); margin: 0 4px; }
 
 .chip {
   display: inline-flex; align-items: center; gap: 5px;
-  padding: 6px 12px; border-radius: var(--r-pill);
-  border: 1px solid var(--line); background: var(--surface);
-  font-size: 12.5px; font-weight: 600; cursor: pointer; color: var(--ink-2);
+  padding: 6px 12px; border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border); background: var(--color-surface);
+  font-size: 12.5px; font-weight: 600; cursor: pointer; color: var(--color-text-secondary);
   font-family: inherit;
   transition: all .12s;
 }
-.chip:hover { background: var(--surface-3); color: var(--ink); }
-.chip.on { background: var(--brand-soft); color: var(--brand-700); border-color: var(--brand); }
+.chip:hover { background: var(--color-surface-secondary); color: var(--color-text); }
+.chip.on { background: var(--color-primary-subtle); color: var(--color-primary-active); border-color: var(--color-primary); }
 .chip .caret { opacity: .55; font-size: 9px; }
 
 .saved-view {
   margin-left: auto;
   padding: 6px 14px;
-  border: 1px solid var(--line); border-radius: var(--r-pill);
-  background: var(--surface);
-  font-size: 12.5px; font-weight: 600; color: var(--ink-2);
+  border: 1px solid var(--color-border); border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  font-size: 12.5px; font-weight: 600; color: var(--color-text-secondary);
   display: inline-flex; align-items: center; gap: 6px;
   cursor: pointer;
   font-family: inherit;
   transition: all .12s;
 }
-.saved-view:hover { border-color: var(--brand); box-shadow: var(--sh-xs); }
-.saved-view .star { color: var(--warning); }
+.saved-view:hover { border-color: var(--color-primary); box-shadow: var(--shadow-sm); }
+.saved-view .star { color: var(--color-warning); }
 .saved-view .caret { opacity: .55; font-size: 9px; }
 
 /* Care status dropdown */
 .care-wrap { position: relative; display: inline-flex; }
 .chip .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
-.chip .caret.clear:hover { color: var(--error); }
+.chip .caret.clear:hover { color: var(--color-danger); }
 .dropdown.care-dd {
   position: absolute; top: 100%; left: 0; margin-top: 6px;
-  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md);
-  box-shadow: var(--sh-lg, 0 12px 32px rgba(20,26,36,.14));
+  background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg, 0 12px 32px rgba(20,26,36,.14));
   padding: 5px; min-width: 200px;
   z-index: 10;
   display: flex; flex-direction: column;
 }
 .dropdown.care-dd button {
   display: flex; align-items: center; gap: 8px;
-  padding: 7px 11px; border-radius: var(--r-sm);
+  padding: 7px 11px; border-radius: var(--radius-md);
   background: transparent; border: none; text-align: left;
   cursor: pointer; font-size: 12.5px; font-family: inherit;
-  color: var(--ink);
+  color: var(--color-text);
 }
-.dropdown.care-dd button:hover { background: var(--surface-3); }
-.dropdown.care-dd button.active { background: var(--brand-soft); color: var(--brand-700); font-weight: 600; }
+.dropdown.care-dd button:hover { background: var(--color-surface-secondary); }
+.dropdown.care-dd button.active { background: var(--color-primary-subtle); color: var(--color-primary-active); font-weight: 600; }
 .dropdown.care-dd .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
-.care-empty { padding: 8px 11px; font-size: 12px; color: var(--ink-4); }
+.care-empty { padding: 8px 11px; font-size: 12px; color: var(--color-text-disabled); }
 </style>

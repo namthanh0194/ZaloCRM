@@ -141,40 +141,40 @@ onMounted(load);
 .al-wrap { padding: 20px 24px; max-width: 1366px; }
 .al-head { margin-bottom: 16px; }
 .al-title { font-size: 22px; font-weight: 700; color: #0e445a; margin: 0 0 4px; }
-.al-sub { font-size: 13.5px; color: #6b7280; margin: 0; }
+.al-sub { font-size: 13.5px; color: var(--color-text-muted); margin: 0; }
 .al-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
 .al-chips { display: inline-flex; gap: 6px; flex-wrap: wrap; }
 .al-chip {
   font-size: 12.5px; font-weight: 500; color: #41454d; background: #f0f1f3;
-  border: 1px solid transparent; padding: 6px 13px; border-radius: 9999px; cursor: pointer;
+  border: 1px solid transparent; padding: 6px 13px; border-radius: var(--radius-pill); cursor: pointer;
 }
 .al-chip:hover { background: #e4e6e9; }
-.al-chip.active { background: #e4f1f8; border-color: #1786be; color: #1786be; font-weight: 600; }
-.al-count { font-size: 12px; color: #6b7280; margin-left: auto; }
-.al-loading, .al-empty { text-align: center; padding: 48px; color: #6b7280; }
+.al-chip.active { background: var(--color-primary-subtle); border-color: var(--color-primary); color: var(--color-primary); font-weight: 600; }
+.al-count { font-size: 12px; color: var(--color-text-muted); margin-left: auto; }
+.al-loading, .al-empty { text-align: center; padding: 48px; color: var(--color-text-muted); }
 .al-empty-icon { font-size: 36px; display: block; margin-bottom: 8px; }
 .al-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .al-table th {
-  text-align: left; padding: 9px 12px; background: #f7f8fa; color: #6b7280;
+  text-align: left; padding: 9px 12px; background: #f7f8fa; color: var(--color-text-muted);
   font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.3px;
   border-bottom: 1px solid #e4e5e9;
 }
 .al-table td { padding: 10px 12px; border-bottom: 1px solid #f0f1f3; color: #2b2f36; }
 .al-table tr:hover td { background: #fafbfc; }
-.al-time { color: #6b7280; white-space: nowrap; }
+.al-time { color: var(--color-text-muted); white-space: nowrap; }
 .al-actor { font-weight: 600; }
-.al-badge { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 6px; white-space: nowrap; }
-.b-handoff { background: #e4f1f8; color: #0e6491; }
+.al-badge { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: var(--radius-sm); white-space: nowrap; }
+.b-handoff { background: var(--color-primary-subtle); color: #0e6491; }
 .b-reset { background: #fef3c7; color: #92400e; }
 .b-danger { background: #fee2e2; color: #b91c1c; }
 .b-default { background: #f0f1f3; color: #41454d; }
-.al-detail { color: #6b7280; font-size: 12.5px; }
+.al-detail { color: var(--color-text-muted); font-size: 12.5px; }
 .al-pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 18px; }
 .al-page-btn {
-  background: #fff; border: 1px solid #d4d6db; color: #41454d; padding: 6px 14px;
-  border-radius: 8px; cursor: pointer; font-size: 13px;
+  background: var(--color-surface); border: 1px solid #d4d6db; color: #41454d; padding: 6px 14px;
+  border-radius: var(--radius-md); cursor: pointer; font-size: 13px;
 }
 .al-page-btn:hover:not(:disabled) { background: #f0f1f3; }
 .al-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.al-page-info { font-size: 12.5px; color: #6b7280; }
+.al-page-info { font-size: 12.5px; color: var(--color-text-muted); }
 </style>

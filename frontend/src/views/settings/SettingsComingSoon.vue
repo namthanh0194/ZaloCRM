@@ -223,19 +223,19 @@ const bullets = computed(() => meta.value.bullets);
 .cs-tag {
   display: inline-block;
   padding: 4px 12px;
-  background: linear-gradient(135deg, #EEF0FF 0%, #F4F4FE 100%);
+  background: linear-gradient(135deg, var(--color-primary-subtle, #EEF0FF) 0%, #F4F4FE 100%);
   border: 1px solid rgba(94, 106, 210, 0.3);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 12px;
   font-weight: 600;
-  color: #5E6AD2;
+  color: var(--color-primary, #1786be);
   margin-bottom: 24px;
 }
 .cs-roadmap {
   text-align: left;
   background: #FAFAFC;
   border: 1px solid #E4E5E9;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 16px 20px;
   margin-bottom: 20px;
 }
@@ -264,7 +264,7 @@ const bullets = computed(() => meta.value.bullets);
   position: absolute;
   left: 0;
   top: 4px;
-  color: #5E6AD2;
+  color: var(--color-primary, #1786be);
   font-weight: 700;
 }
 .cs-actions {
@@ -273,7 +273,7 @@ const bullets = computed(() => meta.value.bullets);
 .cs-link {
   display: inline-block;
   font-size: 12.5px;
-  color: #5E6AD2;
+  color: var(--color-primary, #1786be);
   text-decoration: none;
   font-weight: 600;
 }

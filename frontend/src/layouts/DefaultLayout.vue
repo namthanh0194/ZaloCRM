@@ -503,7 +503,7 @@ function logout() {
 }
 .nav-tab {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 0 12px; border-radius: var(--r-sm, 8px);
+  padding: 0 12px; border-radius: var(--radius-md, 8px);
   cursor: pointer;
   color: var(--shell-ink, #cfe2ec);
   font-size: 13px; font-weight: 600;
@@ -627,14 +627,14 @@ function logout() {
 .user-avatar :deep(.smax-av) { box-shadow: 0 0 0 2px rgba(255,255,255,.25); }
 
 .smax-main {
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
 }
-.smax-main :deep(.v-main__wrap) { min-height: calc(100vh - var(--smax-topnav-h)); }
+.smax-main :deep(.v-main__wrap) { min-height: calc(100vh - var(--layout-topnav-height)); }
 
 /* Vuetify menus rendered from v-menu inherit theme automatically.
    Force light surface in case parent has legacy-dark applied. */
 :deep(.v-overlay__content > .v-list) {
-  background: var(--smax-bg);
-  color: var(--smax-text);
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 </style>

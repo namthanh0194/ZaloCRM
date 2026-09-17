@@ -136,21 +136,21 @@ function close() { emit('update:modelValue', false); }
 
 <style scoped>
 .pc-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1100; display: flex; align-items: center; justify-content: center; }
-.pc-dialog { background: var(--smax-bg); border-radius: 12px; max-width: 720px; width: 90vw; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column; }
-.pc-header { padding: 16px 20px; border-bottom: 1px solid var(--smax-grey-200); display: flex; justify-content: space-between; align-items: center; }
+.pc-dialog { background: var(--color-surface); border-radius: 12px; max-width: 720px; width: 90vw; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column; }
+.pc-header { padding: 16px 20px; border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; }
 .pc-header h3 { margin: 0; font-size: 16px; }
-.pc-close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--smax-grey-600); }
+.pc-close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--color-text-secondary); }
 .pc-body { padding: 16px 20px; overflow-y: auto; }
-.pc-empty { text-align: center; padding: 40px 0; color: var(--smax-grey-600); }
+.pc-empty { text-align: center; padding: 40px 0; color: var(--color-text-secondary); }
 .pc-list { display: flex; flex-direction: column; gap: 16px; }
-.pc-card { border: 1px solid var(--smax-grey-200); border-radius: 8px; padding: 12px; }
-.pc-card-head { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; color: var(--smax-grey-600); }
+.pc-card { border: 1px solid var(--color-border); border-radius: 8px; padding: 12px; }
+.pc-card-head { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; color: var(--color-text-secondary); }
 .pc-match { font-weight: 600; }
 .pc-contacts { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .pc-radio { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 6px; cursor: pointer; }
 .pc-radio:hover { background: rgba(0,0,0,0.03); }
 .pc-info { flex: 1; }
 .pc-name { font-weight: 500; font-size: 13px; }
-.pc-meta { font-size: 11px; color: var(--smax-grey-600); display: flex; gap: 10px; }
+.pc-meta { font-size: 11px; color: var(--color-text-secondary); display: flex; gap: 10px; }
 .pc-actions { display: flex; justify-content: flex-end; gap: 8px; }
 </style>

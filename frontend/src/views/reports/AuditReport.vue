@@ -251,12 +251,12 @@ function disconnectDot(reason?: string): string {
                     v-for="(c, i) in cronJobs"
                     :key="i"
                     style="display:flex;align-items:center;gap:9px;padding:8px 0"
-                    :style="i < cronJobs.length - 1 ? 'border-bottom:1px solid var(--rk-hairline)' : ''"
+                    :style="i < cronJobs.length - 1 ? 'border-bottom:1px solid var(--color-border)' : ''"
                   >
                     <span class="dot" :class="c?.ok ? 'ok' : 'warn'"></span>
                     <div style="flex:1">
-                      <div class="b" style="font-size:12.5px;color:var(--rk-ink)">{{ c?.name || '—' }}</div>
-                      <div class="sub" style="font-size:11px;color:var(--rk-faint)">
+                      <div class="b" style="font-size:12.5px;color:var(--color-text)">{{ c?.name || '—' }}</div>
+                      <div class="sub" style="font-size:11px;color:var(--color-text-disabled)">
                         {{ c?.lastRunMinAgo != null ? `chạy ${n(c.lastRunMinAgo)} phút trước` : '—' }}
                       </div>
                     </div>
@@ -279,11 +279,11 @@ function disconnectDot(reason?: string): string {
                     v-for="(q, i) in queues"
                     :key="i"
                     style="padding:9px 0"
-                    :style="i < queues.length - 1 ? 'border-bottom:1px solid var(--rk-hairline)' : ''"
+                    :style="i < queues.length - 1 ? 'border-bottom:1px solid var(--color-border)' : ''"
                   >
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                      <span class="b" style="font-size:12.5px;color:var(--rk-ink)">{{ q?.name || '—' }}</span>
-                      <span class="b" style="font-size:12.5px;color:var(--rk-ink);font-variant-numeric:tabular-nums">{{ n(q?.depth) }}</span>
+                      <span class="b" style="font-size:12.5px;color:var(--color-text)">{{ q?.name || '—' }}</span>
+                      <span class="b" style="font-size:12.5px;color:var(--color-text);font-variant-numeric:tabular-nums">{{ n(q?.depth) }}</span>
                     </div>
                     <div :class="queueBarClass(q?.depth)"><i :style="{ width: queueW(q?.depth) }"></i></div>
                   </div>
@@ -300,7 +300,7 @@ function disconnectDot(reason?: string): string {
               <div class="card-b" style="padding:14px">
                 <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px">
                   <div style="font-size:38px;font-weight:800;color:#b42318;line-height:1;font-variant-numeric:tabular-nums">
-                    {{ pct(health.errorRate24h) }}<span style="font-size:18px;color:var(--rk-muted)">%</span>
+                    {{ pct(health.errorRate24h) }}<span style="font-size:18px;color:var(--color-text-muted)">%</span>
                   </div>
                 </div>
                 <template v-if="errorBreakdown.length">
@@ -308,11 +308,11 @@ function disconnectDot(reason?: string): string {
                     v-for="(e, i) in errorBreakdown"
                     :key="i"
                     style="padding:9px 0"
-                    :style="i < errorBreakdown.length - 1 ? 'border-bottom:1px solid var(--rk-hairline)' : ''"
+                    :style="i < errorBreakdown.length - 1 ? 'border-bottom:1px solid var(--color-border)' : ''"
                   >
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                      <span style="font-size:12px;color:var(--rk-body)">{{ e?.category || '—' }}</span>
-                      <span class="b" style="font-size:12px;color:var(--rk-ink)">{{ pct(e?.pct) }}%</span>
+                      <span style="font-size:12px;color:var(--color-text-secondary)">{{ e?.category || '—' }}</span>
+                      <span class="b" style="font-size:12px;color:var(--color-text)">{{ pct(e?.pct) }}%</span>
                     </div>
                     <div :class="errBarClass(e?.category)"><i :style="{ width: errW(e?.pct) }"></i></div>
                   </div>
@@ -366,7 +366,7 @@ function disconnectDot(reason?: string): string {
       <!-- DISCONNECT EVENTS -->
       <div class="card">
         <div class="card-h">
-          <div class="t"><v-icon icon="mdi-cellphone-off" size="18" style="color:var(--rk-danger)" /> Sự kiện nick mất kết nối 24h</div>
+          <div class="t"><v-icon icon="mdi-cellphone-off" size="18" style="color:var(--color-danger)" /> Sự kiện nick mất kết nối 24h</div>
           <span class="meta">24 giờ</span>
         </div>
         <div class="card-b" style="padding:0">

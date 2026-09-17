@@ -223,7 +223,7 @@ function chipBg(hex: string | null): string {
   return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},0.15)`;
 }
 function chipFg(hex: string | null): string {
-  return hex || 'var(--smax-grey-700)';
+  return hex || 'var(--color-text-secondary)';
 }
 
 onMounted(fetchStatuses);
@@ -232,5 +232,5 @@ onMounted(fetchStatuses);
 <style scoped>
 .status-swatch { display: inline-block; width: 16px; height: 16px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); }
 .status-chip-preview { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 500; }
-.color-input { width: 40px; height: 28px; border: 1px solid var(--smax-grey-300); border-radius: 4px; cursor: pointer; padding: 0; }
+.color-input { width: 40px; height: 28px; border: 1px solid var(--color-border-strong); border-radius: 4px; cursor: pointer; padding: 0; }
 </style>

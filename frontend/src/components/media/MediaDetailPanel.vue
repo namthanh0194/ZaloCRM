@@ -332,20 +332,18 @@ async function doArchive() {
 
 <style scoped>
 .m-panel {
-  --ink:#181d26; --body:#333840; --muted:#41454d; --hairline:#dddddd;
-  --canvas:#fff; --soft:#f8fafc; --strong:#e0e2e6; --coral:#aa2d00;
-  --r-sm:6px; --r-md:10px; --pill:9999px;
-  width:380px; border-left:1px solid var(--hairline); flex-shrink:0; background:var(--soft);
+  --coral:#aa2d00;
+  width:380px; border-left:1px solid var(--color-border); flex-shrink:0; background:var(--color-surface-secondary);
   display:flex; flex-direction:column; min-height:0; position:relative;
 }
-.p-head { padding:14px 18px; border-bottom:1px solid var(--hairline); display:flex; align-items:center; justify-content:space-between; background:var(--canvas); color:var(--ink); }
-.p-head .x { border:none; background:none; cursor:pointer; color:var(--muted); font-size:15px; }
+.p-head { padding:14px 18px; border-bottom:1px solid var(--color-border); display:flex; align-items:center; justify-content:space-between; background:var(--color-surface); color:var(--color-text); }
+.p-head .x { border:none; background:none; cursor:pointer; color:var(--color-text-muted); font-size:15px; }
 /* ✕ nổi góc panel (bỏ thanh tiêu đề để ảnh lên trên cùng). */
 .p-close { position:absolute; top:10px; right:10px; z-index:3; width:26px; height:26px; border:none; border-radius:9999px; background:rgba(24,29,38,.55); color:#fff; font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
 .p-close:hover { background:rgba(24,29,38,.82); }
 /* Hàng inline: nhãn + giá trị cùng 1 dòng (Tag / Tên / Quyền). */
 .row { display:flex; align-items:center; gap:10px; margin-bottom:11px; }
-.row-label { font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); font-weight:500; width:46px; flex-shrink:0; }
+.row-label { font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--color-text-muted); font-weight:500; width:46px; flex-shrink:0; }
 .row .ipt { flex:1; }
 .row .seg { flex-shrink:0; }
 /* Tag inline: chip + ô nhập trên 1 dòng, KHÔNG xuống dòng — quá nhiều thì cuộn ngang. */
@@ -355,55 +353,55 @@ async function doArchive() {
 .tag-inline .tg-input { flex-shrink:0; }
 .p-body { padding:18px; overflow:auto; flex:1; min-height:0; }
 /* HD 1366 (workspace ~648px): preview gọn 160px để khối Nguồn + tag + nút không bị đẩy khuất. */
-.preview { height:160px; background:var(--strong); border-radius:var(--r-md); display:flex; align-items:center; justify-content:center; margin-bottom:12px; overflow:hidden; }
-.preview.is-file { height:96px; background:var(--canvas); border:1px solid var(--hairline); }
+.preview { height:160px; background:var(--color-border-strong); border-radius:var(--radius-lg); display:flex; align-items:center; justify-content:center; margin-bottom:12px; overflow:hidden; }
+.preview.is-file { height:96px; background:var(--color-surface); border:1px solid var(--color-border); }
 .preview img, .preview video { width:100%; height:100%; object-fit:contain; }
 .preview video { background:#000; }
-.preview .ph { color:var(--muted); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:8px; }
-.preview .ph-name { font-size:12px; color:var(--body); text-align:center; word-break:break-word; max-width:92%; }
+.preview .ph { color:var(--color-text-muted); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:8px; }
+.preview .ph-name { font-size:12px; color:var(--color-text-secondary); text-align:center; word-break:break-word; max-width:92%; }
 
 /* Accordion thu gọn: Nguồn & thông tin / Watermark — bấm header mở (panel gọn, hết tràn). */
-.acc-head { width:100%; display:flex; align-items:center; gap:7px; background:var(--canvas); border:1px solid var(--hairline); border-radius:var(--r-sm); padding:9px 12px; margin-bottom:10px; font-size:12.5px; color:var(--ink); font-weight:500; cursor:pointer; text-align:left; font-family:inherit; }
-.acc-head.open { border-color:var(--muted); }
-.acc-caret { color:var(--muted); width:12px; flex-shrink:0; }
-.acc-badge { margin-left:auto; font-size:10px; font-weight:700; background:#fef3c7; color:#92710a; border-radius:var(--pill); padding:1px 8px; }
+.acc-head { width:100%; display:flex; align-items:center; gap:7px; background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-md); padding:9px 12px; margin-bottom:10px; font-size:12.5px; color:var(--color-text); font-weight:500; cursor:pointer; text-align:left; font-family:inherit; }
+.acc-head.open { border-color:var(--color-text-muted); }
+.acc-caret { color:var(--color-text-muted); width:12px; flex-shrink:0; }
+.acc-badge { margin-left:auto; font-size:10px; font-weight:700; background:#fef3c7; color:#92710a; border-radius:var(--radius-pill); padding:1px 8px; }
 /* Khối "Nguồn & thông tin" — grid 2 cột nhãn-giá-trị (gọn chiều cao, HD 1366). */
-.srcbox { background:var(--canvas); border:1px solid var(--hairline); border-radius:var(--r-md); padding:11px 13px; margin-bottom:12px; }
-.wm-wrap { background:var(--canvas); border:1px solid var(--hairline); border-radius:var(--r-md); padding:11px 13px; margin-bottom:12px; }
+.srcbox { background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-lg); padding:11px 13px; margin-bottom:12px; }
+.wm-wrap { background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-lg); padding:11px 13px; margin-bottom:12px; }
 .srcdl { display:grid; grid-template-columns:88px 1fr; gap:5px 10px; margin:0; }
-.srcdl dt { font-size:12px; color:var(--muted); }
-.srcdl dd { font-size:12.5px; color:var(--ink); margin:0; display:flex; align-items:center; gap:5px; min-width:0; }
-.srcdl dd .dd-ic { flex-shrink:0; color:var(--muted); }
+.srcdl dt { font-size:12px; color:var(--color-text-muted); }
+.srcdl dd { font-size:12.5px; color:var(--color-text); margin:0; display:flex; align-items:center; gap:5px; min-width:0; }
+.srcdl dd .dd-ic { flex-shrink:0; color:var(--color-text-muted); }
 .fld { margin-bottom:12px; }
-.fld label { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin-bottom:6px; font-weight:500; }
-.ipt { width:100%; border:1px solid var(--hairline); border-radius:var(--r-sm); padding:7px 10px; font-size:14px; color:var(--ink); outline:none; }
-.seg { display:inline-flex; border:1px solid var(--hairline); border-radius:var(--pill); overflow:hidden; font-size:12.5px; background:var(--canvas); }
-.seg span { padding:6px 16px; cursor:pointer; color:var(--muted); }
-.seg span.on { background:var(--ink); color:#fff; }
-.warn { background:#f5e9d4; border:1px solid #e6d3ad; color:#6b5520; border-radius:var(--r-sm); padding:8px 11px; font-size:12px; margin-top:8px; }
-.wm-toggle { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--body); cursor:pointer; }
-.wm-toggle input { accent-color:var(--ink); cursor:pointer; }
-.wm-opts { margin-top:10px; padding:10px 12px; background:var(--canvas); border:1px solid var(--hairline); border-radius:var(--r-sm); }
+.fld label { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--color-text-muted); margin-bottom:6px; font-weight:500; }
+.ipt { width:100%; border:1px solid var(--color-border); border-radius:var(--radius-md); padding:7px 10px; font-size:14px; color:var(--color-text); outline:none; }
+.seg { display:inline-flex; border:1px solid var(--color-border); border-radius:var(--radius-pill); overflow:hidden; font-size:12.5px; background:var(--color-surface); }
+.seg span { padding:6px 16px; cursor:pointer; color:var(--color-text-muted); }
+.seg span.on { background:var(--color-text); color:#fff; }
+.warn { background:#f5e9d4; border:1px solid #e6d3ad; color:#6b5520; border-radius:var(--radius-md); padding:8px 11px; font-size:12px; margin-top:8px; }
+.wm-toggle { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--color-text-secondary); cursor:pointer; }
+.wm-toggle input { accent-color:var(--color-text); cursor:pointer; }
+.wm-opts { margin-top:10px; padding:10px 12px; background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-md); }
 .wm-line { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
 .wm-line:last-child { margin-bottom:0; }
-.wm-lbl { font-size:12px; color:var(--muted); width:54px; flex-shrink:0; }
-.wm-sel { flex:1; border:1px solid var(--hairline); border-radius:var(--r-sm); padding:5px 8px; font-size:12.5px; color:var(--ink); background:var(--canvas); outline:none; }
-.wm-range { flex:1; accent-color:var(--ink); }
-.wm-val { font-size:12px; color:var(--ink); width:38px; text-align:right; }
-.hint { font-size:11.5px; color:var(--muted); margin-top:5px; }
+.wm-lbl { font-size:12px; color:var(--color-text-muted); width:54px; flex-shrink:0; }
+.wm-sel { flex:1; border:1px solid var(--color-border); border-radius:var(--radius-md); padding:5px 8px; font-size:12.5px; color:var(--color-text); background:var(--color-surface); outline:none; }
+.wm-range { flex:1; accent-color:var(--color-text); }
+.wm-val { font-size:12px; color:var(--color-text); width:38px; text-align:right; }
+.hint { font-size:11.5px; color:var(--color-text-muted); margin-top:5px; }
 .tags { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
-.tg { display:inline-flex; align-items:center; gap:5px; border:1px solid var(--hairline); border-radius:var(--pill); padding:3px 10px; font-size:11.5px; color:var(--muted); }
+.tg { display:inline-flex; align-items:center; gap:5px; border:1px solid var(--color-border); border-radius:var(--radius-pill); padding:3px 10px; font-size:11.5px; color:var(--color-text-muted); }
 .tg.coral { background:#fbe9e2; border-color:#f0c4b3; color:var(--coral); }
 .tg i { cursor:pointer; font-style:normal; }
-.tg-input { border:1px dashed var(--hairline); border-radius:var(--pill); padding:3px 10px; font-size:11.5px; width:70px; outline:none; }
+.tg-input { border:1px dashed var(--color-border); border-radius:var(--radius-pill); padding:3px 10px; font-size:11.5px; width:70px; outline:none; }
 /* Gợi ý tag kho (focus ô tag → bấm chip để gắn nhanh). */
 .tag-suggest { display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; }
-.ts-chip { border:1px solid var(--hairline); background:var(--canvas); color:var(--body); border-radius:var(--pill); padding:2px 9px; font-size:11px; cursor:pointer; }
+.ts-chip { border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text-secondary); border-radius:var(--radius-pill); padding:2px 9px; font-size:11px; cursor:pointer; }
 .ts-chip:hover { background:#fbe9e2; border-color:#f0c4b3; color:var(--coral); }
-.stat div { font-size:13.5px; color:var(--ink); }
-.p-foot { padding:14px 18px; border-top:1px solid var(--hairline); background:var(--canvas); display:flex; gap:8px; align-items:center; }
-.btn-insert { flex:1; border:none; background:var(--ink); color:#fff; border-radius:var(--r-md); padding:9px; font-size:13px; font-weight:500; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:34px; }
-.btn-fav { border:1px solid var(--hairline); background:var(--canvas); color:var(--body); border-radius:var(--r-md); padding:9px 12px; cursor:pointer; display:inline-flex; align-items:center; min-height:34px; }
+.stat div { font-size:13.5px; color:var(--color-text); }
+.p-foot { padding:14px 18px; border-top:1px solid var(--color-border); background:var(--color-surface); display:flex; gap:8px; align-items:center; }
+.btn-insert { flex:1; border:none; background:var(--color-text); color:#fff; border-radius:var(--radius-lg); padding:9px; font-size:13px; font-weight:500; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:34px; }
+.btn-fav { border:1px solid var(--color-border); background:var(--color-surface); color:var(--color-text-secondary); border-radius:var(--radius-lg); padding:9px 12px; cursor:pointer; display:inline-flex; align-items:center; min-height:34px; }
 .btn-fav.on { background:#fef3c7; border-color:#f4d35e; color:#92710a; }
-.btn-danger { border:1px solid #f0c4b3; background:#fbe9e2; color:var(--coral); border-radius:var(--r-md); padding:9px 12px; cursor:pointer; display:inline-flex; align-items:center; min-height:34px; }
+.btn-danger { border:1px solid #f0c4b3; background:#fbe9e2; color:var(--coral); border-radius:var(--radius-lg); padding:9px 12px; cursor:pointer; display:inline-flex; align-items:center; min-height:34px; }
 </style>

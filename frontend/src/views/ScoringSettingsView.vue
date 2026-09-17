@@ -318,10 +318,10 @@ onMounted(load);
   margin: 0;
 }
 .back-btn {
-  background: #fff;
-  border: 1px solid #E5E7EB;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   padding: 8px 14px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
@@ -330,7 +330,7 @@ onMounted(load);
 .loading {
   text-align: center;
   padding: 48px;
-  color: #6B7280;
+  color: var(--color-text-muted);
 }
 
 .settings-cards {
@@ -350,7 +350,7 @@ onMounted(load);
 }
 .hint {
   font-size: 12px;
-  color: #6B7280;
+  color: var(--color-text-muted);
   margin: -8px 0 12px;
 }
 
@@ -370,8 +370,8 @@ onMounted(load);
   font-size: 13px;
 }
 .weight-row input {
-  border: 1px solid #E5E7EB;
-  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   padding: 6px 10px;
   text-align: center;
   font-family: ui-monospace, monospace;
@@ -379,7 +379,7 @@ onMounted(load);
 }
 .weight-row .unit {
   font-size: 13px;
-  color: #6B7280;
+  color: var(--color-text-muted);
 }
 
 .sum-row {
@@ -419,23 +419,23 @@ onMounted(load);
 .btn-secondary {
   border: none;
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
 }
 .btn-primary {
   background: #6366F1;
-  color: white;
+  color: var(--color-on-primary);
 }
 .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 .btn-secondary {
-  background: #F3F4F6;
-  color: #374151;
-  border: 1px solid #E5E7EB;
+  background: var(--color-surface-secondary);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
 }
 
 .rules-table {
@@ -451,14 +451,14 @@ onMounted(load);
 }
 .rules-table th {
   background: #FAFBFC;
-  color: #6B7280;
+  color: var(--color-text-muted);
   text-transform: uppercase;
   font-size: 10px;
 }
 .rules-table code {
   font-family: ui-monospace, monospace;
   font-size: 11px;
-  background: #F3F4F6;
+  background: var(--color-surface-secondary);
   padding: 1px 6px;
   border-radius: 4px;
 }
@@ -469,15 +469,15 @@ onMounted(load);
   background: #D1FAE5;
   color: #047857;
   padding: 2px 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 11px;
   font-weight: 600;
 }
 .badge-off {
-  background: #F3F4F6;
-  color: #9CA3AF;
+  background: var(--color-surface-secondary);
+  color: var(--color-text-disabled);
   padding: 2px 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 11px;
 }
 
@@ -486,9 +486,9 @@ onMounted(load);
   top: 24px;
   right: 24px;
   background: #111827;
-  color: white;
+  color: var(--color-on-primary);
   padding: 12px 20px;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   font-size: 13px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.15);
   z-index: 9999;

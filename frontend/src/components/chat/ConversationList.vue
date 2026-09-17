@@ -1227,15 +1227,15 @@ function onPatternLeave() {
 
 <style scoped>
 .conv-list {
-  background: var(--smax-bg);
+  background: var(--color-surface);
   display: flex; flex-direction: column;
   height: 100%; overflow: hidden;
 }
 
 .cl-header {
   padding: 11px 13px;
-  border-bottom: 1px solid var(--smax-grey-200);
-  background: var(--smax-grey-50);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-secondary);
 }
 .cl-search-row {
   display: flex; gap: 6px; align-items: center;
@@ -1259,29 +1259,29 @@ function onPatternLeave() {
   border: none;
   border-radius: 50%;
   background: transparent;
-  color: var(--smax-grey-400, #9CA3AF);
+  color: var(--color-text-disabled, #9CA3AF);
   cursor: pointer;
   opacity: 0.55;
   transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
 .cl-search-clear:hover {
   opacity: 1;
-  background: var(--smax-grey-200, #E5E7EB);
-  color: var(--smax-grey-700, #374151);
+  background: var(--color-border, #E5E7EB);
+  color: var(--color-text-secondary, #374151);
 }
 /* Khi có text, chừa chỗ bên phải cho nút X (đỡ đè chữ) */
 .cl-search.has-text { padding-right: 32px; }
 .cl-search {
   flex: 1; min-width: 0;
   padding: 9px 11px 9px 36px;
-  border: 1.5px solid var(--smax-grey-200);
+  border: 1.5px solid var(--color-border);
   border-radius: 9px;
   font-size: 13px;
-  background: var(--smax-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='17' height='17' viewBox='0 0 24 24' fill='none' stroke='%235a6478' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E") no-repeat 11px center;
+  background: var(--color-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='17' height='17' viewBox='0 0 24 24' fill='none' stroke='%235a6478' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E") no-repeat 11px center;
   outline: none;
   font-family: inherit;
 }
-.cl-search:focus { border-color: var(--smax-primary); }
+.cl-search:focus { border-color: var(--color-primary); }
 
 /* Wedge A 2026-05-28: flash đỏ cam khi sale click "Tin nhắn mới" mà search trống */
 .cl-search--flash {
@@ -1291,7 +1291,7 @@ function onPatternLeave() {
   0%   { border-color: #d97706; box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.55); background-color: #fffaf0; }
   35%  { border-color: #ea580c; box-shadow: 0 0 0 6px rgba(217, 119, 6, 0.18); background-color: #fff5e6; }
   70%  { border-color: #d97706; box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.0); background-color: #fffaf0; }
-  100% { border-color: var(--smax-grey-200); box-shadow: none; background-color: var(--smax-bg); }
+  100% { border-color: var(--color-border); box-shadow: none; background-color: var(--color-surface); }
 }
 
 .cl-new-msg-caret {
@@ -1305,9 +1305,9 @@ function onPatternLeave() {
 .cl-new-msg {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 8px 10px;
-  border: 1.5px solid var(--smax-primary);
-  background: var(--smax-primary-soft);
-  color: var(--smax-primary);
+  border: 1.5px solid var(--color-primary);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
   border-radius: 9px;
   font-size: 12px; font-weight: 600;
   cursor: pointer;
@@ -1316,7 +1316,7 @@ function onPatternLeave() {
   flex-shrink: 0;
 }
 .cl-new-msg:hover {
-  background: var(--smax-primary);
+  background: var(--color-primary);
   color: white;
 }
 
@@ -1340,7 +1340,7 @@ function onPatternLeave() {
   white-space: nowrap;
   flex-shrink: 0;
   user-select: none;
-  background: var(--smax-bg);
+  background: var(--color-surface);
   transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 .cl-label-chip:hover {
@@ -1384,7 +1384,7 @@ function onPatternLeave() {
 .cl-tabs {
   display: flex; gap: 3px;
   margin-top: 7px;
-  border-bottom: 1px solid var(--smax-grey-200);
+  border-bottom: 1px solid var(--color-border);
   margin-left: -13px; margin-right: -13px;
   padding: 0 13px;
 }
@@ -1393,25 +1393,25 @@ function onPatternLeave() {
   padding: 7px 11px;
   cursor: pointer;
   font-size: 12px; font-weight: 500;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
   display: inline-flex; align-items: center; gap: 5px;
   font-family: inherit;
 }
 .cl-tab.active {
-  color: var(--smax-primary);
-  border-bottom-color: var(--smax-primary);
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
 }
 .cl-tab-count {
-  background: var(--smax-grey-100);
-  color: var(--smax-grey-700);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
   padding: 1px 6px; border-radius: 9px;
   font-size: 10px;
 }
 .cl-tab.active .cl-tab-count {
-  background: var(--smax-primary-soft);
-  color: var(--smax-primary);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
 }
 
 .conv-scroll { flex: 1; overflow-y: auto; }
@@ -1423,7 +1423,7 @@ function onPatternLeave() {
 .conv-list-enter-active { transition: none; }
 .loading {
   padding: 20px; text-align: center;
-  color: var(--smax-grey-700); font-size: 12px; font-style: italic;
+  color: var(--color-text-secondary); font-size: 12px; font-style: italic;
 }
 
 .conv-item {
@@ -1431,7 +1431,7 @@ function onPatternLeave() {
   display: flex; gap: 11px;
   align-items: flex-start;
   cursor: pointer;
-  border-bottom: 1px solid var(--smax-grey-100);
+  border-bottom: 1px solid var(--color-bg);
   position: relative;
   user-select: none;
   /* Cố định chiều cao mỗi item — name + preview + tag row reserved */
@@ -1474,7 +1474,7 @@ function onPatternLeave() {
   height: 18px;
   border-radius: 50%;
   border: 2px solid #fff;
-  background: var(--smax-grey-100, #f3f4f6);
+  background: var(--color-bg, #f3f4f6);
   object-fit: cover;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
   z-index: 1;
@@ -1488,13 +1488,13 @@ function onPatternLeave() {
   color: #fff;
   background: linear-gradient(135deg, #2962ff, #6366f1);
 }
-.conv-item.active .ci-nick-mini { border-color: var(--smax-primary-soft, #e3f2fd); }
-.conv-item:hover { background: var(--smax-grey-50); }
+.conv-item.active .ci-nick-mini { border-color: var(--color-primary-subtle, #e3f2fd); }
+.conv-item:hover { background: var(--color-surface-secondary); }
 .conv-item.unread .ci-name { font-weight: 700; }
 /* Active: nền xanh nhạt đồng nhất + bo góc + viền xanh nhẹ */
 .conv-item.active,
 .conv-item.is-group.active {
-  background: var(--smax-primary-soft) !important;
+  background: var(--color-primary-subtle) !important;
   border-radius: 12px;
   margin: 2px 6px;
   border-bottom-color: transparent !important;
@@ -1502,7 +1502,7 @@ function onPatternLeave() {
 }
 .conv-item.active:hover,
 .conv-item.is-group.active:hover {
-  background: var(--smax-primary-soft) !important;
+  background: var(--color-primary-subtle) !important;
 }
 
 /* M53 2026-05-30: Virtual conversation — nền cam nhạt + chip 🔒 */
@@ -1611,7 +1611,7 @@ function onPatternLeave() {
   position: absolute; bottom: -2px; right: -2px;
   width: 15px; height: 15px;
   background: #0068ff; border-radius: 50%;
-  border: 2px solid var(--smax-bg);
+  border: 2px solid var(--color-surface);
   color: white; font-size: 9px; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
 }
@@ -1652,7 +1652,7 @@ function onPatternLeave() {
   pointer-events: none;
 }
 .ci-time {
-  font-size: 11px; color: var(--smax-grey-700);
+  font-size: 11px; color: var(--color-text-secondary);
   line-height: 1;
 }
 .ci-preview-sender {
@@ -1660,7 +1660,7 @@ function onPatternLeave() {
   color: inherit;
 }
 .ci-preview {
-  font-size: 12px; color: var(--smax-grey-700);
+  font-size: 12px; color: var(--color-text-secondary);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   margin-top: 2px;
   height: 16px; line-height: 16px;
@@ -1672,7 +1672,7 @@ function onPatternLeave() {
   font-weight: 600;
 }
 .ci-preview.tone-muted {
-  color: var(--smax-grey-500); /* xám — sale gọi ko trả lời / tin recall */
+  color: var(--color-text-muted); /* xám — sale gọi ko trả lời / tin recall */
   font-style: italic;
 }
 /* Tag row luôn reserve khoảng nhỏ — kể cả khi không có tag */
@@ -1727,8 +1727,8 @@ function onPatternLeave() {
   height: 16px;
   padding: 0 6px;
   border-radius: 4px;
-  background: var(--smax-grey-200, #ebedf0);
-  color: var(--smax-grey-700, #4a5468);
+  background: var(--color-border, #ebedf0);
+  color: var(--color-text-secondary, #4a5468);
   font-size: 10px;
   font-weight: 700;
   cursor: pointer;
@@ -1736,7 +1736,7 @@ function onPatternLeave() {
   transition: background 0.12s;
 }
 .tag-overflow:hover {
-  background: var(--smax-primary, #2962ff);
+  background: var(--color-primary, #2962ff);
   color: #fff;
 }
 .tag-overflow-popup {
@@ -1805,7 +1805,7 @@ function onPatternLeave() {
 
 .empty-state {
   text-align: center; padding: 40px 13px;
-  color: var(--smax-grey-700); font-size: 12px;
+  color: var(--color-text-secondary); font-size: 12px;
 }
 </style>
 

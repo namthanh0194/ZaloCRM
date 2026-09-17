@@ -105,12 +105,12 @@
               <tr
                 v-for="(s, i) in data.sales"
                 :key="s.userId"
-                :style="i < 3 ? 'background:var(--rk-brand-softer)' : ''"
+                :style="i < 3 ? 'background:var(--color-surface-active)' : ''"
               >
                 <td
                   class="b"
                   :class="{ muted: i >= 3 }"
-                  :style="i < 3 ? 'color:var(--rk-brand-700)' : ''"
+                  :style="i < 3 ? 'color:var(--color-primary-active)' : ''"
                 >{{ i + 1 }}</td>
                 <td>
                   <div class="cellname">
@@ -255,8 +255,8 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(s, i) in usage.bySale" :key="s.userId" :style="i < 3 ? 'background:var(--rk-brand-softer)' : ''">
-                  <td class="b" :class="{ muted: i >= 3 }" :style="i < 3 ? 'color:var(--rk-brand-700)' : ''">{{ i + 1 }}</td>
+                <tr v-for="(s, i) in usage.bySale" :key="s.userId" :style="i < 3 ? 'background:var(--color-surface-active)' : ''">
+                  <td class="b" :class="{ muted: i >= 3 }" :style="i < 3 ? 'color:var(--color-primary-active)' : ''">{{ i + 1 }}</td>
                   <td>
                     <div class="cellname">
                       <span class="av" :style="{ background: avColor(s.name) }">{{ initials(s.name) }}</span>
@@ -804,33 +804,33 @@ function deltaIcon(d: number): string {
 
 <style scoped>
 .usage-divider { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700;
-  color: var(--rk-brand-700, #0b5880); margin: 20px 0 14px; padding-top: 14px; border-top: 1px dashed var(--rk-hairline, #e6e9ef); }
-.usage-divider :deep(.v-icon) { color: var(--rk-brand, #1786be); }
-.usage-divider-note { font-size: 12px; font-weight: 500; color: var(--rk-faint, #97a0ac); margin-left: 2px; }
+  color: var(--color-primary-active, #0b5880); margin: 20px 0 14px; padding-top: 14px; border-top: 1px dashed var(--color-border, #e6e9ef); }
+.usage-divider :deep(.v-icon) { color: var(--color-primary, #1786be); }
+.usage-divider-note { font-size: 12px; font-weight: 500; color: var(--color-text-disabled, #97a0ac); margin-left: 2px; }
 .mod-list { display: flex; flex-direction: column; gap: 11px; }
 .mod-row { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
-.mod-nm { width: 150px; flex: none; font-weight: 600; color: var(--rk-ink, #1f2d3d); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mod-vv { width: 100px; flex: none; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--rk-ink, #1f2d3d); }
-.usage-note { display: flex; align-items: center; gap: 6px; margin-top: 12px; font-size: 12px; color: var(--rk-muted, #6b7785); font-style: italic; }
+.mod-nm { width: 150px; flex: none; font-weight: 600; color: var(--color-text, #1f2d3d); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mod-vv { width: 100px; flex: none; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--color-text, #1f2d3d); }
+.usage-note { display: flex; align-items: center; gap: 6px; margin-top: 12px; font-size: 12px; color: var(--color-text-muted, #6b7785); font-style: italic; }
 
 /* 1) LINE CHART */
 .lc-wrap { width: 100%; }
 .lc-svg { width: 100%; height: auto; display: block; }
-.lc-grid line { stroke: var(--rk-hairline, #e6e9ef); stroke-width: 1; }
-.lc-ylab, .lc-xlab { font-size: 10.5px; fill: var(--rk-faint, #97a0ac); font-weight: 600; }
+.lc-grid line { stroke: var(--color-border, #e6e9ef); stroke-width: 1; }
+.lc-ylab, .lc-xlab { font-size: 10.5px; fill: var(--color-text-disabled, #97a0ac); font-weight: 600; }
 .lc-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .lc-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 12px; }
-.lc-li { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--rk-ink, #1f2d3d); }
+.lc-li { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--color-text, #1f2d3d); }
 .lc-sw { width: 11px; height: 11px; border-radius: 3px; display: inline-block; flex: none; }
 
 /* 2) HEATMAP */
 .hh { overflow-x: auto; }
 .hh-grid { display: grid; grid-template-columns: 34px repeat(24, 1fr); gap: 3px; align-items: center; min-width: 560px; }
-.hh-rl { font-size: 11.5px; font-weight: 600; color: var(--rk-ink, #1f2d3d); }
+.hh-rl { font-size: 11.5px; font-weight: 600; color: var(--color-text, #1f2d3d); }
 .hh-c { aspect-ratio: 1; border-radius: 3px; background: #eef1f6; }
 .hh-c.hl0 { background: #eef1f6; } .hh-c.hl1 { background: #d7ecf7; } .hh-c.hl2 { background: #9fd3ec; }
-.hh-c.hl3 { background: #4fb0e0; } .hh-c.hl4 { background: var(--rk-brand, #1786be); }
-.hh-hx { font-size: 10px; color: var(--rk-faint, #97a0ac); font-weight: 600; text-align: center; }
+.hh-c.hl3 { background: #4fb0e0; } .hh-c.hl4 { background: var(--color-primary, #1786be); }
+.hh-hx { font-size: 10px; color: var(--color-text-disabled, #97a0ac); font-weight: 600; text-align: center; }
 .hh-foot { display: flex; align-items: center; gap: 4px; margin-top: 12px; font-size: 11px; }
 .hh-foot .hh-c { width: 14px; height: 14px; aspect-ratio: auto; flex: none; }
 .hh-foot .muted { margin: 0 4px; }
@@ -838,26 +838,26 @@ function deltaIcon(d: number): string {
 /* 3) QUADRANT */
 .qd-wrap { width: 100%; max-width: 560px; margin: 0 auto; }
 .qd-svg { width: 100%; height: auto; display: block; }
-.qd-frame { fill: var(--rk-surface-2, #f8fafc); stroke: var(--rk-hairline, #e6e9ef); stroke-width: 1; }
-.qd-med { stroke: var(--rk-faint, #97a0ac); stroke-width: 1; stroke-dasharray: 4 4; }
-.qd-ql { font-size: 10px; fill: var(--rk-faint, #97a0ac); font-weight: 600; }
+.qd-frame { fill: var(--color-surface-secondary, #f8fafc); stroke: var(--color-border, #e6e9ef); stroke-width: 1; }
+.qd-med { stroke: var(--color-text-disabled, #97a0ac); stroke-width: 1; stroke-dasharray: 4 4; }
+.qd-ql { font-size: 10px; fill: var(--color-text-disabled, #97a0ac); font-weight: 600; }
 .qd-dot { stroke: #fff; stroke-width: 1.5; opacity: .92; }
 .qd-dl { font-size: 9px; fill: #fff; font-weight: 700; pointer-events: none; }
-.qd-ax { font-size: 10.5px; fill: var(--rk-muted, #6b7785); font-weight: 700; }
+.qd-ax { font-size: 10.5px; fill: var(--color-text-muted, #6b7785); font-weight: 700; }
 
 /* 4) FUNNEL per sale */
-.fn-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 14px; font-size: 11.5px; color: var(--rk-muted, #6b7785); }
+.fn-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 14px; font-size: 11.5px; color: var(--color-text-muted, #6b7785); }
 .fn-legend span { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
 .fn-sw { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
-.fn-sw.s0 { background: var(--rk-brand-700, #0b5880); } .fn-sw.s1 { background: var(--rk-brand, #1786be); }
+.fn-sw.s0 { background: var(--color-primary-active, #0b5880); } .fn-sw.s1 { background: var(--color-primary, #1786be); }
 .fn-sw.s2 { background: #4fb0e0; } .fn-sw.s3 { background: #9fd3ec; }
 .fn-list { display: flex; flex-direction: column; gap: 10px; }
 .fn-row { display: flex; align-items: center; gap: 12px; }
 .fn-nm { width: 170px; flex: none; }
-.fn-nm > div { font-size: 12.5px; font-weight: 600; color: var(--rk-ink, #1f2d3d); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fn-nm > div { font-size: 12.5px; font-weight: 600; color: var(--color-text, #1f2d3d); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fn-bars { flex: 1; display: flex; align-items: stretch; gap: 2px; height: 26px; min-width: 0; }
 .fn-seg { height: 100%; min-width: 22px; display: flex; align-items: center; justify-content: center; border-radius: 5px;
   font-size: 11px; font-weight: 700; color: #fff; overflow: hidden; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.fn-seg.s0 { background: var(--rk-brand-700, #0b5880); } .fn-seg.s1 { background: var(--rk-brand, #1786be); }
-.fn-seg.s2 { background: #4fb0e0; } .fn-seg.s3 { background: #9fd3ec; color: var(--rk-brand-700, #0b5880); }
+.fn-seg.s0 { background: var(--color-primary-active, #0b5880); } .fn-seg.s1 { background: var(--color-primary, #1786be); }
+.fn-seg.s2 { background: #4fb0e0; } .fn-seg.s3 { background: #9fd3ec; color: var(--color-primary-active, #0b5880); }
 </style>

@@ -1,7 +1,8 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
-  <div>
+  <PageShell :padded="false">
+    <div>
     <div class="d-flex align-center mb-4 flex-wrap gap-2">
       <h1 class="text-h4">Báo cáo</h1>
       <v-spacer />
@@ -61,12 +62,14 @@
         />
       </v-window-item>
     </v-window>
-  </div>
+    </div>
+  </PageShell>
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { api } from '@/api';
+import { PageShell } from '@/design-system';
 
 // Date defaults: last 30 days
 const today = new Date();

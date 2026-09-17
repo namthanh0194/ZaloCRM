@@ -1,0 +1,9 @@
+/* Appointment domain tokens for public actions and appointment status presentation. */
+:root {
+  --appointment-public-bg-start: var(--z-navy-700);
+  --appointment-public-bg-end: var(--z-navy-900);
+  --appointment-status-success-text: #157f3c;
+  --appointment-status-danger-text: #b42318;
+  --appointment-status-warning-text: #b45309;
+  --appointment-danger-border: #f0c0bb;
+}

@@ -128,8 +128,8 @@ function onNickAvatarError(e: Event): void {
 
 <style scoped>
 .nick-sidebar {
-  background: var(--surface);
-  border-right: 1px solid var(--line);
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -138,13 +138,13 @@ function onNickAvatarError(e: Event): void {
 
 .head {
   padding: 14px 16px 10px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--color-border);
 }
 .head .title {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: .06em;
-  color: var(--ink-4);
+  color: var(--color-text-disabled);
   font-weight: 700;
   margin-bottom: 6px;
   display: flex;
@@ -152,35 +152,35 @@ function onNickAvatarError(e: Event): void {
   align-items: center;
 }
 .head .title .total {
-  background: var(--brand-soft);
-  color: var(--brand);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
   padding: 1px 8px;
-  border-radius: var(--r-pill);
+  border-radius: var(--radius-pill);
   font-size: 11px;
 }
 .head .search {
   width: 100%;
   padding: 6px 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   font-size: 12px;
-  background: var(--surface-2);
+  background: var(--color-bg);
   font-family: inherit;
   box-sizing: border-box;
 }
-.head .search:focus { outline: none; background: var(--surface); border-color: var(--brand); }
+.head .search:focus { outline: none; background: var(--color-surface); border-color: var(--color-primary); }
 
 .all-row {
   display: flex; align-items: center; gap: 8px;
-  padding: 8px 10px; border-radius: var(--r-sm);
-  cursor: pointer; border: 1px dashed var(--line);
+  padding: 8px 10px; border-radius: var(--radius-md);
+  cursor: pointer; border: 1px dashed var(--color-border);
   margin: 8px;
-  font-weight: 600; font-size: 13px; color: var(--ink-2);
+  font-weight: 600; font-size: 13px; color: var(--color-text-secondary);
 }
-.all-row:hover { background: var(--brand-soft); color: var(--brand); border-color: var(--brand); }
-.all-row.active { background: var(--brand); color: #fff; border-color: var(--brand); border-style: solid; }
+.all-row:hover { background: var(--color-primary-subtle); color: var(--color-primary); border-color: var(--color-primary); }
+.all-row.active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); border-style: solid; }
 .all-row .av {
-  width: 28px; height: 28px; border-radius: var(--r-xs);
+  width: 28px; height: 28px; border-radius: var(--radius-sm);
   background: linear-gradient(135deg, #94a3b8, #64748b);
   display: grid; place-items: center; color: #fff; font-size: 12px;
   flex-shrink: 0;
@@ -189,8 +189,8 @@ function onNickAvatarError(e: Event): void {
 .all-row .sub { font-size: 10px; opacity: .7; font-weight: 400; }
 .all-row .count {
   margin-left: auto; font-size: 11px;
-  padding: 2px 8px; border-radius: var(--r-pill);
-  background: var(--surface-2); color: var(--ink-2);
+  padding: 2px 8px; border-radius: var(--radius-pill);
+  background: var(--color-bg); color: var(--color-text-secondary);
 }
 .all-row.active .count { background: rgba(255,255,255,.2); color: #fff; }
 
@@ -198,15 +198,15 @@ function onNickAvatarError(e: Event): void {
 
 .nick-pill {
   display: grid; grid-template-columns: 32px 1fr auto; gap: 8px; align-items: center;
-  padding: 8px 10px; border-radius: var(--r-sm);
+  padding: 8px 10px; border-radius: var(--radius-md);
   cursor: pointer;
   border: 1px solid transparent;
   margin-bottom: 2px;
 }
-.nick-pill:hover { background: var(--surface-2); }
+.nick-pill:hover { background: var(--color-bg); }
 .nick-pill.active {
-  background: var(--brand-soft);
-  border-color: var(--brand);
+  background: var(--color-primary-subtle);
+  border-color: var(--color-primary);
   box-shadow: 0 1px 2px rgba(47,110,229,.1);
 }
 .nick-pill .av {
@@ -224,38 +224,38 @@ function onNickAvatarError(e: Event): void {
 .nick-pill .av::after {
   content: ""; position: absolute; bottom: -1px; right: -1px;
   width: 10px; height: 10px; border-radius: 50%;
-  background: var(--success); border: 2px solid var(--surface);
+  background: var(--color-success); border: 2px solid var(--color-surface);
   z-index: 1;
 }
-.nick-pill .av.offline::after { background: var(--ink-4); }
+.nick-pill .av.offline::after { background: var(--color-text-disabled); }
 .nick-pill .info { min-width: 0; }
 .nick-pill .info .name {
   font-weight: 600; font-size: 13px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.nick-pill .info .meta { font-size: 11px; color: var(--ink-4); }
+.nick-pill .info .meta { font-size: 11px; color: var(--color-text-disabled); }
 .nick-pill .count {
   font-size: 11px; font-weight: 700;
-  background: var(--surface-2); color: var(--ink-2);
-  padding: 2px 8px; border-radius: var(--r-pill);
+  background: var(--color-bg); color: var(--color-text-secondary);
+  padding: 2px 8px; border-radius: var(--radius-pill);
 }
-.nick-pill.active .count { background: var(--brand); color: #fff; }
+.nick-pill.active .count { background: var(--color-primary); color: #fff; }
 
 .empty-nick {
   text-align: center;
   font-size: 12px;
-  color: var(--ink-4);
+  color: var(--color-text-disabled);
   padding: 20px 10px;
 }
 
 .footer {
   padding: 10px 14px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--color-border);
   font-size: 11px;
-  color: var(--ink-4);
+  color: var(--color-text-disabled);
   display: flex; align-items: center; gap: 6px;
 }
-.footer .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); }
+.footer .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-success); }
 
 /* Sale color palette — đồng nhất qua hash account.id */
 .av-c1 { background: linear-gradient(135deg, #2f6ee5, #1d4ed8); }

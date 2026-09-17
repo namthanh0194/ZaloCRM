@@ -747,9 +747,9 @@ watch(searchQuery, () => {
 .smax-chat-grid {
   display: grid;
   grid-template-columns: 290px 380px 1fr 350px;
-  height: calc(100vh - var(--smax-topnav-h, 52px));
+  height: calc(100vh - var(--layout-topnav-height, 52px));
   overflow: hidden;
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
 }
 
 /* Khi info-panel đóng, col 4 collapse → grid auto-adjust */
@@ -777,8 +777,8 @@ watch(searchQuery, () => {
 }
 
 .smax-conv-col {
-  border-right: 1px solid var(--smax-grey-200);
-  background: var(--smax-bg);
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface);
 }
 
 /* work-scope 2026-06-15 — 1 DÒNG "N tin ở M nick khác" ở đầu cột 2 (anh chốt: gọn) */
@@ -826,7 +826,7 @@ watch(searchQuery, () => {
 }
 
 .smax-msg-col {
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
 }
 
 /* HD+ compact: thu nhỏ chút để thread có thêm space */

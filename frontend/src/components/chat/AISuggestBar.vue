@@ -56,7 +56,7 @@ function truncated(text: string) {
 <style scoped>
 .ai-suggest-bar {
   background: linear-gradient(90deg, rgba(156,39,176,0.06), rgba(33,150,243,0.06));
-  border-top: 1px solid var(--smax-grey-200);
+  border-top: 1px solid var(--color-border);
   padding: 9px 17px;
   display: flex; align-items: center; gap: 9px;
   flex-shrink: 0;
@@ -70,7 +70,7 @@ function truncated(text: string) {
   flex-shrink: 0;
 }
 .ai-suggest-label {
-  font-size: 11px; color: var(--smax-grey-700);
+  font-size: 11px; color: var(--color-text-secondary);
   text-transform: uppercase; letter-spacing: 0.4px;
   flex-shrink: 0; font-weight: 600;
 }
@@ -80,7 +80,7 @@ function truncated(text: string) {
   flex: 1;
 }
 .ai-suggest-pill {
-  background: var(--smax-bg);
+  background: var(--color-surface);
   border: 1px solid #d1c4e9;
   border-radius: 17px;
   padding: 7px 13px;
@@ -98,13 +98,13 @@ function truncated(text: string) {
 .ai-refresh {
   width: 31px; height: 31px;
   border-radius: 50%;
-  border: 1px solid var(--smax-grey-300);
-  background: var(--smax-bg);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
   cursor: pointer; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   font-size: 14px;
 }
-.ai-refresh:hover:not(:disabled) { background: var(--smax-grey-50); color: var(--smax-primary); }
+.ai-refresh:hover:not(:disabled) { background: var(--color-surface-secondary); color: var(--color-primary); }
 .ai-refresh:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

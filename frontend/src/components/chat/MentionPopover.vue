@@ -77,7 +77,7 @@ const actorTypeClass = computed(() => `type-${props.actorType}`);
   gap: 10px;
   margin-bottom: 8px;
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--smax-grey-100);
+  border-bottom: 1px solid var(--color-bg);
 }
 .mp-avatar {
   width: 42px;
@@ -92,7 +92,7 @@ const actorTypeClass = computed(() => `type-${props.actorType}`);
   flex-shrink: 0;
 }
 .mp-avatar.type-user {
-  background: linear-gradient(135deg, var(--smax-primary, #2962ff), #5e92ff);
+  background: linear-gradient(135deg, var(--color-primary, #2962ff), #5e92ff);
 }
 .mp-avatar.type-bot {
   background: linear-gradient(135deg, #00897b, #4db6ac);
@@ -106,11 +106,11 @@ const actorTypeClass = computed(() => `type-${props.actorType}`);
 .mp-name {
   font-size: 14px;
   font-weight: 700;
-  color: var(--smax-text);
+  color: var(--color-text);
 }
 .mp-role {
   font-size: 11px;
-  color: var(--smax-grey-600);
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.4px;
   margin-top: 2px;
@@ -122,10 +122,10 @@ const actorTypeClass = computed(() => `type-${props.actorType}`);
   gap: 8px;
   padding: 4px 0;
   font-size: 12.5px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
 }
 .mp-icon {
-  color: var(--smax-grey-500);
+  color: var(--color-text-muted);
   width: 16px;
   text-align: center;
 }

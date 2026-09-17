@@ -990,7 +990,7 @@ async function openFile(href: string, name?: string) {
 .sender-name {
   font-size: 11.5px;
   font-weight: 600;
-  color: var(--smax-primary, #2962ff);
+  color: var(--color-primary, #2962ff);
   margin-bottom: 4px;
   line-height: 1.2;
 }
@@ -1024,14 +1024,14 @@ async function openFile(href: string, name?: string) {
 /* INBOUND bubble — GIỮ NGUYÊN trắng như cũ (Anh chốt lại 2026-06-03:
    chỉ nền tím PHẦN TÊN người gửi, không nhuộm cả bubble) */
 .message-bubble.is-other {
-  background: var(--smax-bg, #ffffff);
-  color: var(--smax-text, #212121);
+  background: var(--color-surface, #ffffff);
+  color: var(--color-text, #212121);
   border-radius: 4px 15px 15px 15px;
-  border: 1px solid var(--smax-grey-200, #ebedf0);
+  border: 1px solid var(--color-border, #ebedf0);
 }
 .message-bubble.is-self {
-  background: var(--smax-bubble-self, #d7ecf7);
-  color: var(--smax-text, #212121);
+  background: var(--chat-bubble-self-bg, #d7ecf7);
+  color: var(--color-text, #212121);
   border-radius: 15px 15px 4px 15px;
 }
 
@@ -1089,7 +1089,7 @@ async function openFile(href: string, name?: string) {
 
 .bubble-time {
   font-size: 11px;
-  color: var(--smax-grey-700, #5a6478);
+  color: var(--color-text-secondary, #5a6478);
   margin-top: 3px;
   padding: 0 2px;
 }
@@ -1097,7 +1097,7 @@ async function openFile(href: string, name?: string) {
 /* Badge "đã sửa" — italic xám nhạt, hover xem nội dung gốc qua title attr */
 .edited-badge {
   font-style: italic;
-  color: var(--smax-grey-500, #9ca3af);
+  color: var(--color-text-muted, #9ca3af);
   margin-left: 2px;
   cursor: help;
 }
@@ -1149,7 +1149,7 @@ async function openFile(href: string, name?: string) {
 
 .reminder-card {
   padding: 8px 12px;
-  border-left: 3px solid var(--smax-warning, #ff9100);
+  border-left: 3px solid var(--color-warning, #ff9100);
   border-radius: 7px;
   background: rgba(255, 145, 0, 0.08);
 }
@@ -1157,7 +1157,7 @@ async function openFile(href: string, name?: string) {
   padding: 6px 10px;
   border-radius: 7px;
   background: rgba(33, 150, 243, 0.08);
-  border-left: 3px solid var(--smax-primary, #2962ff);
+  border-left: 3px solid var(--color-primary, #2962ff);
   margin-bottom: 6px;
   transition: background-color 0.15s ease;
 }
@@ -1166,7 +1166,7 @@ async function openFile(href: string, name?: string) {
 .reply-header {
   display: flex; align-items: center; gap: 4px;
   font-size: 10.5px;
-  color: var(--smax-primary, #2962ff);
+  color: var(--color-primary, #2962ff);
   font-weight: 600;
   margin-bottom: 2px;
 }
@@ -1174,7 +1174,7 @@ async function openFile(href: string, name?: string) {
 .reply-sender { letter-spacing: 0.2px; }
 .reply-text {
   font-size: 12.5px;
-  color: var(--smax-text, #212121);
+  color: var(--color-text, #212121);
   opacity: 0.78;
   line-height: 1.35;
   word-break: break-word;
@@ -1185,7 +1185,7 @@ async function openFile(href: string, name?: string) {
   padding: 8px 12px;
   border-radius: 7px;
   background: rgba(33, 150, 243, 0.06);
-  border: 1px solid var(--smax-grey-200, #ebedf0);
+  border: 1px solid var(--color-border, #ebedf0);
 }
 .chat-image {
   max-width: 100%;
@@ -1207,10 +1207,10 @@ async function openFile(href: string, name?: string) {
 /* Auto-link URL + SĐT (2026-06-22) — v-html nên dùng :deep. SĐT là <span> nên cần style
    riêng để trông bấm-được; URL là <a> ăn màu link mặc định, gắn thêm cho đồng nhất. */
 .text-content :deep(.link),
-.media-caption :deep(.link) { color: var(--brand, #1786be); word-break: break-all; }
+.media-caption :deep(.link) { color: var(--color-primary, #1786be); word-break: break-all; }
 .text-content :deep(.phone-link),
 .media-caption :deep(.phone-link) {
-  color: var(--brand, #1786be);
+  color: var(--color-primary, #1786be);
   cursor: pointer;
   border-bottom: 1px dashed currentColor;
 }
@@ -1232,14 +1232,14 @@ async function openFile(href: string, name?: string) {
   margin-top: 6px;
   font-size: 13.5px;
   line-height: 1.45;
-  color: var(--smax-text, #212121);
+  color: var(--color-text, #212121);
   word-break: break-word;
   white-space: pre-wrap;
 }
 :deep(.mention) {
-  color: var(--smax-primary, #2962ff);
+  color: var(--color-primary, #2962ff);
   font-weight: 500;
-  background: var(--smax-primary-soft, #e3f2fd);
+  background: var(--color-primary-subtle, #e3f2fd);
   padding: 0 4px;
   border-radius: 3px;
   transition: background 0.15s ease;
@@ -1251,11 +1251,11 @@ async function openFile(href: string, name?: string) {
   cursor: pointer;
 }
 :deep(.mention[data-uid]:hover) {
-  background: var(--smax-primary, #2962ff);
+  background: var(--color-primary, #2962ff);
   color: white;
 }
 :deep(.link) {
-  color: var(--smax-primary, #2962ff);
+  color: var(--color-primary, #2962ff);
   text-decoration: underline;
 }
 
@@ -1343,7 +1343,7 @@ async function openFile(href: string, name?: string) {
   padding: 8px 12px;
   border-radius: 7px;
   background: rgba(33, 150, 243, 0.06);
-  border: 1px solid var(--smax-grey-200, #ebedf0);
+  border: 1px solid var(--color-border, #ebedf0);
   cursor: pointer;
 }
 
@@ -1351,13 +1351,13 @@ async function openFile(href: string, name?: string) {
 .voice-msg {
   display: inline-flex; align-items: center;
   padding: 6px 10px;
-  background: var(--smax-grey-100, #f5f6fa);
+  background: var(--color-bg, #f5f6fa);
   border-radius: 7px;
   font-size: 13px;
-  color: var(--smax-text);
+  color: var(--color-text);
 }
 .voice-link {
-  color: var(--smax-primary, #2962ff);
+  color: var(--color-primary, #2962ff);
   text-decoration: none;
   font-weight: 500;
 }
@@ -1366,13 +1366,13 @@ async function openFile(href: string, name?: string) {
 .voice-msg-v2 {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 6px 10px;
-  background: var(--smax-grey-100, #f5f6fa);
+  background: var(--color-bg, #f5f6fa);
   border-radius: 9px;
   max-width: 280px;
 }
-.voice-mic-icon { color: var(--smax-primary, #2962ff); flex-shrink: 0; }
+.voice-mic-icon { color: var(--color-primary, #2962ff); flex-shrink: 0; }
 .voice-audio { height: 32px; flex: 1; min-width: 0; }
-.voice-fallback { font-size: 12px; color: var(--smax-grey-700); font-style: italic; }
+.voice-fallback { font-size: 12px; color: var(--color-text-secondary); font-style: italic; }
 
 .recall-card {
   /* 2026-06-20 (anh báo dồn sau tên): block riêng dòng + hug content + tách khỏi tên người gửi. */
@@ -1382,21 +1382,21 @@ async function openFile(href: string, name?: string) {
   padding: 6px 10px;
   background: rgba(107, 114, 128, 0.06);
   border-radius: 7px;
-  border-left: 2px solid var(--smax-grey-500, #9e9e9e);
+  border-left: 2px solid var(--color-text-muted, #9e9e9e);
   opacity: 0.85;
   max-width: 100%;
 }
 .recall-header {
   display: flex; align-items: center; gap: 4px;
   font-size: 11.5px;
-  color: var(--smax-grey-700, #5a6478);
+  color: var(--color-text-secondary, #5a6478);
   font-weight: 600;
 }
 .recall-icon { font-size: 14px; }
 .recall-label { font-style: normal; }
 .recall-body {
   text-decoration: line-through;
-  color: var(--smax-grey-700, #5a6478);
+  color: var(--color-text-secondary, #5a6478);
   font-size: 13px;
   font-style: italic;
   margin-top: 2px;

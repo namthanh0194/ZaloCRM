@@ -3,23 +3,23 @@
    Used by DefaultLayout (top nav), ChatView, ContactsView, FriendsView.
    ════════════════════════════════════════════════════════════ */
 :root {
-  /* Brand palette — HS Holding xanh ngọc (đổi từ #2962ff, /plan-design-review 2026-06-06) */
-  --smax-primary: #1786be;
-  --smax-primary-hover: #0f6fa0;
-  --smax-primary-soft: #e4f1f8;
-  --smax-primary-700: #0b5880;
-  --smax-success: #00c853;
-  --smax-warning: #ff9100;
-  --smax-info: #2196f3;
-  --smax-error: #ff3d00;
+  /* Brand & Semantic palette mapped to Canonical Design Tokens */
+  --smax-primary: var(--color-primary, #1786be);
+  --smax-primary-hover: var(--color-primary-hover, #0f6fa0);
+  --smax-primary-soft: var(--color-primary-subtle, #e4f1f8);
+  --smax-primary-700: var(--color-primary-active, #0b5880);
+  --smax-success: var(--color-success, #00c853);
+  --smax-warning: var(--color-warning, #ff9100);
+  --smax-info: var(--color-info, #2196f3);
+  --smax-error: var(--color-danger, #ff3d00);
 
-  /* Grey scale */
-  --smax-grey-50: #fafbfc;
-  --smax-grey-100: #f5f6fa;
-  --smax-grey-200: #ebedf0;
-  --smax-grey-300: #d4d8de;
-  --smax-grey-700: #5a6478;
-  --smax-text: #212121;
+  /* Grey scale & Surfaces mapped to Design Tokens */
+  --smax-grey-50: var(--color-surface-secondary, #fafbfc);
+  --smax-grey-100: var(--color-bg, #f5f6fa);
+  --smax-grey-200: var(--color-border, #ebedf0);
+  --smax-grey-300: var(--color-border-strong, #d4d8de);
+  --smax-grey-700: var(--color-text-secondary, #5a6478);
+  --smax-text: var(--color-text, #212121);
 
   /* Surfaces */
   --smax-bg: #ffffff;
@@ -68,7 +68,7 @@
 .smax-pill-success { background: rgba(0,200,83,0.12); color: #00897b; }
 .smax-pill-warning { background: rgba(255,145,0,0.12); color: #ef6c00; }
 .smax-pill-info    { background: rgba(33,150,243,0.12); color: #1565c0; }
-.smax-pill-grey    { background: rgba(90,100,120,0.10); color: var(--smax-grey-700); }
+.smax-pill-grey    { background: rgba(90,100,120,0.10); color: var(--color-text-secondary); }
 .smax-pill-error   { background: rgba(255,82,82,0.12); color: #c62828; }
 
 /* CRM label chip (bordered, optional .active state) */
@@ -77,30 +77,30 @@
   padding: 3px 9px; border-radius: 12px;
   font-size: 12px; font-weight: 500;
   border: 1px solid; cursor: pointer; user-select: none;
-  background: var(--smax-bg);
+  background: var(--color-surface);
   white-space: nowrap; flex-shrink: 0;
 }
-.smax-label-chip[data-color="red"]    { color: var(--smax-chip-red-text);    border-color: var(--smax-chip-red); }
-.smax-label-chip[data-color="red"].active    { background: var(--smax-chip-red-active);    color: white; }
-.smax-label-chip[data-color="purple"] { color: var(--smax-chip-purple-text); border-color: var(--smax-chip-purple); }
-.smax-label-chip[data-color="purple"].active { background: var(--smax-chip-purple-active); color: white; }
-.smax-label-chip[data-color="orange"] { color: var(--smax-chip-orange-text); border-color: var(--smax-chip-orange); }
-.smax-label-chip[data-color="orange"].active { background: var(--smax-chip-orange-active); color: white; }
-.smax-label-chip[data-color="green"]  { color: var(--smax-chip-green-text);  border-color: var(--smax-chip-green); }
-.smax-label-chip[data-color="green"].active  { background: var(--smax-chip-green-active);  color: white; }
-.smax-label-chip[data-color="blue"]   { color: var(--smax-chip-blue-text);   border-color: var(--smax-chip-blue); }
-.smax-label-chip[data-color="blue"].active   { background: var(--smax-chip-blue-active);   color: white; }
-.smax-label-chip[data-color="yellow"] { color: var(--smax-chip-yellow-text); border-color: var(--smax-chip-yellow); }
-.smax-label-chip[data-color="yellow"].active { background: var(--smax-chip-yellow-active); color: white; }
+.smax-label-chip[data-color="red"]    { color: var(--chat-chip-red-text);    border-color: var(--chat-chip-red); }
+.smax-label-chip[data-color="red"].active    { background: var(--chat-chip-red-active);    color: white; }
+.smax-label-chip[data-color="purple"] { color: var(--chat-chip-purple-text); border-color: var(--chat-chip-purple); }
+.smax-label-chip[data-color="purple"].active { background: var(--chat-chip-purple-active); color: white; }
+.smax-label-chip[data-color="orange"] { color: var(--chat-chip-orange-text); border-color: var(--chat-chip-orange); }
+.smax-label-chip[data-color="orange"].active { background: var(--chat-chip-orange-active); color: white; }
+.smax-label-chip[data-color="green"]  { color: var(--chat-chip-green-text);  border-color: var(--chat-chip-green); }
+.smax-label-chip[data-color="green"].active  { background: var(--chat-chip-green-active);  color: white; }
+.smax-label-chip[data-color="blue"]   { color: var(--chat-chip-blue-text);   border-color: var(--chat-chip-blue); }
+.smax-label-chip[data-color="blue"].active   { background: var(--chat-chip-blue-active);   color: white; }
+.smax-label-chip[data-color="yellow"] { color: var(--chat-chip-yellow-text); border-color: var(--chat-chip-yellow); }
+.smax-label-chip[data-color="yellow"].active { background: var(--chat-chip-yellow-active); color: white; }
 
 /* Gender badge */
 .smax-gender-badge {
-  border-radius: 50%; border: 2.5px solid var(--smax-bg);
+  border-radius: 50%; border: 2.5px solid var(--color-surface);
   display: inline-flex; align-items: center; justify-content: center;
   color: white; font-weight: 700;
 }
-.smax-gender-female { background: var(--smax-female); }
-.smax-gender-male   { background: var(--smax-male); }
+.smax-gender-female { background: var(--chat-female); }
+.smax-gender-male   { background: var(--chat-male); }
 
 /* Avatar with platform mark */
 .smax-avatar {
@@ -117,7 +117,7 @@
   position: absolute; bottom: -2px; right: -2px;
   width: 15px; height: 15px;
   background: #0068ff; border-radius: 50%;
-  border: 2px solid var(--smax-bg);
+  border: 2px solid var(--color-surface);
   color: white; font-size: 9px; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
 }
@@ -125,7 +125,7 @@
 /* Toggle pill */
 .smax-toggle-pill {
   width: 32px; height: 18px;
-  background: var(--smax-grey-300);
+  background: var(--color-border-strong);
   border-radius: 9px; position: relative;
   cursor: pointer; flex-shrink: 0;
   transition: background 0.2s;
@@ -136,7 +136,7 @@
   background: white; border-radius: 50%;
   transition: transform 0.2s;
 }
-.smax-toggle-pill.on { background: var(--smax-primary); }
+.smax-toggle-pill.on { background: var(--color-primary); }
 .smax-toggle-pill.on::after { transform: translateX(14px); }
 
 /* Body sets light scrollbar that matches Smax */

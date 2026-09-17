@@ -315,7 +315,7 @@ function quotaW(v: any): string {
 
         <div class="card">
           <div class="card-h">
-            <div class="t"><v-icon icon="mdi-alert-outline" size="18" style="color:var(--rk-warn)" /> Nick cần chú ý</div>
+            <div class="t"><v-icon icon="mdi-alert-outline" size="18" style="color:var(--color-warning)" /> Nick cần chú ý</div>
             <span class="meta">Top 5</span>
           </div>
           <div class="card-b" style="padding:0">

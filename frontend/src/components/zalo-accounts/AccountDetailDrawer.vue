@@ -643,19 +643,19 @@ function maskPhone(p: string): string {
 
 /* Sửa SĐT thủ công (2026-06-21) */
 .phone-line { display: flex; align-items: center; gap: 6px; margin-top: 2px; flex-wrap: wrap; }
-.phone-empty { color: var(--ink-4, #b0b6bf); }
+.phone-empty { color: var(--color-text-disabled, #b0b6bf); }
 .phone-edit, .phone-save, .phone-cancel {
   font-size: 11px; font-family: inherit; border-radius: 6px; padding: 2px 8px; cursor: pointer;
-  border: 1px solid var(--line, #e5e7eb); background: var(--surface, #fff); color: var(--ink-2, #4b5563);
+  border: 1px solid var(--color-border, #e5e7eb); background: var(--color-surface, #fff); color: var(--color-text-secondary, #4b5563);
 }
-.phone-edit:hover { background: var(--surface-3, #f3f4f6); }
-.phone-save { background: var(--brand, #1786be); border-color: var(--brand, #1786be); color: #fff; }
+.phone-edit:hover { background: var(--color-surface-secondary, #f3f4f6); }
+.phone-save { background: var(--color-primary, #1786be); border-color: var(--color-primary, #1786be); color: #fff; }
 .phone-save:disabled { opacity: 0.6; cursor: not-allowed; }
 .phone-input {
   width: 130px; font-size: 12px; font-family: inherit; padding: 3px 8px;
-  border: 1px solid var(--line, #e5e7eb); border-radius: 6px; color: var(--ink, #111827); background: var(--surface, #fff);
+  border: 1px solid var(--color-border, #e5e7eb); border-radius: 6px; color: var(--color-text, #111827); background: var(--color-surface, #fff);
 }
-.phone-input:focus { outline: none; border-color: var(--brand, #1786be); }
+.phone-input:focus { outline: none; border-color: var(--color-primary, #1786be); }
 
 .status {
   display: inline-flex;

@@ -1,0 +1,750 @@
+{
+  "assets/airtable.css": {
+    "hardcodedColors": 24,
+    "legacyTokens": 119
+  },
+  "assets/atlas-v2-dashboard.css": {
+    "hardcodedColors": 15,
+    "legacyTokens": 103
+  },
+  "assets/hs-crm-theme.css": {
+    "hardcodedColors": 189,
+    "legacyTokens": 0
+  },
+  "assets/main.css": {
+    "hardcodedColors": 17,
+    "legacyTokens": 14
+  },
+  "assets/rbac-page.css": {
+    "hardcodedColors": 141,
+    "legacyTokens": 0
+  },
+  "assets/report-kit.css": {
+    "hardcodedColors": 28,
+    "legacyTokens": 79
+  },
+  "assets/tokens.css": {
+    "hardcodedColors": 38,
+    "legacyTokens": 26
+  },
+  "components/ai/ai-config-dialog.vue": {
+    "hardcodedColors": 7,
+    "legacyTokens": 0
+  },
+  "components/analytics/ConversionFunnelChart.vue": {
+    "hardcodedColors": 6,
+    "legacyTokens": 0
+  },
+  "components/analytics/ReportBuilder.vue": {
+    "hardcodedColors": 6,
+    "legacyTokens": 0
+  },
+  "components/analytics/ResponseTimeChart.vue": {
+    "hardcodedColors": 2,
+    "legacyTokens": 0
+  },
+  "components/analytics/TrendLineChart.vue": {
+    "hardcodedColors": 4,
+    "legacyTokens": 0
+  },
+  "components/appointments/AppointmentDetailPanel.vue": {
+    "hardcodedColors": 13,
+    "legacyTokens": 71
+  },
+  "components/appointments/AppointmentEditor.vue": {
+    "hardcodedColors": 50,
+    "legacyTokens": 192
+  },
+  "components/appointments/AppointmentsListView.vue": {
+    "hardcodedColors": 14,
+    "legacyTokens": 70
+  },
+  "components/appointments/AppointmentsSidebar.vue": {
+    "hardcodedColors": 6,
+    "legacyTokens": 86
+  },
+  "components/appointments/AppointmentsWeekView.vue": {
+    "hardcodedColors": 14,
+    "legacyTokens": 24
+  },
+  "components/branding/LoginBrandBanner.vue": {
+    "hardcodedColors": 12,
+    "legacyTokens": 0
+  },
+  "components/branding/LoginPreview.vue": {
+    "hardcodedColors": 5,
+    "legacyTokens": 0
+  },
+  "components/chat/ActivityItem.vue": {
+    "hardcodedColors": 30,
+    "legacyTokens": 21
+  },
+  "components/chat/AddFlowModal.vue": {
+    "hardcodedColors": 9,
+    "legacyTokens": 0
+  },
+  "components/chat/AiAssistantMessage.vue": {
+    "hardcodedColors": 14,
+    "legacyTokens": 0
+  },
+  "components/chat/AISuggestBar.vue": {
+    "hardcodedColors": 12,
+    "legacyTokens": 8
+  },
+  "components/chat/AiSuggestionCard.vue": {
+    "hardcodedColors": 38,
+    "legacyTokens": 0
+  },
+  "components/chat/AutomationCardList.vue": {
+    "hardcodedColors": 7,
+    "legacyTokens": 0
+  },
+  "components/chat/ChatAppointments.vue": {
+    "hardcodedColors": 65,
+    "legacyTokens": 0
+  },
+  "components/chat/ChatContactPanel.vue": {
+    "hardcodedColors": 144,
+    "legacyTokens": 119
+  },
+  "components/chat/ConfirmActionModal.vue": {
+    "hardcodedColors": 11,
+    "legacyTokens": 0
+  },
+  "components/chat/ContactDealStageSelector.vue": {
+    "hardcodedColors": 16,
+    "legacyTokens": 2
+  },
+  "components/chat/conversation-context-menu.vue": {
+    "hardcodedColors": 16,
+    "legacyTokens": 0
+  },
+  "components/chat/ConversationFilterBar.vue": {
+    "hardcodedColors": 44,
+    "legacyTokens": 0
+  },
+  "components/chat/ConversationFilterSidebar.vue": {
+    "hardcodedColors": 192,
+    "legacyTokens": 8
+  },
+  "components/chat/ConversationList.vue": {
+    "hardcodedColors": 107,
+    "legacyTokens": 39
+  },
+  "components/chat/CustomerTimelineSection.vue": {
+    "hardcodedColors": 30,
+    "legacyTokens": 38
+  },
+  "components/chat/EmojiPicker.vue": {
+    "hardcodedColors": 0,
+    "legacyTokens": 6
+  },
+  "components/chat/EngagementHeatmap.vue": {
+    "hardcodedColors": 33,
+    "legacyTokens": 0
+  },
+  "components/chat/EngagementMiniBar.vue": {
+    "hardcodedColors": 5,
+    "legacyTokens": 0
+  },
+  "components/chat/FilterRail.vue": {
+    "hardcodedColors": 1,
+    "legacyTokens": 57
+  },
+  "components/chat/FolderManagePopup.vue": {
+    "hardcodedColors": 152,
+    "legacyTokens": 0
+  },
+  "components/chat/FollowUpCard.vue": {
+    "hardcodedColors": 11,
+    "legacyTokens": 0
+  },
+  "components/chat/FollowUpHistoryDialog.vue": {
+    "hardcodedColors": 6,
+    "legacyTokens": 0
+  },
+  "components/chat/forward-dialog.vue": {
+    "hardcodedColors": 41,
+    "legacyTokens": 0
+  },
+  "components/chat/FriendInviteDialog.vue": {
+    "hardcodedColors": 7,
+    "legacyTokens": 0
+  },
+  "components/chat/LinkParentDialog.vue": {
+    "hardcodedColors": 2,
+    "legacyTokens": 3
+  },
+  "components/chat/MediaTabPanel.vue": {
+    "hardcodedColors": 42,
+    "legacyTokens": 60
+  },
+  "components/chat/MentionPopover.vue": {
+    "hardcodedColors": 9,
+    "legacyTokens": 6
+  },
+  "components/chat/message-bubble.vue": {
+    "hardcodedColors": 64,
+    "legacyTokens": 28
+  },
+  "components/chat/message-context-menu.vue": {
+    "hardcodedColors": 21,
+    "legacyTokens": 0
+  },
+  "components/chat/MessageSourceBadge.vue": {
+    "hardcodedColors": 25,
+    "legacyTokens": 0
+  },
+  "components/chat/MessageThread.vue": {
+    "hardcodedColors": 177,
+    "legacyTokens": 84
+  },
+  "components/chat/NewMessageDialog.vue": {
+    "hardcodedColors": 57,
+    "legacyTokens": 36
+  },
+  "components/chat/NoteRow.vue": {
+    "hardcodedColors": 18,
+    "legacyTokens": 19
+  },
+  "components/chat/NotesSection.vue": {
+    "hardcodedColors": 19,
+    "legacyTokens": 21
+  },
+  "components/chat/quick-template-popup.vue": {
+    "hardcodedColors": 30,
+    "legacyTokens": 0
+  },
+  "components/chat/reaction-detail-popup.vue": {
+    "hardcodedColors": 25,
+    "legacyTokens": 0
+  },
+  "components/chat/reaction-display.vue": {
+    "hardcodedColors": 6,
+    "legacyTokens": 4
+  },
+  "components/chat/reaction-picker.vue": {
+    "hardcodedColors": 11,
+    "legacyTokens": 9
+  },
+  "components/chat/reply-preview-bar.vue": {
+    "hardcodedColors": 10,
+    "legacyTokens": 10
+  },
+  "components/chat/rich-text-editor.vue": {
+    "hardcodedColors": 43,
+    "legacyTokens": 27
+  },
+  "components/chat/SalesHandoffModal.vue": {
+    "hardcodedColors": 44,
+    "legacyTokens": 0
+  },
+  "components/chat/ScoreBanner.vue": {
+    "hardcodedColors": 44,
+    "legacyTokens": 0
+  },
+  "components/chat/SequencePreviewDialog.vue": {
+    "hardcodedColors": 33,
+    "legacyTokens": 0
+  },
+  "components/chat/special-message-renderer.vue": {
+    "hardcodedColors": 86,
+    "legacyTokens": 54
+  },
+  "components/chat/StickerPicker.vue": {
+    "hardcodedColors": 16,
+    "legacyTokens": 7
+  },
+  "components/chat/TagCrmBar.vue": {
+    "hardcodedColors": 25,
+    "legacyTokens": 0
+  },
+  "components/chat/video-message-bubble.vue": {
+    "hardcodedColors": 6,
+    "legacyTokens": 0
+  },
+  "components/chat/voice-message-bubble.vue": {
+    "hardcodedColors": 3,
+    "legacyTokens": 0
+  },
+  "components/chat/voice-recorder.vue": {
+    "hardcodedColors": 2,
+    "legacyTokens": 0
+  },
+  "components/chat/ZaloUserInfoDialog.vue": {
+    "hardcodedColors": 28,
+    "legacyTokens": 0
+  },
+  "components/contacts/AddCustomerQuickDialog.vue": {
+    "hardcodedColors": 34,
+    "legacyTokens": 0
+  },
+  "components/contacts/ContactColumnToggle.vue": {
+    "hardcodedColors": 1,
+    "legacyTokens": 0
+  },
+  "components/contacts/ContactDetailDialog.vue": {
+    "hardcodedColors": 12,
+    "legacyTokens": 2
+  },
+  "components/contacts/ContactDetailPanel.vue": {
+    "hardcodedColors": 106,
+    "legacyTokens": 0
+  },
+  "components/contacts/CustomerProfileDialog.vue": {
+    "hardcodedColors": 118,
+    "legacyTokens": 66
+  },
+  "components/contacts/DuplicateReviewDialog.vue": {
+    "hardcodedColors": 35,
+    "legacyTokens": 89
+  },
+  "components/contacts/ParentCandidateDialog.vue": {
+    "hardcodedColors": 2,
+    "legacyTokens": 7
+  },
+  "components/dashboard/AppointmentChart.vue": {
+    "hardcodedColors": 5,
+    "legacyTokens": 0
+  },
+  "components/dashboard/MessageVolumeChart.vue": {
+    "hardcodedColors": 2,
+    "legacyTokens": 0
+  },
+  "components/dashboard/PipelineChart.vue": {
+    "hardcodedColors": 6,
+    "legacyTokens": 0
+  },
+  "components/dashboard/SourceChart.vue": {
+    "hardcodedColors": 5,
+    "legacyTokens": 0
+  },
+  "components/friends/FriendDetailPanel.vue": {
+    "hardcodedColors": 33,
+    "legacyTokens": 1
+  },
+  "components/friends/FriendsBulkBar.vue": {
+    "hardcodedColors": 5,
+    "legacyTokens": 0
+  },
+  "components/friends/FriendsFilterBar.vue": {
+    "hardcodedColors": 12,
+    "legacyTokens": 0
+  },
+  "components/friends/FriendsSmartHints.vue": {
+    "hardcodedColors": 13,
+    "legacyTokens": 0
+  },
+  "components/friends/FriendsTable.vue": {
+    "hardcodedColors": 108,
+    "legacyTokens": 0
+  },
+  "components/friends/NickSidebar.vue": {
+    "hardcodedColors": 24,
+    "legacyTokens": 0
+  },
+  "components/icons/ZaloBrandIcon.vue": {
+    "hardcodedColors": 7,
+    "legacyTokens": 0
+  },
+  "components/lists/CreateListModal.vue": {
+    "hardcodedColors": 84,
+    "legacyTokens": 0
+  },
+  "components/lists/LeadDetailPanel.vue": {
+    "hardcodedColors": 110,
+    "legacyTokens": 0
+  },
+  "components/lists/SourceMetaRow.vue": {
+    "hardcodedColors": 13,
+    "legacyTokens": 0
+  },
+  "components/media/ConfirmShareDialog.vue": {
+    "hardcodedColors": 10,
+    "legacyTokens": 0
+  },
+  "components/media/MediaDetailPanel.vue": {
+    "hardcodedColors": 28,
+    "legacyTokens": 0
+  },
+  "components/media/MediaPickerDialog.vue": {
+    "hardcodedColors": 13,
+    "legacyTokens": 0
+  },
+  "components/media/MediaPickerPopover.vue": {
+    "hardcodedColors": 33,
+    "legacyTokens": 0
+  },
+  "components/media/MediaReviewDialog.vue": {
+    "hardcodedColors": 20,
+    "legacyTokens": 0
+  },
+  "components/media/MediaSendPicker.vue": {
+    "hardcodedColors": 21,
+    "legacyTokens": 0
+  },
+  "components/onboarding/MiniOnboardingIndicator.vue": {
+    "hardcodedColors": 7,
+    "legacyTokens": 0
+  },
+  "components/onboarding/OnboardingChecklist.vue": {
+    "hardcodedColors": 49,
+    "legacyTokens": 0
+  },
+  "components/privacy/NickAvatarLock.vue": {
+    "hardcodedColors": 2,
+    "legacyTokens": 0
+  },
+  "components/privacy/PrivacyLockBadge.vue": {
+    "hardcodedColors": 24,
+    "legacyTokens": 0
+  },
+  "components/privacy/PrivacyUnlockOtpModal.vue": {
+    "hardcodedColors": 50,
+    "legacyTokens": 0
+  },
+  "components/privacy/PrivacyViewerDialog.vue": {
+    "hardcodedColors": 40,
+    "legacyTokens": 0
+  },
+  "components/privacy/PrivateBlur.vue": {
+    "hardcodedColors": 8,
+    "legacyTokens": 0
+  },
+  "components/profile/avatar-history.vue": {
+    "hardcodedColors": 2,
+    "legacyTokens": 0
+  },
+  "components/profile/avatar-uploader.vue": {
+    "hardcodedColors": 3,
+    "legacyTokens": 0
+  },
+  "components/rbac/DepartmentEditPanel.vue": {
+    "hardcodedColors": 74,
+    "legacyTokens": 0
+  },
+  "components/rbac/PermissionGroupEditPanel.vue": {
+    "hardcodedColors": 42,
+    "legacyTokens": 0
+  },
+  "components/rbac/UserEditPanel.vue": {
+    "hardcodedColors": 73,
+    "legacyTokens": 0
+  },
+  "components/scoring/ScoreBreakdownModal.vue": {
+    "hardcodedColors": 54,
+    "legacyTokens": 0
+  },
+  "components/scoring/ScoreHistoryModal.vue": {
+    "hardcodedColors": 33,
+    "legacyTokens": 19
+  },
+  "components/scoring/ScoreInlinePanel.vue": {
+    "hardcodedColors": 37,
+    "legacyTokens": 13
+  },
+  "components/settings/ChangePasswordModal.vue": {
+    "hardcodedColors": 31,
+    "legacyTokens": 0
+  },
+  "components/settings/CrmTagManagement.vue": {
+    "hardcodedColors": 45,
+    "legacyTokens": 54
+  },
+  "components/settings/OrgSettings.vue": {
+    "hardcodedColors": 1,
+    "legacyTokens": 0
+  },
+  "components/settings/StatusManagement.vue": {
+    "hardcodedColors": 8,
+    "legacyTokens": 2
+  },
+  "components/settings/UserManagement.vue": {
+    "hardcodedColors": 2,
+    "legacyTokens": 0
+  },
+  "components/settings/ZaloAccessDialog.vue": {
+    "hardcodedColors": 7,
+    "legacyTokens": 0
+  },
+  "components/settings/ZaloLabelsManagement.vue": {
+    "hardcodedColors": 11,
+    "legacyTokens": 17
+  },
+  "components/ui/Avatar.vue": {
+    "hardcodedColors": 22,
+    "legacyTokens": 8
+  },
+  "components/ui/CareStatusBadge.vue": {
+    "hardcodedColors": 13,
+    "legacyTokens": 3
+  },
+  "components/ui/TagChipList.vue": {
+    "hardcodedColors": 7,
+    "legacyTokens": 9
+  },
+  "components/ui/ToastContainer.vue": {
+    "hardcodedColors": 18,
+    "legacyTokens": 0
+  },
+  "components/users/CreateUserWithZaloModal.vue": {
+    "hardcodedColors": 57,
+    "legacyTokens": 0
+  },
+  "components/zalo/credential-manager.vue": {
+    "hardcodedColors": 3,
+    "legacyTokens": 0
+  },
+  "components/zalo-accounts/AccountDetailDrawer.vue": {
+    "hardcodedColors": 128,
+    "legacyTokens": 0
+  },
+  "components/zalo-accounts/AccountsTable.vue": {
+    "hardcodedColors": 113,
+    "legacyTokens": 0
+  },
+  "components/zalo-accounts/ArchivedNicksPanel.vue": {
+    "hardcodedColors": 27,
+    "legacyTokens": 0
+  },
+  "components/zalo-accounts/BulkActionBar.vue": {
+    "hardcodedColors": 11,
+    "legacyTokens": 0
+  },
+  "components/zalo-accounts/ConnectNickWizard.vue": {
+    "hardcodedColors": 59,
+    "legacyTokens": 0
+  },
+  "components/zalo-accounts/InternalContactSetupPage.vue": {
+    "hardcodedColors": 87,
+    "legacyTokens": 0
+  },
+  "components/zalo-accounts/NickGridCards.vue": {
+    "hardcodedColors": 52,
+    "legacyTokens": 0
+  },
+  "components/zalo-accounts/NickPickerPopup.vue": {
+    "hardcodedColors": 39,
+    "legacyTokens": 0
+  },
+  "components/zalo-accounts/OwnerReassignDrawer.vue": {
+    "hardcodedColors": 58,
+    "legacyTokens": 0
+  },
+  "components/zalo-accounts/PrivacyNicksTab.vue": {
+    "hardcodedColors": 97,
+    "legacyTokens": 0
+  },
+  "components/zalo-accounts/SdkLimitsDialog.vue": {
+    "hardcodedColors": 54,
+    "legacyTokens": 0
+  },
+  "components/zalo-accounts/StatsCards.vue": {
+    "hardcodedColors": 21,
+    "legacyTokens": 0
+  },
+  "components/zalo-accounts/UptimeSparkline.vue": {
+    "hardcodedColors": 4,
+    "legacyTokens": 0
+  },
+  "design-system/components/ZBadge.vue": {
+    "hardcodedColors": 6,
+    "legacyTokens": 0
+  },
+  "design-system/components/ZButton.vue": {
+    "hardcodedColors": 2,
+    "legacyTokens": 0
+  },
+  "layouts/AuthLayout.vue": {
+    "hardcodedColors": 2,
+    "legacyTokens": 0
+  },
+  "layouts/DefaultLayout.vue": {
+    "hardcodedColors": 44,
+    "legacyTokens": 4
+  },
+  "layouts/MobileLayout.vue": {
+    "hardcodedColors": 3,
+    "legacyTokens": 0
+  },
+  "style.css": {
+    "hardcodedColors": 22,
+    "legacyTokens": 0
+  },
+  "views/AnalyticsView.vue": {
+    "hardcodedColors": 1,
+    "legacyTokens": 0
+  },
+  "views/ApiSettingsView.vue": {
+    "hardcodedColors": 1,
+    "legacyTokens": 0
+  },
+  "views/AppointmentActionView.vue": {
+    "hardcodedColors": 33,
+    "legacyTokens": 0
+  },
+  "views/AppointmentsView.vue": {
+    "hardcodedColors": 20,
+    "legacyTokens": 82
+  },
+  "views/ChatView.vue": {
+    "hardcodedColors": 9,
+    "legacyTokens": 5
+  },
+  "views/ContactProfileView.vue": {
+    "hardcodedColors": 27,
+    "legacyTokens": 0
+  },
+  "views/ContactsView.vue": {
+    "hardcodedColors": 106,
+    "legacyTokens": 170
+  },
+  "views/CustomerActivityLogView.vue": {
+    "hardcodedColors": 7,
+    "legacyTokens": 41
+  },
+  "views/DashboardView.vue": {
+    "hardcodedColors": 46,
+    "legacyTokens": 28
+  },
+  "views/ForcePasswordChangeView.vue": {
+    "hardcodedColors": 39,
+    "legacyTokens": 0
+  },
+  "views/FriendsView.vue": {
+    "hardcodedColors": 24,
+    "legacyTokens": 1
+  },
+  "views/GroupScanView.vue": {
+    "hardcodedColors": 9,
+    "legacyTokens": 0
+  },
+  "views/IntegrationsView.vue": {
+    "hardcodedColors": 6,
+    "legacyTokens": 0
+  },
+  "views/LoginView.vue": {
+    "hardcodedColors": 7,
+    "legacyTokens": 0
+  },
+  "views/marketing/CommunityMarketingShell.vue": {
+    "hardcodedColors": 8,
+    "legacyTokens": 0
+  },
+  "views/marketing/ListDetailView.vue": {
+    "hardcodedColors": 56,
+    "legacyTokens": 1
+  },
+  "views/marketing/ListsView.vue": {
+    "hardcodedColors": 18,
+    "legacyTokens": 0
+  },
+  "views/MediaView.vue": {
+    "hardcodedColors": 91,
+    "legacyTokens": 1
+  },
+  "views/ProfileView.vue": {
+    "hardcodedColors": 1,
+    "legacyTokens": 0
+  },
+  "views/rbac/DepartmentsView.vue": {
+    "hardcodedColors": 16,
+    "legacyTokens": 0
+  },
+  "views/rbac/PermissionGroupsView.vue": {
+    "hardcodedColors": 72,
+    "legacyTokens": 0
+  },
+  "views/rbac/UsersRbacView.vue": {
+    "hardcodedColors": 136,
+    "legacyTokens": 4
+  },
+  "views/reports/AuditReport.vue": {
+    "hardcodedColors": 10,
+    "legacyTokens": 0
+  },
+  "views/reports/EngagementReport.vue": {
+    "hardcodedColors": 14,
+    "legacyTokens": 0
+  },
+  "views/reports/NickFleetReport.vue": {
+    "hardcodedColors": 10,
+    "legacyTokens": 0
+  },
+  "views/reports/OverviewReport.vue": {
+    "hardcodedColors": 10,
+    "legacyTokens": 0
+  },
+  "views/reports/PipelineReport.vue": {
+    "hardcodedColors": 8,
+    "legacyTokens": 0
+  },
+  "views/reports/SalesReport.vue": {
+    "hardcodedColors": 24,
+    "legacyTokens": 0
+  },
+  "views/ScoringSettingsView.vue": {
+    "hardcodedColors": 27,
+    "legacyTokens": 0
+  },
+  "views/settings/AiAssistantPage.vue": {
+    "hardcodedColors": 63,
+    "legacyTokens": 0
+  },
+  "views/settings/AppointmentSettingsPage.vue": {
+    "hardcodedColors": 12,
+    "legacyTokens": 0
+  },
+  "views/settings/AuditLogView.vue": {
+    "hardcodedColors": 31,
+    "legacyTokens": 0
+  },
+  "views/settings/PersonalAccountPage.vue": {
+    "hardcodedColors": 50,
+    "legacyTokens": 0
+  },
+  "views/settings/PersonalPasswordPage.vue": {
+    "hardcodedColors": 13,
+    "legacyTokens": 0
+  },
+  "views/settings/PersonalProfilePage.vue": {
+    "hardcodedColors": 6,
+    "legacyTokens": 0
+  },
+  "views/settings/RolesPage.vue": {
+    "hardcodedColors": 13,
+    "legacyTokens": 0
+  },
+  "views/settings/SdkLimitsSettingsPage.vue": {
+    "hardcodedColors": 1,
+    "legacyTokens": 0
+  },
+  "views/settings/SettingsComingSoon.vue": {
+    "hardcodedColors": 9,
+    "legacyTokens": 0
+  },
+  "views/settings/SettingsLayout.vue": {
+    "hardcodedColors": 6,
+    "legacyTokens": 0
+  },
+  "views/settings/SystemNotificationsPage.vue": {
+    "hardcodedColors": 66,
+    "legacyTokens": 42
+  },
+  "views/settings/TagTaxonomyV2Page.vue": {
+    "hardcodedColors": 78,
+    "legacyTokens": 0
+  },
+  "views/SettingsView.vue": {
+    "hardcodedColors": 1,
+    "legacyTokens": 0
+  },
+  "views/StuckLeadsView.vue": {
+    "hardcodedColors": 71,
+    "legacyTokens": 0
+  },
+  "views/ZaloAccountsView.vue": {
+    "hardcodedColors": 82,
+    "legacyTokens": 0
+  }
+}

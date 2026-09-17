@@ -1,11 +1,12 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
-  <div>
+  <PageShell :padded="false">
+    <div>
     <!-- Header -->
     <div class="d-flex align-center mb-4 flex-wrap gap-2">
       <h1 class="text-h4">
-        <v-icon class="mr-2" style="color: #00F2FF;">mdi-chart-timeline-variant-shimmer</v-icon>
+        <v-icon class="mr-2" color="primary">mdi-chart-timeline-variant-shimmer</v-icon>
         Phân tích nâng cao
       </h1>
       <v-spacer />
@@ -110,7 +111,8 @@
         />
       </v-window-item>
     </v-window>
-  </div>
+    </div>
+  </PageShell>
 </template>
 
 <script setup lang="ts">
@@ -122,6 +124,7 @@ import TeamLeaderboard from '@/components/analytics/TeamLeaderboard.vue';
 import ResponseTimeChart from '@/components/analytics/ResponseTimeChart.vue';
 import ReportBuilder from '@/components/analytics/ReportBuilder.vue';
 import { ref } from 'vue';
+import { PageShell } from '@/design-system';
 
 const {
   funnel, teamPerformance, responseTime, customResult, savedReports,

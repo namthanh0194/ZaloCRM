@@ -230,45 +230,44 @@ onMounted(async () => {
 .mr-overlay { position: fixed; inset: 0; z-index: 140; background: rgba(15,23,42,.42); display: flex; align-items: center; justify-content: center; }
 .mr-box {
   /* Theme Atlas v2 chuẩn (khớp MediaTabPanel/màn chat HS Holding). */
-  --ink:#141a24; --body:#475066; --muted:#8b93a7; --hairline:#e7eaf0; --canvas:#fff;
-  --soft:#f1f4f9; --action:#1786be; --action-soft:#e4f1f8; --coral:#aa2d00;
-  width: 460px; max-width: 94vw; max-height: 88vh; background: var(--canvas); border-radius: 12px;
+  --coral:#aa2d00;
+  width: 460px; max-width: 94vw; max-height: 88vh; background: var(--color-surface); border-radius: 12px;
   box-shadow: 0 18px 56px rgba(15,23,42,.28); display: flex; flex-direction: column; overflow: hidden;
 }
-.mr-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 13px 16px; border-bottom: 1px solid var(--hairline); }
-.mr-ttl { font-size: 14px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mr-x { border: none; background: none; cursor: pointer; color: var(--muted); display: inline-flex; flex-shrink: 0; }
+.mr-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 13px 16px; border-bottom: 1px solid var(--color-border); }
+.mr-ttl { font-size: 14px; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mr-x { border: none; background: none; cursor: pointer; color: var(--color-text-muted); display: inline-flex; flex-shrink: 0; }
 .mr-body { padding: 16px; overflow: auto; flex: 1; min-height: 0; }
-.mr-preview { background: var(--soft); border: 1px solid var(--hairline); border-radius: 10px; height: 220px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-top: 14px; }
+.mr-preview { background: var(--color-surface-secondary); border: 1px solid var(--color-border); border-radius: 10px; height: 220px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-top: 14px; }
 .mr-preview img, .mr-preview video { max-width: 100%; max-height: 100%; object-fit: contain; }
-.mr-ph { display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--muted); }
+.mr-ph { display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--color-text-muted); }
 .mr-ph-name { font-size: 12px; max-width: 90%; text-align: center; word-break: break-word; }
 .mr-dl { display: grid; grid-template-columns: 92px 1fr; gap: 5px 10px; margin: 0 0 14px; }
-.mr-dl dt { font-size: 12px; color: var(--muted); }
-.mr-dl dd { font-size: 12.5px; color: var(--ink); margin: 0; display: flex; align-items: center; gap: 5px; min-width: 0; }
-.mr-ddic { color: var(--muted); flex-shrink: 0; }
-.mr-tags { border-top: 1px solid var(--hairline); padding-top: 12px; }
-.mr-tlabel { display: flex; align-items: center; gap: 5px; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
+.mr-dl dt { font-size: 12px; color: var(--color-text-muted); }
+.mr-dl dd { font-size: 12.5px; color: var(--color-text); margin: 0; display: flex; align-items: center; gap: 5px; min-width: 0; }
+.mr-ddic { color: var(--color-text-muted); flex-shrink: 0; }
+.mr-tags { border-top: 1px solid var(--color-border); padding-top: 12px; }
+.mr-tlabel { display: flex; align-items: center; gap: 5px; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--color-text-muted); font-weight: 600; margin-bottom: 8px; }
 .mr-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 9px; min-height: 26px; align-items: center; }
-.mr-chip { display: inline-flex; align-items: center; gap: 3px; background: #e4f1f8; border: 1px solid #bfddec; color: var(--action); border-radius: 9999px; padding: 3px 5px 3px 11px; font-size: 12px; }
-.mr-chip-x { border: none; background: none; cursor: pointer; color: var(--action); display: inline-flex; padding: 1px; border-radius: 9999px; }
+.mr-chip { display: inline-flex; align-items: center; gap: 3px; background: #e4f1f8; border: 1px solid #bfddec; color: var(--color-primary); border-radius: 9999px; padding: 3px 5px 3px 11px; font-size: 12px; }
+.mr-chip-x { border: none; background: none; cursor: pointer; color: var(--color-primary); display: inline-flex; padding: 1px; border-radius: 9999px; }
 .mr-chip-x:hover { background: rgba(23,134,190,.18); }
-.mr-empty { font-size: 11.5px; color: var(--muted); }
+.mr-empty { font-size: 11.5px; color: var(--color-text-muted); }
 .mr-addrow { position: relative; display: flex; gap: 8px; }
-.mr-input { flex: 1; border: 1px solid var(--hairline); border-radius: 7px; padding: 7px 10px; font-size: 12.5px; outline: none; color: var(--ink); }
-.mr-input:focus { border-color: var(--action); }
+.mr-input { flex: 1; border: 1px solid var(--color-border); border-radius: 7px; padding: 7px 10px; font-size: 12.5px; outline: none; color: var(--color-text); }
+.mr-input:focus { border-color: var(--color-primary); }
 /* Dropdown autocomplete (Atlas v2) — bung LÊN TRÊN ô nhập (bottom) để không bị preview đè.
    Nền bán trong suốt (mờ ~30%) + blur nhẹ → vẫn thấy ảnh/video/file phía dưới xuyên qua. */
 .mr-ac { position: absolute; left: 0; right: 0; bottom: calc(100% + 4px); z-index: 20; margin: 0; padding: 4px; list-style: none;
   background: rgba(255,255,255,.72); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
-  border: 1px solid var(--hairline); border-radius: 8px; box-shadow: 0 -8px 24px rgba(15,23,42,.18); max-height: 188px; overflow: auto; }
-.mr-ac-item { padding: 6px 10px; font-size: 12.5px; color: var(--body); border-radius: 6px; cursor: pointer; }
-.mr-ac-item.on { background: var(--action-soft); color: var(--action); font-weight: 600; }
-.mr-saving { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
-.mr-foot { display: flex; gap: 8px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--hairline); background: var(--soft); }
-.mr-cancel { border: 1px solid var(--hairline); background: var(--canvas); color: var(--muted); border-radius: 8px; padding: 8px 16px; font-size: 13px; cursor: pointer; min-height: 36px; }
+  border: 1px solid var(--color-border); border-radius: 8px; box-shadow: 0 -8px 24px rgba(15,23,42,.18); max-height: 188px; overflow: auto; }
+.mr-ac-item { padding: 6px 10px; font-size: 12.5px; color: var(--color-text-secondary); border-radius: 6px; cursor: pointer; }
+.mr-ac-item.on { background: var(--color-primary-subtle); color: var(--color-primary); font-weight: 600; }
+.mr-saving { font-size: 11.5px; color: var(--color-text-muted); margin-top: 6px; }
+.mr-foot { display: flex; gap: 8px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--color-border); background: var(--color-surface-secondary); }
+.mr-cancel { border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-muted); border-radius: 8px; padding: 8px 16px; font-size: 13px; cursor: pointer; min-height: 36px; }
 /* Nút Gửi: màu hành động chuẩn HS (action #1786be) — nổi + đúng nhận diện theme. */
-.mr-send { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: none; background: var(--action); color: #fff; border-radius: 8px; padding: 8px; font-size: 13.5px; font-weight: 600; cursor: pointer; min-height: 36px; }
+.mr-send { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: none; background: var(--color-primary); color: #fff; border-radius: 8px; padding: 8px; font-size: 13.5px; font-weight: 600; cursor: pointer; min-height: 36px; }
 .mr-send:hover { background: #1370a0; }
 .mr-send:disabled, .mr-cancel:disabled, .mr-chip-x:disabled { opacity: .55; cursor: default; }
 </style>

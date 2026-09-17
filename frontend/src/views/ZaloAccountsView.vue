@@ -832,55 +832,55 @@ onMounted(async () => {
 /* Phase Privacy v2 2026-05-23 — Tab strip */
 .za-tabs {
   display: flex; gap: 6px;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 1px solid var(--color-border, #E5E7EB);
   margin-bottom: 18px; padding-bottom: 0;
 }
 .za-tab {
   background: transparent; border: none; cursor: pointer;
   padding: 10px 18px; font-family: inherit; font-size: 13.5px; font-weight: 600;
-  color: #6B7280; position: relative;
+  color: var(--color-text-muted, #6B7280); position: relative;
   border-bottom: 2px solid transparent; margin-bottom: -1px;
   transition: color 0.15s;
   display: inline-flex; align-items: center; gap: 6px;
 }
-.za-tab:hover { color: #374151; }
-.za-tab.active { color: #5E6AD2; border-bottom-color: #5E6AD2; }
+.za-tab:hover { color: var(--color-text, #374151); }
+.za-tab.active { color: var(--color-primary, #5E6AD2); border-bottom-color: var(--color-primary, #5E6AD2); }
 .za-tab-counter {
   font-size: 11px; font-weight: 700;
-  padding: 2px 8px; border-radius: 9999px;
-  background: #EFF6FF; color: #1D4ED8;
+  padding: 2px 8px; border-radius: var(--radius-pill);
+  background: var(--color-info-subtle, #EFF6FF); color: var(--color-info, #1D4ED8);
   font-variant-numeric: tabular-nums;
 }
-.za-tab-counter.full { background: #FEF2F2; color: #B91C1C; }
+.za-tab-counter.full { background: var(--color-danger-subtle, #FEF2F2); color: var(--color-danger, #B91C1C); }
 
 /* 2026-06-09 — sub-tab Đơn giản / Nâng cao (cấp 2): pill segmented, cùng tông brand Atlas v2. */
 .za-subtabs {
   display: inline-flex; gap: 3px; padding: 3px;
-  background: #F3F4F6; border-radius: 10px;
+  background: var(--color-surface-secondary, #F3F4F6); border-radius: var(--radius-md, 10px);
   margin-bottom: 16px;
 }
 .za-subtab {
   background: transparent; border: none; cursor: pointer;
   padding: 7px 16px; font-family: inherit; font-size: 13px; font-weight: 600;
-  color: #6B7280; border-radius: 7px;
+  color: var(--color-text-muted); border-radius: 7px;
   display: inline-flex; align-items: center; gap: 6px;
   transition: color .15s, background .15s, box-shadow .15s;
 }
-.za-subtab:hover { color: #374151; }
+.za-subtab:hover { color: var(--color-text, #374151); }
 .za-subtab.active {
-  color: #5E6AD2; background: #FFFFFF;
+  color: var(--color-primary, #5E6AD2); background: var(--color-surface, #FFFFFF);
   box-shadow: 0 1px 2px rgba(16,24,40,.08);
 }
 
 /* Mục 1 — gạt nhóm theo trạng thái / người dùng (atlas v2) */
 .za-groupby { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 14px; }
-.za-groupby-lbl { font-size: 12.5px; color: #6b7280; font-weight: 600; margin-right: 2px; }
+.za-groupby-lbl { font-size: 12.5px; color: var(--color-text-muted); font-weight: 600; margin-right: 2px; }
 .za-groupby-opt {
-  background: #fff; border: 1px solid #e5e7eb; cursor: pointer;
+  background: var(--color-surface, #fff); border: 1px solid var(--color-border, #e5e7eb); cursor: pointer;
   padding: 6px 14px; font-family: inherit; font-size: 12.5px; font-weight: 600;
-  color: #6b7280; border-radius: 8px; transition: all .15s;
+  color: var(--color-text-muted); border-radius: var(--radius-md); transition: all .15s;
 }
-.za-groupby-opt:hover { border-color: #c7d2fe; color: #374151; }
+.za-groupby-opt:hover { border-color: #c7d2fe; color: var(--color-text-secondary); }
 .za-groupby-opt.active { background: #eef0ff; border-color: #5e6ad2; color: #5e6ad2; }
 
 /* Phase 4 redesign 2026-05-22: filter chip Phòng ban + group-by toggle */
@@ -888,21 +888,21 @@ onMounted(async () => {
 .chip-btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 7px 12px; background: white; border: 1px solid #E4E5E9;
-  border-radius: 6px; font-size: 13px; cursor: pointer;
-  font-family: inherit; color: #374151;
+  border-radius: var(--radius-sm); font-size: 13px; cursor: pointer;
+  font-family: inherit; color: var(--color-text-secondary);
 }
 .chip-btn:hover { background: #F9FAFB; border-color: #C7CCEB; }
 .chip-multi.open .chip-btn { border-color: #5E6AD2; background: #EEF0FF; color: #4F5BC4; }
 .chip-count {
-  background: #5E6AD2; color: white;
+  background: #5E6AD2; color: var(--color-on-primary);
   font-size: 10px; font-weight: 700;
-  padding: 1px 6px; border-radius: 10px;
+  padding: 1px 6px; border-radius: var(--radius-lg);
   line-height: 1.4;
 }
-.chip-caret { font-size: 10px; color: #9CA3AF; }
+.chip-caret { font-size: 10px; color: var(--color-text-disabled); }
 .chip-pop {
   position: absolute; top: 100%; left: 0; margin-top: 4px;
-  background: white; border: 1px solid #E4E5E9; border-radius: 8px;
+  background: white; border: 1px solid #E4E5E9; border-radius: var(--radius-md);
   box-shadow: 0 6px 24px rgba(15, 23, 42, 0.12);
   min-width: 260px; max-width: 360px;
   z-index: 50;
@@ -910,7 +910,7 @@ onMounted(async () => {
 .chip-pop-head {
   display: flex; justify-content: space-between; align-items: center;
   padding: 10px 12px; border-bottom: 1px solid #F3F4F6;
-  font-size: 11px; color: #6B7280; text-transform: uppercase; letter-spacing: .04em; font-weight: 600;
+  font-size: 11px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .04em; font-weight: 600;
 }
 .chip-clear {
   background: transparent; border: none; color: #5E6AD2;
@@ -919,16 +919,16 @@ onMounted(async () => {
 .chip-pop-list { max-height: 320px; overflow-y: auto; padding: 4px 0; }
 .chip-pop-row {
   display: flex; align-items: center; gap: 8px;
-  padding: 8px 12px; font-size: 13px; color: #374151;
+  padding: 8px 12px; font-size: 13px; color: var(--color-text-secondary);
   cursor: pointer;
 }
 .chip-pop-row:hover { background: #F9FAFB; }
-.chip-pop-empty { padding: 16px; text-align: center; color: #9CA3AF; font-size: 12px; }
+.chip-pop-empty { padding: 16px; text-align: center; color: var(--color-text-disabled); font-size: 12px; }
 
 .toggle-group {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 7px 10px; background: white; border: 1px solid #E4E5E9;
-  border-radius: 6px; font-size: 12.5px; color: #374151;
+  border-radius: var(--radius-sm); font-size: 12.5px; color: var(--color-text-secondary);
   cursor: pointer; user-select: none;
 }
 .toggle-group input { cursor: pointer; accent-color: #5E6AD2; }
@@ -950,14 +950,14 @@ onMounted(async () => {
   margin: 0;
   font-size: 20px;
   font-weight: 700;
-  color: #111827;
+  color: var(--color-text);
 }
 .topbar .sub {
   font-size: 12.5px;
-  color: #6B7280;
+  color: var(--color-text-muted);
   margin-top: 2px;
 }
-.topbar .sub b { color: #111827; font-weight: 600 }
+.topbar .sub b { color: var(--color-text); font-weight: 600 }
 .topbar .sub .warn { color: #B91C1C; font-weight: 500 }
 .topbar .sub .dot { margin: 0 6px; color: #D1D5DB }
 .topbar .actions { display: flex; gap: 8px }
@@ -967,34 +967,34 @@ onMounted(async () => {
   align-items: center;
   gap: 6px;
   padding: 7px 12px;
-  border-radius: 8px;
-  border: 1px solid #E5E7EB;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
   background: white;
   cursor: pointer;
   font-size: 12.5px;
-  color: #4B5563;
+  color: var(--color-text-secondary);
   font-weight: 500;
   transition: background 0.12s, border 0.12s, color 0.12s;
 }
 .btn:hover:not(:disabled) {
   border-color: #D1D5DB;
-  color: #111827;
+  color: var(--color-text);
 }
 .btn:disabled { opacity: 0.55; cursor: not-allowed }
 .btn svg { width: 14px; height: 14px }
 .btn-primary {
   background: #6366F1;
-  color: white;
+  color: var(--color-on-primary);
   border-color: #6366F1;
 }
 .btn-primary:hover:not(:disabled) {
   background: #4F46E5;
   border-color: #4F46E5;
-  color: white;
+  color: var(--color-on-primary);
 }
 .btn-danger {
   background: #EF4444;
-  color: white;
+  color: var(--color-on-primary);
   border-color: #EF4444;
 }
 .btn-danger:hover:not(:disabled) {
@@ -1008,7 +1008,7 @@ onMounted(async () => {
   align-items: center;
   background: white;
   border: 1px solid #F3F4F6;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   padding: 8px 10px;
   margin-bottom: 12px;
 }
@@ -1020,7 +1020,7 @@ onMounted(async () => {
   padding: 0 8px;
   background: #F9FAFB;
   border: 1px solid #F3F4F6;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   height: 32px;
 }
 .search input {
@@ -1029,19 +1029,19 @@ onMounted(async () => {
   background: transparent;
   outline: none;
   font-size: 12.5px;
-  color: #111827;
+  color: var(--color-text);
 }
-.search input::placeholder { color: #9CA3AF }
-.search svg { width: 13px; height: 13px; color: #6B7280 }
+.search input::placeholder { color: var(--color-text-disabled) }
+.search svg { width: 13px; height: 13px; color: var(--color-text-muted) }
 
 .select {
   height: 32px;
   padding: 0 9px;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--color-border);
   border-radius: 7px;
   background: white;
   font-size: 12px;
-  color: #4B5563;
+  color: var(--color-text-secondary);
   cursor: pointer;
   font-family: inherit;
 }
@@ -1059,7 +1059,7 @@ onMounted(async () => {
 }
 .modal {
   background: white;
-  border-radius: 14px;
+  border-radius: var(--radius-xl);
   width: 420px;
   max-width: 92vw;
   box-shadow: 0 24px 60px rgba(17, 24, 39, 0.18);
@@ -1073,11 +1073,11 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
 }
-.modal-head h3 { margin: 0; font-size: 15px; font-weight: 600; color: #111827 }
+.modal-head h3 { margin: 0; font-size: 15px; font-weight: 600; color: var(--color-text) }
 .x-btn {
   background: transparent;
   border: none;
-  color: #6B7280;
+  color: var(--color-text-muted);
   cursor: pointer;
   font-size: 16px;
   padding: 4px 8px;
@@ -1085,7 +1085,7 @@ onMounted(async () => {
 .modal-body {
   padding: 18px;
   font-size: 13px;
-  color: #4B5563;
+  color: var(--color-text-secondary);
 }
 .modal-body.text-center { text-align: center }
 .field { margin-bottom: 12px }
@@ -1093,7 +1093,7 @@ onMounted(async () => {
   display: block;
   font-size: 11.5px;
   font-weight: 600;
-  color: #6B7280;
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: .04em;
   margin-bottom: 4px;
@@ -1101,7 +1101,7 @@ onMounted(async () => {
 .field input {
   width: 100%;
   padding: 8px 10px;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--color-border);
   border-radius: 7px;
   font-size: 13px;
   outline: none;
@@ -1110,7 +1110,7 @@ onMounted(async () => {
 .field input:focus { border-color: #6366F1 }
 .hint {
   font-size: 11px;
-  color: #9CA3AF;
+  color: var(--color-text-disabled);
   margin-top: 4px;
 }
 .modal-foot {
@@ -1132,7 +1132,7 @@ onMounted(async () => {
   padding: 5px 8px;
   border-radius: 7px;
   font-size: 12px;
-  color: #6B7280;
+  color: var(--color-text-muted);
   margin-bottom: 4px;
   text-align: left;
 }
@@ -1144,24 +1144,24 @@ onMounted(async () => {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #F3F4F6;
-  color: #6B7280;
+  background: var(--color-surface-secondary);
+  color: var(--color-text-muted);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 10.5px;
 }
-.qr-step.active .n { background: #6366F1; color: white }
+.qr-step.active .n { background: #6366F1; color: var(--color-on-primary) }
 .qr-scanned p { color: #047857; font-weight: 500; margin: 8px 0 }
-.qr-scanned .muted { color: #6B7280; font-weight: 400; font-size: 12px }
+.qr-scanned .muted { color: var(--color-text-muted); font-weight: 400; font-size: 12px }
 .error-text {
   color: #B91C1C;
   font-size: 12px;
   margin-top: 8px;
   background: #FEF2F2;
   padding: 6px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 .loading-spinner {
   width: 40px;

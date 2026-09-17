@@ -147,7 +147,7 @@
               <tr v-for="(r, i) in bySource" :key="i">
                 <td>
                   <div class="cellname">
-                    <span class="av" style="background:var(--rk-brand)"><v-icon icon="mdi-source-branch" size="14" /></span>
+                    <span class="av" style="background:var(--color-primary)"><v-icon icon="mdi-source-branch" size="14" /></span>
                     <div>{{ r.source || 'Không rõ' }}</div>
                   </div>
                 </td>

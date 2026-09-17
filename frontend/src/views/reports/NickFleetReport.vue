@@ -347,3 +347,9 @@ function avColor(name: string): string {
   return AV_COLORS[h % AV_COLORS.length];
 }
 </script>
+
+<style scoped>
+.rpt {
+  color: var(--color-text);
+}
+</style>

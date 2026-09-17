@@ -1,0 +1,6 @@
+/* Chat domain tokens. Keep message-specific meanings out of global semantics. */
+:root {
+  --chat-bubble-self-bg: #d7ecf7;
+  --chat-female: #e91e63;
+  --chat-male: #1e88e5;
+}

@@ -1,7 +1,8 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
-  <div class="mobile-chat" style="height: calc(100vh - 120px);">
+  <PageShell :padded="false" :scrollable="false">
+    <div class="mobile-chat" style="height: calc(100vh - 120px);">
     <!-- Conversation list (shown when no conversation selected) -->
     <div v-if="!selectedConvId" style="height: 100%;">
       <ConversationList
@@ -40,7 +41,8 @@
         style="flex: 1; min-height: 0;"
       />
     </div>
-  </div>
+    </div>
+  </PageShell>
 </template>
 
 <script setup lang="ts">
@@ -49,6 +51,7 @@ import ConversationList from '@/components/chat/ConversationList.vue';
 import MessageThread from '@/components/chat/MessageThread.vue';
 import { useChat } from '@/composables/use-chat';
 import { useOfflineQueue } from '@/composables/use-offline-queue';
+import { PageShell } from '@/design-system';
 
 const {
   conversations, selectedConvId, selectedConv, messages,

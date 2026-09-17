@@ -111,6 +111,11 @@
 - Tuân thủ quy trình 2 bước của Global rules (lượt đầu phân tích và đề xuất → người dùng `ok` mới thực thi thay đổi); đối với các câu hỏi tra cứu thông tin, đối chiếu, giải thích hoặc tư vấn thuần túy không làm thay đổi tệp hay hệ thống, trả lời phân tích trực tiếp.
 - Tìm nguyên nhân gốc trước khi sửa lỗi (Root Cause Investigation); không áp dụng bản vá tạm bợ khi chưa rõ nguyên nhân.
 - Không tự ý commit Git, tạo branch, deploy hoặc chạy migration production khi người dùng chưa yêu cầu rõ ràng.
+- **Quy tắc phát triển trên nhánh `develop` và cập nhật phiên bản:**
+  - Mọi công việc phát triển, sửa lỗi hoặc tính năng mới chỉ được thực hiện và push lên nhánh `develop`. Nhánh `main` do người dùng tự merge thủ công.
+  - Mỗi lần chuẩn bị commit/push lên nhánh `develop` có thay đổi tính năng, sửa lỗi hoặc cấu trúc, bắt buộc phải:
+    1. Tăng version hệ thống (theo chuẩn SemVer: patch khi sửa lỗi/refactor nhỏ, minor khi thêm tính năng/migration) đồng bộ tại `backend/package.json`, `frontend/package.json` và cập nhật `RELEASE_MIGRATION_BASELINES` trong `backend/src/modules/system-upgrade/migration-release-manifest.ts` nếu có migration mới.
+    2. Cập nhật `CHANGELOG.md` ghi rõ số version mới, ngày tháng và chi tiết các nội dung đã thay đổi (Added / Changed / Fixed).
 
 ## Rule cấu trúc thư mục và phạm vi file
 

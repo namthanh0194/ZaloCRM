@@ -9,6 +9,7 @@
     "build": "tsc",
     "start": "node dist/app.js",
     "db:migrate": "prisma migrate dev",
+    "db:baseline": "tsx scripts/baseline-migration-history.ts",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",

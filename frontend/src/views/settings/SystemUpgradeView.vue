@@ -23,6 +23,12 @@
     <v-alert v-if="status?.remoteError" class="mb-2" type="warning" variant="tonal">
       Không lấy được version GitHub: {{ status.remoteError }}
     </v-alert>
+    <v-alert v-if="migrationHistoryAlert" class="mb-2" :type="migrationHistoryAlert.type" variant="tonal">
+      {{ migrationHistoryAlert.message }}
+      <template v-if="migrationHistoryAlert.command">
+        <div class="mt-2 font-mono text-caption">{{ migrationHistoryAlert.command }}</div>
+      </template>
+    </v-alert>
 
     <div v-if="status" class="status-grid">
       <ZCard>
@@ -55,6 +61,7 @@
               {{ versionLabel }}
             </ZBadge>
           </div>
+          <div class="card-subtext">Version dùng để xác định release; Prisma vẫn dựa trên lịch sử migration.</div>
         </div>
       </ZCard>
 
@@ -71,7 +78,7 @@
             <ZButton
               variant="primary"
               size="sm"
-              :disabled="!status.pendingCount || !status.databaseConnected"
+              :disabled="!status.canMigrate"
               :loading="migrating"
               @click="runMigrations"
             >
@@ -99,7 +106,7 @@
             <td class="font-mono text-caption">{{ m.name }}</td>
             <td>
               <ZBadge :variant="migrationBadgeVariant(m.status)" size="sm">
-                {{ m.status }}
+                {{ migrationStatusLabel(m.status) }}
               </ZBadge>
             </td>
             <td class="text-caption text-medium-emphasis">
@@ -119,14 +126,22 @@ import { PageShell, PageHeader, ZButton, ZBadge, ZCard } from "@/design-system";
 
 type Migration = {
   name: string;
-  status: "applied" | "pending" | "failed" | "missing_file";
+  status: "applied" | "pending" | "failed" | "missing_file" | "unknown";
   finishedAt: string | null;
   appliedSteps: number;
   totalSteps: number;
 };
 
+type ReleaseMigrationBaseline = {
+  version: string;
+  lastMigration: string;
+};
+
 type UpgradeStatus = {
   databaseConnected: boolean;
+  migrationHistoryStatus: "available" | "fresh" | "baseline_required" | "unreadable";
+  migrationHistoryError: string | null;
+  canMigrate: boolean;
   localVersion: string;
   remoteVersion: string;
   remoteCommit: string | null;
@@ -134,6 +149,8 @@ type UpgradeStatus = {
   versionStatus: "up_to_date" | "remote_newer" | "local_newer" | "unknown";
   pendingCount: number;
   migrations: Migration[];
+  releaseMigrationBaselines: ReleaseMigrationBaseline[];
+  currentReleaseBaseline: ReleaseMigrationBaseline | null;
 };
 
 const status = ref<UpgradeStatus | null>(null);
@@ -154,6 +171,35 @@ const versionBadgeVariant = computed<"success" | "warning" | "neutral">(() => {
   return "neutral";
 });
 
+const migrationHistoryAlert = computed(() => {
+  if (status.value?.migrationHistoryStatus === "baseline_required") {
+    const baseline = status.value.releaseMigrationBaselines.find(({ version }) => version === "3.4.0");
+    return {
+      type: "warning" as const,
+      message: "Database đã kết nối nhưng lịch sử Prisma migration thiếu hoặc trống. Không chạy migration trước khi baseline an toàn.",
+      command: baseline ? `cd backend && npm run db:baseline -- --version=${baseline.version}` : null,
+    };
+  }
+
+  if (status.value?.migrationHistoryStatus === "unreadable") {
+    return {
+      type: "error" as const,
+      message: status.value.migrationHistoryError || "Không đọc được lịch sử Prisma migration. Migration đang bị khóa để bảo vệ dữ liệu.",
+      command: null,
+    };
+  }
+
+  if (status.value?.migrationHistoryStatus === "fresh") {
+    return {
+      type: "info" as const,
+      message: "Database chưa có schema ứng dụng. Migration có thể khởi tạo một database mới.",
+      command: null,
+    };
+  }
+
+  return null;
+});
+
 async function loadStatus() {
   loading.value = true;
   error.value = "";
@@ -171,7 +217,8 @@ async function runMigrations() {
   error.value = "";
   try {
     const result = (await api.post("/system/upgrade/migrate")).data;
-    status.value = result.status;
+    if (result.status) status.value = result.status;
+    if (!result.success) error.value = result.error || "Chạy migration thất bại";
   } catch (err: any) {
     error.value = err?.response?.data?.error || err.message || "Chạy migration thất bại";
   } finally {
@@ -184,6 +231,16 @@ function migrationBadgeVariant(value: Migration["status"]): "success" | "warning
   if (value === "pending") return "warning";
   if (value === "failed") return "danger";
   return "neutral";
+}
+
+function migrationStatusLabel(value: Migration["status"]) {
+  return {
+    applied: "Đã áp dụng",
+    pending: "Chờ chạy",
+    failed: "Lỗi",
+    missing_file: "Thiếu file",
+    unknown: "Chưa xác minh",
+  }[value];
 }
 
 onMounted(loadStatus);

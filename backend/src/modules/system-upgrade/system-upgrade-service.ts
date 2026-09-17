@@ -3,7 +3,17 @@ import path from 'node:path';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { prisma } from '../../shared/database/prisma-client.js';
+import { runSystemQuery } from '../../shared/tenant/tenant-context.js';
 import { logger } from '../../shared/utils/logger.js';
+import {
+  RELEASE_MIGRATION_BASELINES,
+  getReleaseMigrationBaseline,
+} from './migration-release-manifest.js';
+
+export {
+  getReleaseMigrationBaseline,
+  planBaselineMigrations,
+} from './migration-release-manifest.js';
 
 const execAsync = promisify(exec);
 
@@ -20,9 +30,11 @@ export interface AppliedMigrationRow {
 
 export interface MigrationStatusItem {
   name: string;
-  status: 'applied' | 'pending' | 'failed' | 'missing_file';
+  status: 'applied' | 'pending' | 'failed' | 'missing_file' | 'unknown';
   finishedAt?: string | null;
 }
+
+export type MigrationHistoryStatus = 'available' | 'fresh' | 'baseline_required' | 'unreadable';
 
 export interface ClassificationResult {
   migrations: MigrationStatusItem[];
@@ -43,6 +55,15 @@ export function compareVersions(local: string, remote: string): 'up_to_date' | '
     if (l > r) return 'local_newer';
   }
   return 'up_to_date';
+}
+
+export function classifyUnavailableMigrations(localMigrations: LocalMigrationInfo[]): ClassificationResult {
+  return {
+    migrations: localMigrations.map((migration) => ({ name: migration.name, status: 'unknown' })),
+    pendingCount: 0,
+    hasIntegrityIssue: false,
+    canMigrate: false,
+  };
 }
 
 export function classifyMigrations(
@@ -161,20 +182,48 @@ export class SystemUpgradeService {
     const localMigrations = this.getLocalMigrationFiles();
     let appliedRows: AppliedMigrationRow[] = [];
     let dbConnected = false;
+    let migrationHistoryStatus: MigrationHistoryStatus = 'unreadable';
+    let migrationHistoryError: string | null = null;
 
     try {
-      const rows = await prisma.$queryRaw<AppliedMigrationRow[]>`
-        SELECT migration_name, finished_at, rolled_back_at
-        FROM _prisma_migrations
-        ORDER BY started_at ASC
-      `;
-      appliedRows = rows;
+      await runSystemQuery(() => prisma.$queryRaw`SELECT 1`);
       dbConnected = true;
     } catch (e) {
-      logger.warn('[system-upgrade] error reading _prisma_migrations: ' + String(e));
+      logger.warn('[system-upgrade] database health check failed: ' + String(e));
     }
 
-    const classification = classifyMigrations(localMigrations, appliedRows);
+    if (dbConnected) {
+      try {
+        const [probe] = await runSystemQuery(() => prisma.$queryRaw<{
+          migrationHistoryTable: string | null;
+          applicationSchemaTable: string | null;
+        }[]>`
+          SELECT
+            to_regclass('public._prisma_migrations')::text AS "migrationHistoryTable",
+            to_regclass('public.organizations')::text AS "applicationSchemaTable"
+        `);
+
+        if (!probe?.migrationHistoryTable) {
+          migrationHistoryStatus = probe?.applicationSchemaTable ? 'baseline_required' : 'fresh';
+        } else {
+          appliedRows = await runSystemQuery(() => prisma.$queryRaw<AppliedMigrationRow[]>`
+            SELECT migration_name, finished_at, rolled_back_at
+            FROM public._prisma_migrations
+            ORDER BY started_at ASC
+          `);
+          migrationHistoryStatus = appliedRows.length === 0 && probe.applicationSchemaTable
+            ? 'baseline_required'
+            : 'available';
+        }
+      } catch (e) {
+        logger.warn('[system-upgrade] error reading Prisma migration history: ' + String(e));
+        migrationHistoryError = 'Không đọc được lịch sử Prisma migration.';
+      }
+    }
+
+    const classification = migrationHistoryStatus === 'available' || migrationHistoryStatus === 'fresh'
+      ? classifyMigrations(localMigrations, appliedRows)
+      : classifyUnavailableMigrations(localMigrations);
     const localVersion = this.getLocalVersion();
     const remoteInfo = await this.fetchRemoteVersion();
     const versionStatus =
@@ -184,6 +233,10 @@ export class SystemUpgradeService {
 
     return {
       databaseConnected: dbConnected,
+      migrationHistoryStatus,
+      migrationHistoryError,
+      releaseMigrationBaselines: RELEASE_MIGRATION_BASELINES,
+      currentReleaseBaseline: getReleaseMigrationBaseline(localVersion) ?? null,
       localVersion,
       remoteVersion: remoteInfo.version,
       remoteError: remoteInfo.error,
@@ -205,8 +258,20 @@ export class SystemUpgradeService {
     if (status.hasIntegrityIssue) {
       return { success: false, output: '', error: 'Phát hiện thư mục migration bị thiếu file hoặc lỗi toàn vẹn' };
     }
+    if (status.migrationHistoryStatus !== 'available' && status.migrationHistoryStatus !== 'fresh') {
+      return {
+        success: false,
+        output: '',
+        error: status.migrationHistoryStatus === 'baseline_required'
+          ? 'Cần baseline lịch sử Prisma migration trước khi chạy migration mới.'
+          : 'Không thể xác minh lịch sử Prisma migration.',
+      };
+    }
     if (status.pendingCount === 0) {
       return { success: true, output: 'Cơ sở dữ liệu đã ở trạng thái mới nhất, không có migration cần chạy.' };
+    }
+    if (!status.canMigrate) {
+      return { success: false, output: '', error: 'Không thể chạy migration trong trạng thái hiện tại.' };
     }
 
     isMigrating = true;

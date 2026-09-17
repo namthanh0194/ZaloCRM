@@ -38,6 +38,9 @@ export async function systemUpgradeRoutes(app: FastifyInstance) {
       error: result.error ?? null,
       output: result.output.slice(-4000),
     });
-    return result;
+    return {
+      ...result,
+      status: await SystemUpgradeService.getMigrationStatus(),
+    };
   });
 }

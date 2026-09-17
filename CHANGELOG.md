@@ -5,6 +5,27 @@ Các thay đổi đáng chú ý của ZCRM. Theo [Semantic Versioning](https://s
 > Các tag `v1.x`–`v3.3.x` là **lịch sử upstream** (locphamnguyen/ZaloCRM) — xem đầy đủ ở cuối file.
 > `v3.4.x` là dòng release hiện tại.
 
+## [3.6.2] - 2026-09-17
+### Changed — Giao diện (UI)
+- **Cập nhật màu nền Header:** Đổi tông màu thanh Header ứng dụng từ gradient cũ sang màu `#182537` đồng bộ trên cả Desktop (`DefaultLayout.vue`) và Mobile (`MobileLayout.vue`), bổ sung viền dưới tinh tế tách bạch với thân trang.
+
+## [3.6.1] - 2026-09-17
+### Added — Tính năng & Độ tin cậy
+- **Release Migration Baseline an toàn cho Production:** Thêm script `npm run db:baseline` (mặc định dry-run) kiểm tra các bảng và cột sentinel của v3.4.0 (`organizations`, `users`, `customer_lists`, `lead_notify_ack_...`) và sử dụng `prisma migrate resolve --applied` để ghi nhận 110 migration cũ mà không thực thi lại file SQL cũ, tránh lỗi trùng bảng trên production.
+- **Tài liệu vận hành Baseline:** Tạo runbook `docs/operations/prisma-production-baseline.md` hướng dẫn chi tiết quy trình backup và baseline database an toàn.
+
+### Changed — Cải tiến & Độc lập Private Repo
+- **Hỗ trợ Private Repository:** Loại bỏ hoàn toàn việc gọi lấy version từ URL public GitHub raw; backend tự động nhận diện git commit hash đang chạy thông qua biến môi trường container (`SOURCE_COMMIT` từ Coolify) qua `resolveRunningCommit()`.
+- **Chuẩn hóa giao diện Nâng cấp hệ thống (`/settings/system-upgrade`):**
+  - Hiển thị thông tin phiên bản và Git commit thực tế đang chạy trên server production kèm nhãn `Đã đồng bộ`.
+  - Bổ sung trạng thái migration `unknown` (Chưa xác minh) khi database thiếu lịch sử Prisma migration.
+  - Tự động khóa nút chạy migration (`canMigrate: false`) và hiển thị banner cảnh báo kèm lệnh baseline khi phát hiện database production có schema nhưng thiếu lịch sử migration.
+  - Đồng bộ trạng thái response sau khi chạy migration để UI cập nhật ngay mà không cần reload trang.
+- **Đóng gói Docker:** Cập nhật `docker/Dockerfile` sao chép `migration-release-manifest.ts` vào runtime image phục vụ script vận hành CLI.
+
+### Fixed — Sửa lỗi
+- Khắc phục triệt để tình trạng trang Nâng cấp hệ thống nhận diện nhầm toàn bộ 113 migration là "pending" do database production trước đây thiếu bảng `_prisma_migrations`.
+
 ## [3.4.0] - 2026-06-20
 
 Đợt cập nhật lớn: **giao diện mới** + **Dashboard mới**, **nâng cao bảo mật**, **quét nhóm Zalo**, **bộ báo cáo mới**, **cầu Zalo ↔ Telegram**, **độ tin cậy chat**, và chuyển sang **mã nguồn mở AGPL-3.0**.

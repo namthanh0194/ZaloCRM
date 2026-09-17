@@ -454,14 +454,15 @@ function logout() {
 
 /* HS Holding shell — teal-navy gradient nav (redesign 2026-06-05, đảo lock Variant A sáng) */
 .smax-topnav {
-  background: linear-gradient(180deg, var(--nav-grad-a, #0e445a) 0%, var(--nav-grad-b, #06222f) 100%);
+  background: #182537;
   color: rgba(255, 255, 255, 0.85);
   height: 48px;
   display: flex; align-items: center;
   padding: 0 14px; gap: 4px;
   flex-shrink: 0;
   position: sticky; top: 0; z-index: 100;
-  box-shadow: 0 1px 0 rgba(255,255,255,.06), 0 2px 8px rgba(0,0,0,.18);
+  box-shadow: 0 1px 0 rgba(255,255,255,.08), 0 2px 8px rgba(0,0,0,.25);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* Brand lockup — monogram HS + wordmark "HS Holding / CRM" */

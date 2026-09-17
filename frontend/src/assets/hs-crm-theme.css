@@ -88,8 +88,9 @@
   --mono: "Roboto Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
   /* HS Holding teal-navy nav gradient */
-  --nav-grad-a: #0e445a;
-  --nav-grad-b: #06222f;
+  --nav-grad-a: #182537;
+  --nav-grad-b: #182537;
+  --nav-bg: #182537;
   --nav-accent: #5bb8e5;
 
   /* Layout */

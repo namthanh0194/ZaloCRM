@@ -43,6 +43,19 @@ export interface ClassificationResult {
   hasIntegrityIssue: boolean;
 }
 
+export function resolveRunningCommit(): string | null {
+  const raw =
+    process.env.SOURCE_COMMIT ||
+    process.env.COOLIFY_COMMIT_SHA ||
+    process.env.GIT_COMMIT ||
+    process.env.COMMIT_SHA ||
+    null;
+
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  return trimmed.length >= 7 ? trimmed.slice(0, 8) : trimmed;
+}
+
 export function compareVersions(local: string, remote: string): 'up_to_date' | 'remote_newer' | 'local_newer' {
   const pLocal = local.split('.').map((x) => parseInt(x, 10) || 0);
   const pRemote = remote.split('.').map((x) => parseInt(x, 10) || 0);
@@ -225,11 +238,7 @@ export class SystemUpgradeService {
       ? classifyMigrations(localMigrations, appliedRows)
       : classifyUnavailableMigrations(localMigrations);
     const localVersion = this.getLocalVersion();
-    const remoteInfo = await this.fetchRemoteVersion();
-    const versionStatus =
-      remoteInfo.version !== 'unknown' && localVersion !== 'unknown'
-        ? compareVersions(localVersion, remoteInfo.version)
-        : 'unknown';
+    const currentCommit = resolveRunningCommit();
 
     return {
       databaseConnected: dbConnected,
@@ -238,9 +247,8 @@ export class SystemUpgradeService {
       releaseMigrationBaselines: RELEASE_MIGRATION_BASELINES,
       currentReleaseBaseline: getReleaseMigrationBaseline(localVersion) ?? null,
       localVersion,
-      remoteVersion: remoteInfo.version,
-      remoteError: remoteInfo.error,
-      versionStatus,
+      currentCommit,
+      deploymentChannel: 'production' as const,
       ...classification,
       isMigrating,
     };

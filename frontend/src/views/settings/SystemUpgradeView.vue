@@ -20,9 +20,6 @@
     </PageHeader>
 
     <v-alert v-if="error" class="mb-2" type="error" variant="tonal">{{ error }}</v-alert>
-    <v-alert v-if="status?.remoteError" class="mb-2" type="warning" variant="tonal">
-      Không lấy được version GitHub: {{ status.remoteError }}
-    </v-alert>
     <v-alert v-if="migrationHistoryAlert" class="mb-2" :type="migrationHistoryAlert.type" variant="tonal">
       {{ migrationHistoryAlert.message }}
       <template v-if="migrationHistoryAlert.command">
@@ -54,14 +51,14 @@
           </div>
         </template>
         <div class="card-body-content">
-          <div class="version-row">Local: <strong>{{ status.localVersion }}</strong></div>
-          <div class="version-row">GitHub: <strong>{{ status.remoteVersion }}</strong></div>
+          <div class="version-row">Phiên bản: <strong>{{ status.localVersion }}</strong></div>
+          <div class="version-row">Git commit: <strong>{{ status.currentCommit || "N/A" }}</strong></div>
           <div class="mt-2">
-            <ZBadge :variant="versionBadgeVariant">
-              {{ versionLabel }}
+            <ZBadge variant="success">
+              Đã đồng bộ
             </ZBadge>
           </div>
-          <div class="card-subtext">Version dùng để xác định release; Prisma vẫn dựa trên lịch sử migration.</div>
+          <div class="card-subtext">Kênh production độc lập, không phụ thuộc kết nối public GitHub.</div>
         </div>
       </ZCard>
 
@@ -143,10 +140,8 @@ type UpgradeStatus = {
   migrationHistoryError: string | null;
   canMigrate: boolean;
   localVersion: string;
-  remoteVersion: string;
-  remoteCommit: string | null;
-  remoteError?: string | null;
-  versionStatus: "up_to_date" | "remote_newer" | "local_newer" | "unknown";
+  currentCommit: string | null;
+  deploymentChannel: "production";
   pendingCount: number;
   migrations: Migration[];
   releaseMigrationBaselines: ReleaseMigrationBaseline[];
@@ -157,19 +152,6 @@ const status = ref<UpgradeStatus | null>(null);
 const loading = ref(false);
 const migrating = ref(false);
 const error = ref("");
-
-const versionLabel = computed(() => ({
-  up_to_date: "Đang ở phiên bản mới nhất",
-  remote_newer: "Có phiên bản mới hơn",
-  local_newer: "Bản local đang đi trước GitHub",
-  unknown: "Chưa rõ trạng thái",
-})[status.value?.versionStatus || "unknown"]);
-
-const versionBadgeVariant = computed<"success" | "warning" | "neutral">(() => {
-  if (status.value?.versionStatus === "remote_newer") return "warning";
-  if (status.value?.versionStatus === "up_to_date") return "success";
-  return "neutral";
-});
 
 const migrationHistoryAlert = computed(() => {
   if (status.value?.migrationHistoryStatus === "baseline_required") {

@@ -12,6 +12,7 @@ export const RELEASE_MIGRATION_BASELINES: ReleaseMigrationBaseline[] = [
   { version: '3.4.0', lastMigration: '20260625010000_lead_notify_ack' },
   { version: '3.6.0', lastMigration: '20260915130000_add_ai_knowledge_documents' },
   { version: '3.6.1', lastMigration: '20260915130000_add_ai_knowledge_documents' },
+  { version: '3.6.2', lastMigration: '20260915130000_add_ai_knowledge_documents' },
 ];
 
 export function getReleaseMigrationBaseline(version: string): ReleaseMigrationBaseline | undefined {

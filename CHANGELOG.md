@@ -5,6 +5,10 @@ Các thay đổi đáng chú ý của ZCRM. Theo [Semantic Versioning](https://s
 > Các tag `v1.x`–`v3.3.x` là **lịch sử upstream** (locphamnguyen/ZaloCRM) — xem đầy đủ ở cuối file.
 > `v3.4.x` là dòng release hiện tại.
 
+## [3.6.2] - 2026-09-17
+### Changed — Giao diện (UI)
+- **Cập nhật màu nền Header:** Đổi tông màu thanh Header ứng dụng từ gradient cũ sang màu `#182537` đồng bộ trên cả Desktop (`DefaultLayout.vue`) và Mobile (`MobileLayout.vue`), bổ sung viền dưới tinh tế tách bạch với thân trang.
+
 ## [3.6.1] - 2026-09-17
 ### Added — Tính năng & Độ tin cậy
 - **Release Migration Baseline an toàn cho Production:** Thêm script `npm run db:baseline` (mặc định dry-run) kiểm tra các bảng và cột sentinel của v3.4.0 (`organizations`, `users`, `customer_lists`, `lead_notify_ack_...`) và sử dụng `prisma migrate resolve --applied` để ghi nhận 110 migration cũ mà không thực thi lại file SQL cũ, tránh lỗi trùng bảng trên production.

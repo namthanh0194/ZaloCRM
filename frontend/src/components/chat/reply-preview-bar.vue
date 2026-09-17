@@ -109,14 +109,14 @@ function mediaFallback(msgType?: string | null): string {
 .reply-preview-bar {
   display: flex; align-items: center; gap: 9px;
   padding: 7px 11px;
-  background: var(--smax-grey-50, #fafbfc);
-  border: 1px solid var(--smax-grey-200, #ebedf0);
+  background: var(--color-surface-secondary, #fafbfc);
+  border: 1px solid var(--color-border, #ebedf0);
   border-left-width: 3px;
   border-radius: 7px;
   margin-bottom: 7px;
 }
-.bar--reply { border-left-color: var(--smax-primary, #2962ff); }
-.bar--edit  { border-left-color: var(--smax-warning, #ff9100); }
+.bar--reply { border-left-color: var(--color-primary, #2962ff); }
+.bar--edit  { border-left-color: var(--color-warning, #ff9100); }
 
 .reply-icon { flex-shrink: 0; }
 
@@ -126,12 +126,12 @@ function mediaFallback(msgType?: string | null): string {
 }
 .reply-sender {
   font-size: 11.5px; font-weight: 600;
-  color: var(--smax-primary, #2962ff);
+  color: var(--color-primary, #2962ff);
 }
-.bar--edit .reply-sender { color: var(--smax-warning, #ff9100); }
+.bar--edit .reply-sender { color: var(--color-warning, #ff9100); }
 .reply-content {
   font-size: 12.5px;
-  color: var(--smax-grey-700, #5a6478);
+  color: var(--color-text-secondary, #5a6478);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -143,8 +143,8 @@ function mediaFallback(msgType?: string | null): string {
   border-radius: 50%;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  color: var(--smax-grey-700, #5a6478);
+  color: var(--color-text-secondary, #5a6478);
   flex-shrink: 0;
 }
-.close-btn:hover { background: var(--smax-grey-100, #f5f6fa); color: var(--smax-error, #ff3d00); }
+.close-btn:hover { background: var(--color-bg, #f5f6fa); color: var(--color-danger, #ff3d00); }
 </style>

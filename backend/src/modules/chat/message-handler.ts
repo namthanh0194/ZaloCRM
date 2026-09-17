@@ -1055,6 +1055,7 @@ async function updateConversationAfterMessage(
   } else {
     updateData.unreadCount = { increment: 1 };
     updateData.isReplied = false;
+    updateData.deletedAt = null;
   }
   await prisma.conversation.update({ where: { id: conversationId }, data: updateData });
 }

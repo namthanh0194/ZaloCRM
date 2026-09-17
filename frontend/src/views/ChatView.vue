@@ -54,6 +54,7 @@
         @update:filters="onFiltersUpdate"
         @conversation-moved="onConversationMoved"
         @conversation-deleted="onConversationDeleted"
+        @conversation-restored="onConversationRestored"
         @compose-opened="onComposeOpened"
         @follow-changed="onFollowChanged"
       >
@@ -351,7 +352,7 @@ const conversationCounts = computed(() => {
   let unread = 0, unanswered = 0, stuck = 0, ready = 0, individual = 0, group = 0;
   for (const c of conversations.value) {
     const cc = c as any;
-    if ((cc.unreadCount || 0) > 0) unread++;
+    unread += (cc.unreadCount || 0);
     if (cc.isReplied === false) unanswered++;
     if (cc.friendship?.stuckSince != null) stuck++;
     if ((cc.contact?.leadScore || 0) >= 80) ready++;
@@ -548,6 +549,13 @@ function onConversationDeleted(id: string) {
   void refreshPriorityUnread();
 }
 
+function onConversationRestored(id: string) {
+  const idx = conversations.value.findIndex((c) => c.id === id);
+  if (idx !== -1) conversations.value.splice(idx, 1);
+  fetchConversations({ bypassCache: true });
+  void refreshPriorityUnread();
+}
+
 // Khi user tạo conv mới từ "Tin nhắn mới" dialog → refresh list + nav vào conv đó.
 async function onComposeOpened(conversationId: string) {
   await fetchConversations();
@@ -739,9 +747,9 @@ watch(searchQuery, () => {
 .smax-chat-grid {
   display: grid;
   grid-template-columns: 290px 380px 1fr 350px;
-  height: calc(100vh - var(--smax-topnav-h, 52px));
+  height: calc(100vh - var(--layout-topnav-height, 52px));
   overflow: hidden;
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
 }
 
 /* Khi info-panel đóng, col 4 collapse → grid auto-adjust */
@@ -769,8 +777,8 @@ watch(searchQuery, () => {
 }
 
 .smax-conv-col {
-  border-right: 1px solid var(--smax-grey-200);
-  background: var(--smax-bg);
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface);
 }
 
 /* work-scope 2026-06-15 — 1 DÒNG "N tin ở M nick khác" ở đầu cột 2 (anh chốt: gọn) */
@@ -818,7 +826,7 @@ watch(searchQuery, () => {
 }
 
 .smax-msg-col {
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
 }
 
 /* HD+ compact: thu nhỏ chút để thread có thêm space */

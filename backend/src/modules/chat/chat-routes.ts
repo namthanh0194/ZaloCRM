@@ -36,6 +36,7 @@ import { buildSendFileName } from '../media/media-routes.js';
 import { bumpUsage } from '../media/media-service.js';
 import { getOwnerScope } from '../rbac/owner-scope.js';
 import { blockVisibilityWhere } from '../../shared/ee-registry/automation.js';
+import { conversationVisibilityWhere, getConversationAccessActor, isConversationAccessManager, requireConversationAccess } from './conversation-access.js';
 
 type QueryParams = Record<string, string>;
 
@@ -130,18 +131,29 @@ export async function chatRoutes(app: FastifyInstance) {
   // NOTE: Must be registered BEFORE /api/v1/conversations/:id to avoid route conflict
   app.get('/api/v1/conversations/counts', async (request: FastifyRequest, reply: FastifyReply) => {
     const user = request.user!;
-    const { accountId = '', tab = '', threadType = '' } = request.query as QueryParams;
+    const accessActor = await getConversationAccessActor(request);
+    const { accountId = '', tab = '', threadType = '', deleted = '' } = request.query as QueryParams;
 
     // T5-A (YC2): nick đã XÓA-có-uid vẫn hiện hội thoại (đọc-only) → DISPLAYABLE thay archivedAt:null.
-    const baseWhere: any = { orgId: user.orgId, deletedAt: null, zaloAccount: DISPLAYABLE_NICK_WHERE };
+    const baseWhere: any = { orgId: user.orgId, zaloAccount: DISPLAYABLE_NICK_WHERE };
+    if (tab === 'deleted' || deleted === 'true') {
+      baseWhere.deletedAt = { not: null };
+    } else {
+      baseWhere.deletedAt = null;
+      if (tab) baseWhere.tab = tab;
+    }
+    Object.assign(baseWhere, conversationVisibilityWhere(accessActor));
     if (accountId) baseWhere.zaloAccountId = accountId;
-    if (tab) baseWhere.tab = tab;
     // 2026-06-11 — đếm theo cùng key tab như list: Cá nhân/Nhóm (threadType) loại
     // trừ hội thoại đã chuyển sang Ưu tiên (tab=other) → mặc định tab=main nếu
     // không truyền tab. Sidebar cột 1 + mini-count cột 2 đồng bộ con số theo tab.
-    if (threadType === 'user' || threadType === 'group') {
+    if (tab !== 'deleted' && deleted !== 'true') {
+      if (threadType === 'user' || threadType === 'group') {
+        baseWhere.threadType = threadType;
+        if (!tab) baseWhere.tab = 'main';
+      }
+    } else if (threadType === 'user' || threadType === 'group') {
       baseWhere.threadType = threadType;
-      if (!tab) baseWhere.tab = 'main';
     }
 
     // Phase Contact Scope Hybrid 2026-05-27: scope qua getZaloScope (gỡ legacy
@@ -162,16 +174,18 @@ export async function chatRoutes(app: FastifyInstance) {
     // thuộc tab/threadType đang chọn (tab Ưu tiên cần biết badge đậm dù đang ở tab
     // khác). Tái dùng scope zalo ở baseWhere (org + accessible nicks), bỏ tab/threadType.
     const otherScopeWhere: any = { orgId: user.orgId, deletedAt: null, tab: 'other', unreadCount: { gt: 0 } };
+    Object.assign(otherScopeWhere, conversationVisibilityWhere(accessActor));
     if (baseWhere.zaloAccountId) otherScopeWhere.zaloAccountId = baseWhere.zaloAccountId;
 
-    const [unread, unreplied, total, otherUnread] = await Promise.all([
+    const [unread, unreplied, total, otherUnread, unreadMessagesAgg] = await Promise.all([
       prisma.conversation.count({ where: { ...baseWhere, unreadCount: { gt: 0 } } }),
       prisma.conversation.count({ where: { ...baseWhere, isReplied: false } }),
       prisma.conversation.count({ where: baseWhere }),
       prisma.conversation.count({ where: otherScopeWhere }),
+      prisma.conversation.aggregate({ where: { ...baseWhere, unreadCount: { gt: 0 } }, _sum: { unreadCount: true } }),
     ]);
 
-    return { unread, unreplied, total, otherUnread };
+    return { unread, unreplied, total, otherUnread, unreadMessages: unreadMessagesAgg._sum.unreadCount ?? 0 };
   });
 
   // ── Event counts cho badge cột 1 (sinh nhật 7d / hẹn 24h / quá hạn) ──────
@@ -179,6 +193,7 @@ export async function chatRoutes(app: FastifyInstance) {
   // distinct, scope org + zalo access. Phải đăng ký TRƯỚC /conversations/:id.
   app.get('/api/v1/conversations/event-counts', async (request: FastifyRequest, _reply: FastifyReply) => {
     const user = request.user!;
+    const accessActor = await getConversationAccessActor(request);
     const { folderId = '', accountId = '', tab = '', threadType = '' } = request.query as QueryParams;
 
     const now = new Date();
@@ -243,6 +258,10 @@ export async function chatRoutes(app: FastifyInstance) {
           ? Prisma.sql`AND cv.zalo_account_id IN (${Prisma.join(effectiveAccountIds)})`
           : Prisma.sql`AND FALSE`;
 
+    const conversationAccessSql = isConversationAccessManager(accessActor)
+      ? Prisma.empty
+      : Prisma.sql`AND EXISTS (SELECT 1 FROM conversation_accesses ca WHERE ca.conversation_id = cv.id AND ca.user_id = ${user.id})`;
+
     const [birthdayRows, apptSoonRows, apptOverdueRows, replyStateRows] = await Promise.all([
       // Sinh nhật 7 ngày tới — so ngày/tháng (bỏ năm, wrap qua năm mới).
       // 2026-06-11 — đếm Contact DISTINCT CÓ hội thoại khớp tab + nick scope đang xem
@@ -258,6 +277,7 @@ export async function chatRoutes(app: FastifyInstance) {
           )
           ${convTabSql}
           ${nickScopeSql}
+          ${conversationAccessSql}
       `,
       // Lịch hẹn scheduled trong 24h tới (distinct Contact, theo tab + nick scope).
       prisma.$queryRaw<Array<{ n: bigint }>>`
@@ -270,6 +290,7 @@ export async function chatRoutes(app: FastifyInstance) {
           AND ap.appointment_date >= ${now} AND ap.appointment_date <= ${in24h}
           ${convTabSql}
           ${nickScopeSql}
+          ${conversationAccessSql}
       `,
       // Hẹn scheduled đã quá giờ (distinct Contact, theo tab + nick scope).
       prisma.$queryRaw<Array<{ n: bigint }>>`
@@ -282,6 +303,7 @@ export async function chatRoutes(app: FastifyInstance) {
           AND ap.appointment_date < ${now}
           ${convTabSql}
           ${nickScopeSql}
+          ${conversationAccessSql}
       `,
       // 2026-06-09 — Badge đếm nhóm "Tin nhắn" (user vs bot). Chỉ 1-1 (threadType='user').
       // Mốc khách nhắn cuối tính PER-CONVERSATION từ messages (KHÔNG dùng Contact.lastInboundAt
@@ -316,6 +338,7 @@ export async function chatRoutes(app: FastifyInstance) {
           AND agg.last_inbound IS NOT NULL
           ${tab === 'other' ? Prisma.sql`AND cv.tab = 'other'` : Prisma.sql`AND cv.tab = 'main'`}
           ${nickScopeSql}
+          ${conversationAccessSql}
       `,
     ]);
 
@@ -418,6 +441,7 @@ export async function chatRoutes(app: FastifyInstance) {
   // ── List conversations (paginated, filterable) ──────────────────────────
   app.get('/api/v1/conversations', { preHandler: requireGrant('conversation', 'access') }, async (request: FastifyRequest, reply: FastifyReply) => {
     const user = request.user!;
+    const accessActor = await getConversationAccessActor(request);
     const {
       page = '1',
       limit = '50',
@@ -433,6 +457,7 @@ export async function chatRoutes(app: FastifyInstance) {
       dateTo = '',
       tags = '',
       tab = '',
+      deleted = '',
       threadType = '',          // user | group
       // Mới — Contact level
       statusId = '',
@@ -468,15 +493,25 @@ export async function chatRoutes(app: FastifyInstance) {
     } = request.query as QueryParams;
 
     // T5-A (YC2): hội thoại nick đã XÓA-có-uid hiện lại (đọc-only) → DISPLAYABLE thay archivedAt:null.
-    const where: any = { orgId: user.orgId, deletedAt: null, zaloAccount: DISPLAYABLE_NICK_WHERE };
-    if (tab) where.tab = tab;
-    if (threadType === 'user' || threadType === 'group') {
+    const where: any = { orgId: user.orgId, zaloAccount: DISPLAYABLE_NICK_WHERE };
+    if (tab === 'deleted' || deleted === 'true') {
+      where.deletedAt = { not: null };
+    } else {
+      where.deletedAt = null;
+      if (tab) where.tab = tab;
+    }
+    Object.assign(where, conversationVisibilityWhere(accessActor));
+    if (tab !== 'deleted' && deleted !== 'true') {
+      if (threadType === 'user' || threadType === 'group') {
+        where.threadType = threadType;
+        // 2026-06-11 — Loại trừ lẫn nhau với tab "Ưu tiên" (tab=other): tab Cá nhân /
+        // Nhóm CHỈ hiện hội thoại ở hộp Chính (tab=main). Hội thoại đã chuyển sang
+        // Ưu tiên không còn xuất hiện ở Cá nhân/Nhóm nữa (anh chốt). Nếu FE gửi kèm
+        // tab riêng thì tôn trọng tab đó (không ép).
+        if (!tab) where.tab = 'main';
+      }
+    } else if (threadType === 'user' || threadType === 'group') {
       where.threadType = threadType;
-      // 2026-06-11 — Loại trừ lẫn nhau với tab "Ưu tiên" (tab=other): tab Cá nhân /
-      // Nhóm CHỈ hiện hội thoại ở hộp Chính (tab=main). Hội thoại đã chuyển sang
-      // Ưu tiên không còn xuất hiện ở Cá nhân/Nhóm nữa (anh chốt). Nếu FE gửi kèm
-      // tab riêng thì tôn trọng tab đó (không ép).
-      if (!tab) where.tab = 'main';
     }
 
     // Phase 6+ — folderId translate sang accountIds (override accountId/accountIds nếu set)
@@ -849,7 +884,7 @@ export async function chatRoutes(app: FastifyInstance) {
             // Primary sort by Zalo Snowflake numeric (match 100% Zalo Web), sentAt fallback
             // cho CRM-sent in-flight messages chưa nhận echo zaloMsgId.
             orderBy: [{ zaloMsgIdNum: { sort: 'desc', nulls: 'last' } }, { sentAt: 'desc' }],
-            select: { id: true, zaloMsgId: true, senderUid: true, senderName: true, content: true, contentType: true, senderType: true, sentAt: true, isDeleted: true, editedAt: true, reactions: { select: { emoji: true, reactorId: true, reactorName: true, reactorSource: true } } },
+            select: { id: true, zaloMsgId: true, senderUid: true, senderName: true, content: true, contentType: true, senderType: true, sentAt: true, isDeleted: true, editedAt: true, repliedByUserId: true, repliedBy: { select: { id: true, fullName: true } }, metadata: true, reactions: { select: { emoji: true, reactorId: true, reactorName: true, reactorSource: true } } },
           },
         },
         orderBy: orderByClause,
@@ -987,7 +1022,7 @@ export async function chatRoutes(app: FastifyInstance) {
   });
 
   // ── Get single conversation ──────────────────────────────────────────────
-  app.get('/api/v1/conversations/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get('/api/v1/conversations/:id', { preHandler: requireConversationAccess('read') }, async (request: FastifyRequest, reply: FastifyReply) => {
     const user = request.user!;
     const { id } = request.params as { id: string };
 
@@ -1104,7 +1139,7 @@ export async function chatRoutes(app: FastifyInstance) {
   //    phone / birthday. Khi user click conv, gọi getUserInfo() lấy fresh profile và
   //    upsert những field còn NULL trong DB (KHÔNG ghi đè giá trị sale đã chỉnh).
   //    Cooldown 5min per conv để không spam SDK.
-  app.post('/api/v1/conversations/:id/touch-profile', { preHandler: requireZaloAccess('read') }, async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post('/api/v1/conversations/:id/touch-profile', { preHandler: [requireZaloAccess('read'), requireConversationAccess('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     const user = request.user!;
     const { id } = request.params as { id: string };
 
@@ -1259,7 +1294,7 @@ export async function chatRoutes(app: FastifyInstance) {
 
   // ── List messages for a conversation (paginated, newest first) ──────────
   app.get('/api/v1/conversations/:id/messages', {
-    preHandler: requireZaloAccess('read'),
+    preHandler: [requireZaloAccess('read'), requireConversationAccess('read')],
     // Privacy phase integration: main-nick conv content sẽ bị redact ▒▒▒▒ ở middleware Privacy
     config: { contentClass: 'content' as const, rbacResource: 'conversation' as const, rbacAction: 'access' as const },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
@@ -1489,7 +1524,7 @@ export async function chatRoutes(app: FastifyInstance) {
   });
 
   // ── Send message ─────────────────────────────────────────────────────────
-  app.post('/api/v1/conversations/:id/messages', { preHandler: requireZaloAccess('chat') }, async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post('/api/v1/conversations/:id/messages', { preHandler: [requireZaloAccess('chat'), requireConversationAccess('chat')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     const user = request.user!;
     const { id } = request.params as { id: string };
     // 2026-05-21: thêm `styles` cho Zalo RTF (bold/italic/underline/strikethrough).
@@ -1849,7 +1884,7 @@ export async function chatRoutes(app: FastifyInstance) {
   // KHÔNG idempotent: sale có thể gửi lại Khối. Chống double-send: FE disable nút khi
   // đang gửi; BE break khi gửi dở (đã gửi ≥1 tin mà tin sau lỗi → KHÔNG retry). KHÔNG
   // được bọc route này bằng retry kiểu BullMQ.
-  app.post('/api/v1/conversations/:id/send-block', { preHandler: requireZaloAccess('chat') }, async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post('/api/v1/conversations/:id/send-block', { preHandler: [requireZaloAccess('chat'), requireConversationAccess('chat')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     const user = request.user!;
     const { id } = request.params as { id: string };
     const { blockId } = (request.body ?? {}) as { blockId?: string };
@@ -2169,7 +2204,7 @@ export async function chatRoutes(app: FastifyInstance) {
   });
 
   // ── Upload image(s) and send qua Zalo (paste image / nút Gửi ảnh) ────────
-  app.post('/api/v1/conversations/:id/upload-image', { preHandler: requireZaloAccess('chat') }, async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post('/api/v1/conversations/:id/upload-image', { preHandler: [requireZaloAccess('chat'), requireConversationAccess('chat')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     const user = request.user!;
     const { id } = request.params as { id: string };
 
@@ -2311,7 +2346,7 @@ export async function chatRoutes(app: FastifyInstance) {
   });
 
   // ── Mark conversation as read ────────────────────────────────────────────
-  app.post('/api/v1/conversations/:id/mark-read', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post('/api/v1/conversations/:id/mark-read', { preHandler: requireConversationAccess('read') }, async (request: FastifyRequest, reply: FastifyReply) => {
     const user = request.user!;
     const { id } = request.params as { id: string };
 
@@ -2458,7 +2493,7 @@ export async function chatRoutes(app: FastifyInstance) {
   });
 
   // ── Move conversation to a different tab (main / other) ────────────────
-  app.patch('/api/v1/conversations/:id/tab', { preHandler: requireZaloAccess('chat') }, async (request: FastifyRequest, reply: FastifyReply) => {
+  app.patch('/api/v1/conversations/:id/tab', { preHandler: [requireZaloAccess('read'), requireConversationAccess('read')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     const user = request.user!;
     const { id } = request.params as { id: string };
     const { tab } = request.body as { tab: string };
@@ -2480,7 +2515,7 @@ export async function chatRoutes(app: FastifyInstance) {
   // 2026-06-11 (anh chốt) — xóa MỀM: set deletedAt, KHÔNG xóa Message vật lý.
   // Hội thoại biến mất khỏi list/count nhưng có thể khôi phục (POST .../restore).
   // Scope orgId + requireZaloAccess('chat') để tránh xóa chéo tenant/nick (privacy).
-  app.delete('/api/v1/conversations/:id', { preHandler: requireZaloAccess('chat') }, async (request: FastifyRequest, reply: FastifyReply) => {
+  app.delete('/api/v1/conversations/:id', { preHandler: [requireZaloAccess('chat'), requireConversationAccess('chat')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     const user = request.user!;
     const { id } = request.params as { id: string };
 
@@ -2494,7 +2529,7 @@ export async function chatRoutes(app: FastifyInstance) {
   });
 
   // Khôi phục hội thoại đã ẩn (dự phòng — chưa gắn UI, để có đường khôi phục).
-  app.post('/api/v1/conversations/:id/restore', { preHandler: requireZaloAccess('chat') }, async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post('/api/v1/conversations/:id/restore', { preHandler: [requireZaloAccess('chat'), requireConversationAccess('chat')] }, async (request: FastifyRequest, reply: FastifyReply) => {
     const user = request.user!;
     const { id } = request.params as { id: string };
 

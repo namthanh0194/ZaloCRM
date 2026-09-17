@@ -452,49 +452,47 @@ onMounted(async () => {
 <style scoped>
 .mtp {
   display: flex; flex-direction: column; min-height: 0; height: 100%;
-  --at-action: #1786be; --at-action-soft: #e4f1f8; --at-ink: #141a24;
-  --at-body: #475066; --at-hint: #8b93a7; --at-hairline: #e7eaf0;
-  --at-canvas: #fff; --at-surface-soft: #f1f4f9; --mono: "Roboto Mono", monospace;
+  --mono: var(--font-family-mono);
 }
 
 /* sub-tabs (kiểu .at-roletab) */
-.mtp-subtabs { display: flex; padding: 0 8px; border-bottom: 1px solid var(--at-hairline); flex-shrink: 0; }
+.mtp-subtabs { display: flex; padding: 0 8px; border-bottom: 1px solid var(--color-border); flex-shrink: 0; }
 .mtp-st {
   flex: 1; border: none; background: transparent; cursor: pointer; font-family: inherit;
-  font-size: 12px; font-weight: 600; color: var(--at-body); padding: 9px 4px 8px;
+  font-size: 12px; font-weight: 600; color: var(--color-text-secondary); padding: 9px 4px 8px;
   border-bottom: 2.5px solid transparent; display: inline-flex; align-items: center;
   justify-content: center; gap: 4px;
 }
-.mtp-st:hover { color: var(--at-ink); }
-.mtp-st.active { color: var(--at-action); border-bottom-color: var(--at-action); }
+.mtp-st:hover { color: var(--color-text); }
+.mtp-st.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
 .mtp-cnt {
-  font-size: 10px; font-weight: 700; background: var(--at-surface-soft); color: var(--at-body);
+  font-size: 10px; font-weight: 700; background: var(--color-surface-secondary); color: var(--color-text-secondary);
   border-radius: 9999px; padding: 0 6px; font-family: var(--mono);
 }
-.mtp-st.active .mtp-cnt { background: var(--at-action-soft); color: var(--at-action); }
+.mtp-st.active .mtp-cnt { background: var(--color-primary-subtle); color: var(--color-primary); }
 
 /* Hàng 1: Tìm (hẹp) + Sắp xếp + Lọc — không tràn cột 350px */
 .mtp-search { display: flex; gap: 5px; align-items: center; padding: 9px 12px 7px; flex-shrink: 0; }
 .mtp-inp {
   flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 5px;
-  border: 1px solid var(--at-hairline); border-radius: 8px; padding: 5px 9px; color: var(--at-hint);
+  border: 1px solid var(--color-border); border-radius: 8px; padding: 5px 9px; color: var(--color-text-disabled);
 }
-.mtp-inp input { border: none; outline: none; font: inherit; font-size: 12px; flex: 1; min-width: 0; color: var(--at-ink); background: transparent; }
+.mtp-inp input { border: none; outline: none; font: inherit; font-size: 12px; flex: 1; min-width: 0; color: var(--color-text); background: transparent; }
 /* Nút Sắp xếp: gọn, không xuống dòng, nhãn ngắn (Gửi nhiều/Gần nhất/Mới upload) */
 .mtp-sortbtn {
-  flex-shrink: 0; border: 1px solid var(--at-hairline); background: #fff; border-radius: 8px;
-  padding: 6px 8px; font-size: 11px; font-weight: 600; cursor: pointer; color: var(--at-body);
+  flex-shrink: 0; border: 1px solid var(--color-border); background: #fff; border-radius: 8px;
+  padding: 6px 8px; font-size: 11px; font-weight: 600; cursor: pointer; color: var(--color-text-secondary);
   white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; font-family: inherit;
 }
-.mtp-sortbtn:hover { border-color: var(--at-action); color: var(--at-action); }
+.mtp-sortbtn:hover { border-color: var(--color-primary); color: var(--color-primary); }
 /* Nút Lọc: chỉ icon (vuông), tiết kiệm chỗ */
 .mtp-filtbtn {
-  flex-shrink: 0; width: 30px; height: 29px; border: 1px solid var(--at-hairline); background: #fff;
-  border-radius: 8px; cursor: pointer; color: var(--at-body); display: inline-flex;
+  flex-shrink: 0; width: 30px; height: 29px; border: 1px solid var(--color-border); background: #fff;
+  border-radius: 8px; cursor: pointer; color: var(--color-text-secondary); display: inline-flex;
   align-items: center; justify-content: center; font-family: inherit;
 }
-.mtp-filtbtn:hover { border-color: var(--at-action); color: var(--at-action); }
-.mtp-filtbtn.on { background: var(--at-action); border-color: var(--at-action); color: #fff; }
+.mtp-filtbtn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.mtp-filtbtn.on { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
 
 /* Hàng 2 (Quyền) + Hàng 3 (Dự án | Tag) — luôn hiện, mỗi nhóm 1 dòng cuộn ngang */
 .mtp-row2, .mtp-row3 {
@@ -502,38 +500,38 @@ onMounted(async () => {
   overflow-x: auto; scrollbar-width: none;
 }
 .mtp-row2::-webkit-scrollbar, .mtp-row3::-webkit-scrollbar { display: none; }
-.mtp-rlabel { flex-shrink: 0; font-size: 10.5px; color: var(--at-hint); font-weight: 700; }
-.mtp-rdiv { flex-shrink: 0; width: 1px; height: 16px; background: var(--at-hairline); margin: 0 2px; }
-.mtp-seg { flex-shrink: 0; display: inline-flex; border: 1px solid var(--at-hairline); border-radius: 9999px; overflow: hidden; }
+.mtp-rlabel { flex-shrink: 0; font-size: 10.5px; color: var(--color-text-disabled); font-weight: 700; }
+.mtp-rdiv { flex-shrink: 0; width: 1px; height: 16px; background: var(--color-border); margin: 0 2px; }
+.mtp-seg { flex-shrink: 0; display: inline-flex; border: 1px solid var(--color-border); border-radius: 9999px; overflow: hidden; }
 .mtp-seg button {
   border: none; background: #fff; font-family: inherit; font-size: 11px; padding: 4px 11px;
-  cursor: pointer; color: var(--at-body); border-right: 1px solid var(--at-hairline); white-space: nowrap;
+  cursor: pointer; color: var(--color-text-secondary); border-right: 1px solid var(--color-border); white-space: nowrap;
 }
 .mtp-seg button:last-child { border-right: none; }
-.mtp-seg button.on { background: var(--at-action-soft); color: var(--at-action); font-weight: 700; }
+.mtp-seg button.on { background: var(--color-primary-subtle); color: var(--color-primary); font-weight: 700; }
 .mtp-chip {
-  flex-shrink: 0; border: 1px solid var(--at-hairline); background: #fff; border-radius: 9999px;
-  padding: 3px 10px; font-size: 11px; font-weight: 600; color: var(--at-body); cursor: pointer;
+  flex-shrink: 0; border: 1px solid var(--color-border); background: #fff; border-radius: 9999px;
+  padding: 3px 10px; font-size: 11px; font-weight: 600; color: var(--color-text-secondary); cursor: pointer;
   white-space: nowrap; font-family: inherit;
 }
-.mtp-chip:hover { border-color: var(--at-action); color: var(--at-action); }
-.mtp-chip.on { background: var(--at-action-soft); border-color: var(--at-action); color: var(--at-action); }
-.mtp-chip--tag { color: var(--at-hint); }
-.mtp-chip--tag.on { color: var(--at-action); }
+.mtp-chip:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.mtp-chip.on { background: var(--color-primary-subtle); border-color: var(--color-primary); color: var(--color-primary); }
+.mtp-chip--tag { color: var(--color-text-disabled); }
+.mtp-chip--tag.on { color: var(--color-primary); }
 
 /* Lọc sâu (Thời gian + Cỡ) */
 .mtp-filter { padding: 0 12px 8px; flex-shrink: 0; display: flex; flex-direction: column; gap: 7px; }
 .mtp-frow { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-.mtp-sel { border: 1px solid var(--at-hairline); border-radius: 6px; padding: 4px 8px; font-size: 11.5px; color: var(--at-ink); background: #fff; outline: none; font-family: inherit; }
+.mtp-sel { border: 1px solid var(--color-border); border-radius: 6px; padding: 4px 8px; font-size: 11.5px; color: var(--color-text); background: #fff; outline: none; font-family: inherit; }
 
 /* album bar */
-.mtp-album { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--at-ink);
-  background: var(--at-surface-soft); border-radius: 6px; padding: 6px 9px; margin: 0 12px 8px; flex-shrink: 0; }
+.mtp-album { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--color-text);
+  background: var(--color-surface-secondary); border-radius: 6px; padding: 6px 9px; margin: 0 12px 8px; flex-shrink: 0; }
 .mtp-toggle { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; user-select: none; }
-.mtp-toggle input { accent-color: var(--at-action); cursor: pointer; }
-.mtp-acount { color: var(--at-action); font-weight: 700; font-family: var(--mono); }
+.mtp-toggle input { accent-color: var(--color-primary); cursor: pointer; }
+.mtp-acount { color: var(--color-primary); font-weight: 700; font-family: var(--mono); }
 .mtp-send-album {
-  margin-left: auto; border: none; background: var(--at-action); color: #fff; border-radius: 6px;
+  margin-left: auto; border: none; background: var(--color-primary); color: #fff; border-radius: 6px;
   padding: 5px 11px; font-size: 11.5px; font-weight: 700; cursor: pointer;
   display: inline-flex; align-items: center; gap: 5px; font-family: inherit;
 }
@@ -541,11 +539,11 @@ onMounted(async () => {
 
 /* body */
 .mtp-body { flex: 1; overflow-y: auto; padding: 2px 12px 12px; }
-.mtp-empty { padding: 24px 12px; text-align: center; font-size: 12.5px; color: var(--at-hint); line-height: 1.5; }
+.mtp-empty { padding: 24px 12px; text-align: center; font-size: 12.5px; color: var(--color-text-disabled); line-height: 1.5; }
 .mtp-pager { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px 0 2px; }
-.mtp-pg { border: 1px solid var(--at-line, #e3e6ea); background: #fff; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; color: var(--at-ink, #141a24); }
+.mtp-pg { border: 1px solid var(--color-border, #e3e6ea); background: #fff; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; color: var(--color-text, #141a24); }
 .mtp-pg:disabled { opacity: .4; cursor: default; }
-.mtp-pgnum { font-size: 11.5px; color: var(--at-hint, #8b93a7); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mtp-pgnum { font-size: 11.5px; color: var(--color-text-disabled, #8b93a7); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* grid ảnh/video */
 .mtp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
@@ -553,9 +551,9 @@ onMounted(async () => {
   position: relative; aspect-ratio: 1; border-radius: 9px; overflow: hidden; cursor: pointer;
   border: 1.5px solid transparent; background: #e4e9f0; padding: 0;
 }
-.mtp-cell:hover { border-color: var(--at-action); }
+.mtp-cell:hover { border-color: var(--color-primary); }
 .mtp-cell:disabled { opacity: .6; }
-.mtp-cell.picked { border-color: var(--at-action); box-shadow: 0 0 0 2px var(--at-action-soft); }
+.mtp-cell.picked { border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary-subtle); }
 .mtp-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .mtp-ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #aab2c2; }
 .mtp-cname {
@@ -573,25 +571,25 @@ onMounted(async () => {
 }
 .mtp-pick {
   position: absolute; top: 4px; left: 4px; width: 20px; height: 20px; border-radius: 9999px;
-  background: var(--at-action); color: #fff; font-size: 11px; font-weight: 800; display: flex;
+  background: var(--color-primary); color: #fff; font-size: 11px; font-weight: 800; display: flex;
   align-items: center; justify-content: center; font-family: var(--mono);
 }
-.mtp-sending { position: absolute; inset: 0; background: rgba(255,255,255,.8); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--at-ink); }
+.mtp-sending { position: absolute; inset: 0; background: rgba(255,255,255,.8); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--color-text); }
 
 /* list tệp */
 .mtp-list { display: flex; flex-direction: column; }
 .mtp-frow-item {
   display: grid; grid-template-columns: 34px 1fr auto; gap: 9px; align-items: center; width: 100%;
-  padding: 7px 6px; border: none; background: none; border-bottom: 1px solid var(--at-hairline);
+  padding: 7px 6px; border: none; background: none; border-bottom: 1px solid var(--color-border);
   cursor: pointer; text-align: left; border-radius: 6px;
 }
 .mtp-frow-item:last-child { border-bottom: none; }
-.mtp-frow-item:hover { background: var(--at-surface-soft); }
+.mtp-frow-item:hover { background: var(--color-surface-secondary); }
 .mtp-frow-item:disabled { opacity: .55; }
 .mtp-ficon { width: 34px; height: 34px; flex-shrink: 0; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; }
 .mtp-finfo { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.mtp-fname { font-size: 12.5px; color: var(--at-ink); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mtp-fmeta { font-size: 11px; color: var(--at-hint); }
-.mtp-fsend { color: var(--at-action); display: inline-flex; align-items: center; }
-.mtp-fsending { font-size: 11px; color: var(--at-hint); }
+.mtp-fname { font-size: 12.5px; color: var(--color-text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mtp-fmeta { font-size: 11px; color: var(--color-text-disabled); }
+.mtp-fsend { color: var(--color-primary); display: inline-flex; align-items: center; }
+.mtp-fsending { font-size: 11px; color: var(--color-text-disabled); }
 </style>

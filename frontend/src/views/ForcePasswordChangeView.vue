@@ -138,7 +138,7 @@ const auth = useAuthStore();
 // Branding lockup — đồng bộ logo + tên tổ chức với trang /login.
 const DEFAULT_LOGO = '/brand/hs-monogram.png';
 const brandLogo = ref(DEFAULT_LOGO);
-const brandName = ref('HS Holding');
+const brandName = ref('Repu Digital');
 function onLogoError() {
   if (brandLogo.value !== DEFAULT_LOGO) brandLogo.value = DEFAULT_LOGO;
 }
@@ -147,7 +147,7 @@ onMounted(() => {
     .then((b) => {
       if (!b) return;
       brandLogo.value = b.logoUrl || DEFAULT_LOGO;
-      brandName.value = b.name || 'HS Holding';
+      brandName.value = b.name || 'Repu Digital';
     })
     .catch(() => {});
 });
@@ -205,13 +205,13 @@ async function handleSubmit() {
   /* tránh tràn ngang trên màn hẹp + cho cuộn dọc nếu card cao hơn viewport ngắn */
   overflow-x: hidden;
   box-sizing: border-box;
-  font-family: var(--font, "Plus Jakarta Sans", sans-serif);
+  font-family: var(--font, "Inter", sans-serif);
 }
 
 .fpc-card {
-  background: var(--surface, #fff);
-  border: 1px solid var(--line, #e7eaf0);
-  border-radius: var(--r-xl, 18px);
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #e7eaf0);
+  border-radius: var(--radius-xl, 18px);
   padding: 32px 36px 30px;
   max-width: 440px;
   width: 100%;
@@ -221,7 +221,7 @@ async function handleSubmit() {
 
 /* Màn hẹp (auth mở trên điện thoại): card co + giảm padding để không tràn */
 @media (max-width: 480px) {
-  .fpc-card { padding: 26px 20px 24px; border-radius: var(--r-lg, 14px); }
+  .fpc-card { padding: 26px 20px 24px; border-radius: var(--radius-xl, 14px); }
   .fpc-title { font-size: 19px; }
 }
 
@@ -239,14 +239,14 @@ async function handleSubmit() {
 }
 .fpc-bbox img { width: 26px; height: auto; display: block; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3)); }
 .fpc-bwm { display: flex; flex-direction: column; line-height: 1.08; }
-.fpc-b1 { font-size: 15px; font-weight: 800; color: var(--ink, #141a24); letter-spacing: .01em; }
-.fpc-b2 { font-size: 10px; font-weight: 700; letter-spacing: .26em; color: var(--brand, #1786be); text-transform: uppercase; }
+.fpc-b1 { font-size: 15px; font-weight: 800; color: var(--color-text, #141a24); letter-spacing: .01em; }
+.fpc-b2 { font-size: 10px; font-weight: 700; letter-spacing: .26em; color: var(--color-primary, #1786be); text-transform: uppercase; }
 
 .fpc-icon {
   width: 60px; height: 60px;
-  background: var(--brand-soft, #e4f1f8);
-  color: var(--brand, #1786be);
-  border-radius: var(--r-lg, 14px);
+  background: var(--color-primary-subtle, #e4f1f8);
+  color: var(--color-primary, #1786be);
+  border-radius: var(--radius-xl, 14px);
   display: flex; align-items: center; justify-content: center;
   margin: 0 auto 14px;
 }
@@ -255,13 +255,13 @@ async function handleSubmit() {
   text-align: center;
   font-size: 21px;
   font-weight: 700;
-  color: var(--ink, #141a24);
+  color: var(--color-text, #141a24);
   margin: 0 0 8px;
 }
 
 .fpc-sub {
   text-align: center;
-  color: var(--ink-3, #6b7488);
+  color: var(--color-text-muted, #6b7488);
   font-size: 13.5px;
   line-height: 1.55;
   margin: 0 0 22px;
@@ -276,25 +276,25 @@ async function handleSubmit() {
 .fpc-label {
   font-size: 12px;
   font-weight: 600;
-  color: var(--ink-2, #475066);
+  color: var(--color-text-secondary, #475066);
   margin-top: 8px;
 }
 
 .fpc-input {
   padding: 11px 14px;
-  border: 1px solid var(--line, #e7eaf0);
-  border-radius: var(--r-md, 10px);
+  border: 1px solid var(--color-border, #e7eaf0);
+  border-radius: var(--radius-lg, 10px);
   font-size: 14px;
   font-family: var(--mono, "Roboto Mono", monospace);
   letter-spacing: .04em;
-  color: var(--ink, #141a24);
-  background: var(--surface, #fff);
+  color: var(--color-text, #141a24);
+  background: var(--color-surface, #fff);
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .fpc-input:focus {
-  border-color: var(--brand, #1786be);
-  box-shadow: 0 0 0 3px var(--brand-soft, #e4f1f8);
+  border-color: var(--color-primary, #1786be);
+  box-shadow: 0 0 0 3px var(--color-primary-subtle, #e4f1f8);
 }
 .fpc-input-error {
   border-color: var(--error, #ef4444);
@@ -307,15 +307,15 @@ async function handleSubmit() {
   display: flex; align-items: center; justify-content: center;
   width: 30px; height: 30px; padding: 0; margin: 0;
   border: none; background: transparent; cursor: pointer;
-  color: var(--ink-4, #97a0b3); border-radius: 6px;
+  color: var(--color-text-disabled, #97a0b3); border-radius: 6px;
 }
-.pw-eye:hover { color: var(--ink-2, #475066); background: rgba(0,0,0,.04); }
+.pw-eye:hover { color: var(--color-text-secondary, #475066); background: rgba(0,0,0,.04); }
 
 .fpc-strength {
-  background: var(--brand-softer, #f2f8fc);
-  border: 1px solid var(--line, #e7eaf0);
+  background: var(--color-primary-subtle, #f2f8fc);
+  border: 1px solid var(--color-border, #e7eaf0);
   padding: 10px 14px;
-  border-radius: var(--r-sm, 8px);
+  border-radius: var(--radius-md, 8px);
   margin: 4px 0;
 }
 .fpc-strength-row {
@@ -323,7 +323,7 @@ async function handleSubmit() {
   align-items: center;
   gap: 8px;
   font-size: 12.5px;
-  color: var(--ink-3, #6b7488);
+  color: var(--color-text-muted, #6b7488);
   padding: 2px 0;
 }
 .fpc-strength-row.ok {
@@ -346,18 +346,18 @@ async function handleSubmit() {
   color: var(--error, #b91c1c);
   border: 1px solid #fca5a5;
   padding: 10px 14px;
-  border-radius: var(--r-sm, 8px);
+  border-radius: var(--radius-md, 8px);
   font-size: 13px;
   margin-top: 6px;
 }
 
 .fpc-submit {
   margin-top: 14px;
-  background: var(--brand, #1786be);
+  background: var(--color-primary, #1786be);
   color: #fff;
   border: none;
   padding: 13px 24px;
-  border-radius: var(--r-md, 10px);
+  border-radius: var(--radius-lg, 10px);
   font-weight: 700;
   font-size: 14px;
   cursor: pointer;
@@ -365,7 +365,7 @@ async function handleSubmit() {
   transition: background 0.15s;
 }
 .fpc-submit:hover:not(:disabled) {
-  background: var(--brand-600, #0f6fa0);
+  background: var(--color-primary-hover, #0f6fa0);
 }
 .fpc-submit:disabled {
   opacity: 0.5;
@@ -375,7 +375,7 @@ async function handleSubmit() {
 .fpc-note {
   text-align: center;
   font-size: 11.5px;
-  color: var(--ink-3, #6b7488);
+  color: var(--color-text-muted, #6b7488);
   margin: 12px 0 0;
 }
 </style>

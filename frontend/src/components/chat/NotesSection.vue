@@ -385,7 +385,7 @@ defineExpose({ rootCount });
 .notes-title {
   font-size: 12px;
   font-weight: 600;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -393,8 +393,8 @@ defineExpose({ rootCount });
   text-transform: uppercase;
 }
 .notes-count {
-  background: var(--smax-primary-soft, #e3f2fd);
-  color: var(--smax-primary, #2962ff);
+  background: var(--color-primary-subtle, #e3f2fd);
+  color: var(--color-primary, #2962ff);
   padding: 1px 8px;
   border-radius: 10px;
   font-size: 11px;
@@ -406,7 +406,7 @@ defineExpose({ rootCount });
   align-items: center;
   gap: 4px;
   font-size: 10px;
-  color: var(--smax-grey-600);
+  color: var(--color-text-secondary);
   cursor: pointer;
   user-select: none;
 }
@@ -417,14 +417,14 @@ defineExpose({ rootCount });
   display: flex;
   align-items: flex-end;
   gap: 5px;
-  border: 1.5px solid var(--smax-grey-200);
+  border: 1.5px solid var(--color-border);
   border-radius: 8px;
   padding: 5px 5px 5px 8px;
-  background: var(--smax-bg, #fff);
+  background: var(--color-surface, #fff);
   transition: border-color 0.15s;
 }
 .note-composer:focus-within {
-  border-color: var(--smax-primary, #2962ff);
+  border-color: var(--color-primary, #2962ff);
   box-shadow: 0 0 0 3px rgba(33,150,243,0.08);
 }
 .reply-composer {
@@ -440,7 +440,7 @@ defineExpose({ rootCount });
   font-size: 13px;
   line-height: 1.45;
   background: transparent;
-  color: var(--smax-text);
+  color: var(--color-text);
   min-height: 22px;
   max-height: 120px;
   padding: 4px 0;
@@ -450,7 +450,7 @@ defineExpose({ rootCount });
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: var(--smax-primary, #2962ff);
+  background: var(--color-primary, #2962ff);
   color: #fff;
   border: none;
   font-size: 14px;
@@ -463,11 +463,11 @@ defineExpose({ rootCount });
 .send-btn.small { width: 26px; height: 26px; font-size: 12px; }
 .send-btn:hover:not(:disabled) { background: #1e4cc7; }
 .send-btn:active:not(:disabled) { transform: scale(0.92); }
-.send-btn:disabled { background: var(--smax-grey-300); cursor: not-allowed; }
+.send-btn:disabled { background: var(--color-border-strong); cursor: not-allowed; }
 .btn-link {
   background: none;
   border: none;
-  color: var(--smax-grey-500);
+  color: var(--color-text-muted);
   cursor: pointer;
 }
 .btn-link.small-x {
@@ -486,7 +486,7 @@ defineExpose({ rootCount });
   padding-right: 4px;
 }
 .notes-list::-webkit-scrollbar { width: 5px; }
-.notes-list::-webkit-scrollbar-thumb { background: var(--smax-grey-200); border-radius: 3px; }
+.notes-list::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
 
 .note-card {
   display: flex;
@@ -496,7 +496,7 @@ defineExpose({ rootCount });
 .note-replies {
   margin-left: 24px;
   padding-left: 10px;
-  border-left: 2px solid var(--smax-grey-100);
+  border-left: 2px solid var(--color-bg);
   display: flex;
   flex-direction: column;
   gap: 3px;          /* reply cũng sát nhau */
@@ -508,10 +508,10 @@ defineExpose({ rootCount });
   padding: 16px 10px;
   text-align: center;
   font-size: 12px;
-  color: var(--smax-grey-500);
+  color: var(--color-text-muted);
 }
 .notes-empty .empty-icon { font-size: 22px; display: block; margin-bottom: 4px; }
-.notes-empty em { color: var(--smax-grey-700); font-style: italic; }
+.notes-empty em { color: var(--color-text-secondary); font-style: italic; }
 
 /* ── AI suggestion banner ──────────────────────────────────────────────── */
 .ai-suggestion-banner {
@@ -527,7 +527,7 @@ defineExpose({ rootCount });
 }
 .ai-icon { font-size: 14px; }
 .ai-text { flex: 1; color: #6d4c00; }
-.ai-text.muted { color: var(--smax-grey-500); font-style: italic; }
+.ai-text.muted { color: var(--color-text-muted); font-style: italic; }
 .ai-text strong { color: #c43a00; }
 .ai-create-btn {
   background: #f57c00;
@@ -543,15 +543,15 @@ defineExpose({ rootCount });
 .ai-dismiss {
   background: none;
   border: none;
-  color: var(--smax-grey-500);
+  color: var(--color-text-muted);
   font-size: 16px;
   line-height: 1;
   cursor: pointer;
   padding: 0 4px;
 }
 .ai-suggestion-banner.muted {
-  background: var(--smax-grey-50, #f9fafb);
-  border-color: var(--smax-grey-200);
+  background: var(--color-surface-secondary, #f9fafb);
+  border-color: var(--color-border);
   animation: fadeOutBanner 5s ease forwards;
 }
 @keyframes fadeOutBanner {
@@ -571,8 +571,8 @@ defineExpose({ rootCount });
 }
 .source-badge {
   display: inline-block;
-  background: var(--smax-grey-200);
-  color: var(--smax-grey-700);
+  background: var(--color-border);
+  color: var(--color-text-secondary);
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;

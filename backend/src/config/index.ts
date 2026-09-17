@@ -1,3 +1,4 @@
+import path from 'node:path';
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Nguyễn Tiến Lộc
 /**
@@ -45,7 +46,7 @@ export const config = {
   jwtSecret: requireSecret('JWT_SECRET', DEV_JWT_FALLBACK, envValue('JWT_SECRET')),
   encryptionKey: requireSecret('ENCRYPTION_KEY', DEV_ENC_FALLBACK, envValue('ENCRYPTION_KEY')),
   databaseUrl: envValue('DATABASE_URL') || 'postgresql://crmuser:password@localhost:5432/zalocrm',
-  uploadDir: envValue('UPLOAD_DIR') || '/var/lib/zalo-crm/files',
+  uploadDir: path.resolve(process.cwd(), envValue('UPLOAD_DIR') || '/var/lib/zalo-crm/files'),
   appUrl: envValue('APP_URL') || 'http://localhost:3000',
 
   /* --- Storage driver selection (2026-06-20) ---

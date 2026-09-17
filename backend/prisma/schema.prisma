@@ -40,6 +40,7 @@ model Organization {
   contacts                    Contact[]
   contactAccess               ContactAccess[]
   conversations               Conversation[]
+  conversationAccesses        ConversationAccess[]
   appointments                Appointment[]
   activityLogs                ActivityLog[]
   dailyStats                  DailyMessageStat[]
@@ -51,6 +52,8 @@ model Organization {
   automationRules             AutomationRule[]
   messageTemplates            MessageTemplate[]
   aiConfig                    AiConfig?
+  aiProviders                 AiProvider[]
+  aiKnowledgeDocs             AiKnowledgeDocument[]
   aiSuggestions               AiSuggestion[]
   aiSuggestionsApplied        AiSuggestionApplied[]
   pinnedConversations         PinnedConversation[]
@@ -264,6 +267,8 @@ model User {
   team                      Team?                        @relation(fields: [teamId], references: [id])
   zaloAccounts              ZaloAccount[]
   zaloAccess                ZaloAccountAccess[]
+  conversationAccesses      ConversationAccess[]         @relation("UserConversationAccess")
+  assignedConversations     ConversationAccess[]         @relation("AssignedByConversationAccess")
   assignedContacts          Contact[]                    @relation("AssignedContacts")
   contactAccess             ContactAccess[]
   appointments              Appointment[]
@@ -789,6 +794,7 @@ model Conversation {
   zaloAccount   ZaloAccount          @relation(fields: [zaloAccountId], references: [id], onDelete: Cascade)
   contact       Contact?             @relation(fields: [contactId], references: [id])
   messages      Message[]
+  accesses      ConversationAccess[]
   aiSuggestions AiSuggestion[]
   pins          PinnedConversation[]
   // 2026-06-18 — Cầu Telegram: 1 hội thoại = 1 forum topic (định tuyến reply).
@@ -806,6 +812,28 @@ model Conversation {
   // Tab Chính/Khác: filter tab + accountId, sort lastMessageAt desc.
   @@index([orgId, tab, zaloAccountId, lastMessageAt(sort: Desc)])
   @@map("conversations")
+}
+
+// ACL: phân quyền chi tiết theo từng cuộc hội thoại cho nhân viên (Sale)
+model ConversationAccess {
+  id             String       @id @default(uuid())
+  orgId          String       @map("org_id")
+  conversationId String       @map("conversation_id")
+  userId         String       @map("user_id")
+  assignedById   String?      @map("assigned_by_id")
+  canChat        Boolean      @default(true) @map("can_chat")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  org          Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation("UserConversationAccess", fields: [userId], references: [id], onDelete: Cascade)
+  assignedBy   User?        @relation("AssignedByConversationAccess", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  @@unique([conversationId, userId])
+  @@index([orgId, userId])
+  @@index([conversationId])
+  @@map("conversation_accesses")
 }
 
 // Individual message within a conversation
@@ -1679,6 +1707,40 @@ model AiConfig {
   org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   @@map("ai_configs")
+}
+
+model AiProvider {
+  id              String   @id @default(uuid())
+  orgId           String   @map("org_id")
+  name            String
+  slug            String
+  baseUrl         String   @map("base_url")
+  model           String
+  apiKeyEncrypted Bytes?   @map("api_key_encrypted")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, slug])
+  @@index([orgId, isActive])
+  @@map("ai_providers")
+}
+
+model AiKnowledgeDocument {
+  id        String   @id @default(uuid())
+  orgId     String   @map("org_id")
+  title     String
+  content   String   @db.Text
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, isActive])
+  @@map("ai_knowledge_documents")
 }
 
 // M53 (2026-05-30): Audit log mỗi lần sale click "Áp dụng" trên AiSuggestionCard.

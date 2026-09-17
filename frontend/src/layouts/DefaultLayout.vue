@@ -21,6 +21,10 @@
           :class="{ active: isActive(tab) }"
         >
           <v-icon :icon="tab.icon" size="16" class="ic-svg" />{{ tab.label }}
+          <span
+            v-if="tab.path === '/chat' && chatUnreadTotal > 0"
+            class="nav-unread-badge right-count"
+          >{{ chatUnreadTotal > 99 ? '99+' : chatUnreadTotal }}</span>
         </RouterLink>
 
         <!-- Báo cáo dropdown — gộp Phân tích + Báo cáo (anh chốt 2026-05-28).
@@ -146,7 +150,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { api } from '@/api';
 import { useTheme } from 'vuetify';
 import { useRoute, RouterLink } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
@@ -157,11 +162,39 @@ import GlobalSearch from '@/components/GlobalSearch.vue';
 import ToastContainer from '@/components/ui/ToastContainer.vue';
 import Avatar from '@/components/ui/Avatar.vue';
 import { fetchPublicBranding } from '@/api/public-branding';
+import { useChatNotification } from '@/composables/use-chat-notification';
+import { createAppSocket } from '@/api/socket';
+import type { Socket } from 'socket.io-client';
 // Open-core: extension top-nav shortcuts (empty in Community edition via @ee stub).
 import { eeTopNavShortcuts } from '@ee/nav';
 // 2026-06-04: gỡ MiniOnboardingIndicator (Anh chốt code lại setup 4 bước sau)
 // LeadFloatingButton moved to ConversationFilterSidebar 2026-06-01
 // 2026-06-08: gỡ import api — banner "BỎ LỠ thông báo" đã tắt (checkInternalContactSetup no-op).
+const chatUnreadTotal = ref(0);
+const chatNotification = useChatNotification();
+let countsTimer: ReturnType<typeof setTimeout> | null = null;
+let navChatSocket: Socket | null = null;
+
+async function refreshChatUnread() {
+  if (!authStore.user) return;
+  try {
+    const res = await api.get('/conversations/counts');
+    const total = Number(res.data?.unreadMessages ?? res.data?.unread ?? 0);
+    chatUnreadTotal.value = total;
+    chatNotification.setUnreadTotal(total);
+  } catch {
+    // silent
+  }
+}
+
+function debouncedRefreshChatUnread() {
+  if (countsTimer) clearTimeout(countsTimer);
+  countsTimer = setTimeout(() => {
+    void refreshChatUnread();
+    countsTimer = null;
+  }, 200);
+}
+
 const theme = useTheme();
 const route = useRoute();
 const authStore = useAuthStore();
@@ -247,12 +280,43 @@ function dismissInternalContactBanner() {
 // Brand lockup trên menu — logo + tên tổ chức (đồng bộ /login, /setup-password).
 const DEFAULT_LOGO = '/brand/hs-monogram.png';
 const brandLogo = ref(DEFAULT_LOGO);
-const brandName = ref('HS Holding');
+const brandName = ref('Repu Digital');
+onUnmounted(() => {
+  window.removeEventListener('chat:counts-changed', debouncedRefreshChatUnread);
+  if (countsTimer) {
+    clearTimeout(countsTimer);
+    countsTimer = null;
+  }
+  if (navChatSocket) {
+    navChatSocket.disconnect();
+    navChatSocket = null;
+  }
+});
+
 function onLogoError() {
   if (brandLogo.value !== DEFAULT_LOGO) brandLogo.value = DEFAULT_LOGO;
 }
 
 onMounted(() => {
+  void chatNotification.requestPermission();
+  void refreshChatUnread();
+  window.addEventListener('chat:counts-changed', debouncedRefreshChatUnread);
+
+  if (authStore.user) {
+    navChatSocket = createAppSocket();
+    navChatSocket.on('chat:message', (data: { message?: { id?: string; senderType?: string; senderName?: string; content?: string }; conversationId?: string }) => {
+      if (data?.message?.senderType !== 'self') {
+        debouncedRefreshChatUnread();
+        chatNotification.notifyIncomingMessage({
+          senderName: data?.message?.senderName,
+          content: data?.message?.content,
+          conversationId: data?.conversationId,
+          messageId: data?.message?.id,
+        });
+      }
+    });
+  }
+
   // 2026-06-13 (anh chốt): app LUÔN theme sáng 'hsLight', bỏ chọn theme tối. Ép cứng +
   // dọn giá trị 'legacy-dark'/'smax-light' cũ trong localStorage để user nào đang kẹt
   // dark cũng về sáng.
@@ -264,7 +328,7 @@ onMounted(() => {
     .then((b) => {
       if (!b) return;
       brandLogo.value = b.logoUrl || DEFAULT_LOGO;
-      brandName.value = b.name || 'HS Holding';
+      brandName.value = b.name || 'Repu Digital';
     })
     .catch(() => {});
 });
@@ -422,9 +486,24 @@ function logout() {
   flex-wrap: nowrap;
   flex-shrink: 0;
 }
+.nav-unread-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  background: #EF4444;
+  padding: 0 5px;
+  border-radius: 999px;
+  min-width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  margin-left: 4px;
+}
 .nav-tab {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 0 12px; border-radius: var(--r-sm, 8px);
+  padding: 0 12px; border-radius: var(--radius-md, 8px);
   cursor: pointer;
   color: var(--shell-ink, #cfe2ec);
   font-size: 13px; font-weight: 600;
@@ -548,14 +627,14 @@ function logout() {
 .user-avatar :deep(.smax-av) { box-shadow: 0 0 0 2px rgba(255,255,255,.25); }
 
 .smax-main {
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
 }
-.smax-main :deep(.v-main__wrap) { min-height: calc(100vh - var(--smax-topnav-h)); }
+.smax-main :deep(.v-main__wrap) { min-height: calc(100vh - var(--layout-topnav-height)); }
 
 /* Vuetify menus rendered from v-menu inherit theme automatically.
    Force light surface in case parent has legacy-dark applied. */
 :deep(.v-overlay__content > .v-list) {
-  background: var(--smax-bg);
-  color: var(--smax-text);
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 </style>

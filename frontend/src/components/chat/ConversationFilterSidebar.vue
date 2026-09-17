@@ -83,6 +83,7 @@
         >
           <InboxIcon class="ic" :size="18" :stroke-width="1.9" />
           <span v-if="eventCounts.msgBotNoSale > 0" class="badge red">{{ eventCounts.msgBotNoSale }}</span>
+          <span v-else-if="eventCounts.msgUnanswered > 0" class="badge red">{{ eventCounts.msgUnanswered }}</span>
           <span v-else-if="messageActiveCount > 0" class="badge">{{ messageActiveCount }}</span>
         </button>
 
@@ -524,7 +525,8 @@
           <header class="section-header" :title="TIPS.message" tabindex="0" role="button" :aria-expanded="sectionsOpen.message" @click="toggleSection('message')" @keydown.enter.prevent="toggleSection('message')" @keydown.space.prevent="toggleSection('message')">
             <div class="left"><span class="emoji"><InboxIcon :size="14" :stroke-width="2" /></span>Tin nhắn</div>
             <div class="right">
-              <span v-if="messageActiveCount > 0" class="count-badge">{{ messageActiveCount }}</span>
+              <span v-if="eventCounts.msgUnanswered > 0" class="count-badge red">{{ eventCounts.msgUnanswered }}</span>
+              <span v-else-if="messageActiveCount > 0" class="count-badge">{{ messageActiveCount }}</span>
               <span v-else class="count-badge zero">0</span>
               <span class="chevron"><ChevronDownIcon :size="14" :stroke-width="2" /></span>
             </div>
@@ -1458,7 +1460,17 @@ async function loadEventCounts() {
 // ─── Result count (parent có thể truyền qua prop) ────────
 const resultCount = computed(() => props.resultCount ?? '—');
 
+let countsDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+function onCountsChanged() {
+  if (countsDebounceTimer) clearTimeout(countsDebounceTimer);
+  countsDebounceTimer = setTimeout(() => {
+    loadEventCounts();
+    countsDebounceTimer = null;
+  }, 200);
+}
+
 onMounted(async () => {
+  window.addEventListener('chat:counts-changed', onCountsChanged);
   await Promise.all([
     props.filters.fetchFolders(),
     props.filters.fetchPresets(),
@@ -1466,6 +1478,9 @@ onMounted(async () => {
     loadStatuses(),
     loadEventCounts(),
   ]);
+});
+onUnmounted(() => {
+  window.removeEventListener('chat:counts-changed', onCountsChanged);
 });
 
 // 2026-06-09 — Reload tag + badge "Tin nhắn" khi đổi Phạm vi xem (folder hoặc nick).
@@ -1553,16 +1568,16 @@ watch(
 }
 .c-icon-btn:hover { background: #F4F4F7; }
 .c-icon-btn.active {
-  background: var(--smax-primary-soft, #e4f1f8);
-  box-shadow: inset 3px 0 0 var(--smax-primary, #1786be);
+  background: var(--color-primary-subtle, #e4f1f8);
+  box-shadow: inset 3px 0 0 var(--color-primary, #1786be);
 }
-.c-icon-btn.active .ic { color: var(--smax-primary, #1786be); }
+.c-icon-btn.active .ic { color: var(--color-primary, #1786be); }
 .c-icon-btn.open {
-  background: var(--smax-primary, #1786be);
+  background: var(--color-primary, #1786be);
   color: white;
 }
 .c-icon-btn.open .ic { color: #fff; }
-.c-icon-btn:focus-visible { outline: 2px solid var(--smax-primary, #1786be); outline-offset: 1px; }
+.c-icon-btn:focus-visible { outline: 2px solid var(--color-primary, #1786be); outline-offset: 1px; }
 /* Lucide SVG: màu mặc định xám, active/open override ở trên (icon emoji cũ → SVG 2026-06-06). */
 .c-icon-btn .ic { line-height: 1; color: #6b7488; }
 .c-icon-btn .badge {
@@ -2000,6 +2015,7 @@ watch(
   line-height: 1.4;
 }
 .count-badge.zero { background: #F4F4F7; color: #97A0AC; }
+.count-badge.red { background: #EF4444; color: white; }
 .chevron { color: #97A0AC; font-size: 11px; transition: transform 0.15s; }
 .section.collapsed .chevron { transform: rotate(-90deg); }
 .section.disabled .section-header { cursor: not-allowed; }
@@ -2191,7 +2207,7 @@ watch(
 }
 .stage-chip:hover { border-color: #D4D6DB; }
 /* 2026-06-08 — màu border/text lấy từ Status.color qua inline style; selected mặc định khi không có color. */
-.stage-chip.selected { background: var(--smax-primary-soft, #e4f1f8); border-color: var(--smax-primary, #1786be); color: var(--smax-primary, #1786be); }
+.stage-chip.selected { background: var(--color-primary-subtle, #e4f1f8); border-color: var(--color-primary, #1786be); color: var(--color-primary, #1786be); }
 .stage-chip .st-dot { width: 7px; height: 7px; border-radius: 999px; flex-shrink: 0; }
 .stage-chip:focus-visible { outline: 2px solid #5E6AD2; outline-offset: 1px; }
 

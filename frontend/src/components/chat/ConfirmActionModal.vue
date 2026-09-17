@@ -166,12 +166,12 @@ function onCancel(): void {
 @keyframes cam-fade { from { opacity: 0; } to { opacity: 1; } }
 
 .cam-modal {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
   width: 400px;
   max-width: calc(100vw - 32px);
-  box-shadow: var(--sh-lg);
+  box-shadow: var(--shadow-lg);
   animation: cam-slide 0.2s ease;
   display: flex;
   flex-direction: column;
@@ -184,61 +184,61 @@ function onCancel(): void {
 /* Head */
 .cam-head { display: flex; align-items: flex-start; gap: 11px; padding: 16px 16px 12px; }
 .cam-ic {
-  width: 34px; height: 34px; border-radius: var(--r-sm); flex-shrink: 0;
+  width: 34px; height: 34px; border-radius: var(--radius-md); flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;
 }
-.cam-ic.primary { background: var(--warning-soft, #fef3c7); color: var(--warning, #b45309); }
-.cam-ic.danger { background: var(--error-soft, #fee2e2); color: var(--error, #dc2626); }
+.cam-ic.primary { background: var(--color-warning-subtle, #fef3c7); color: var(--color-warning, #b45309); }
+.cam-ic.danger { background: var(--color-danger-subtle, #fee2e2); color: var(--color-danger, #dc2626); }
 .cam-head__tx { flex: 1; min-width: 0; }
-.cam-head h2 { margin: 0; font-size: 14.5px; font-weight: 600; color: var(--ink); line-height: 1.35; }
-.cam-sub { font-size: 12.5px; color: var(--ink-3); margin-top: 4px; line-height: 1.45; }
+.cam-head h2 { margin: 0; font-size: 14.5px; font-weight: 600; color: var(--color-text); line-height: 1.35; }
+.cam-sub { font-size: 12.5px; color: var(--color-text-muted); margin-top: 4px; line-height: 1.45; }
 .cam-x {
-  width: 26px; height: 26px; border-radius: var(--r-sm); border: 0; flex-shrink: 0;
-  background: transparent; color: var(--ink-4); cursor: pointer; font-family: inherit;
+  width: 26px; height: 26px; border-radius: var(--radius-md); border: 0; flex-shrink: 0;
+  background: transparent; color: var(--color-text-disabled); cursor: pointer; font-family: inherit;
   display: inline-flex; align-items: center; justify-content: center;
 }
-.cam-x:hover { background: var(--surface-3); color: var(--ink); }
+.cam-x:hover { background: var(--color-surface-secondary); color: var(--color-text); }
 
 /* Body */
 .cam-body { padding: 2px 16px 4px; display: flex; flex-direction: column; }
-.cam-label { font-size: 11.5px; font-weight: 600; color: var(--ink-2); margin-bottom: 6px; }
-.cam-req { color: var(--error); }
+.cam-label { font-size: 11.5px; font-weight: 600; color: var(--color-text-secondary); margin-bottom: 6px; }
+.cam-req { color: var(--color-danger); }
 .cam-textarea {
   width: 100%;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 8px 10px;
   font-family: inherit;
   font-size: 12.5px;
-  color: var(--ink);
+  color: var(--color-text);
   resize: vertical;
-  background: var(--surface);
+  background: var(--color-surface);
   transition: border-color 0.12s;
 }
-.cam-textarea:focus { outline: none; border-color: var(--brand); }
-.cam-err { font-size: 11px; color: var(--error); margin-top: 5px; }
+.cam-textarea:focus { outline: none; border-color: var(--color-primary); }
+.cam-err { font-size: 11px; color: var(--color-danger); margin-top: 5px; }
 .cam-input {
   width: 100%; box-sizing: border-box;
-  border: 1px solid var(--line); border-radius: var(--r-sm);
-  padding: 8px 10px; font-family: inherit; font-size: 13px; color: var(--ink);
-  background: var(--surface); transition: border-color 0.12s;
+  border: 1px solid var(--color-border); border-radius: var(--radius-md);
+  padding: 8px 10px; font-family: inherit; font-size: 13px; color: var(--color-text);
+  background: var(--color-surface); transition: border-color 0.12s;
 }
-.cam-input:focus { outline: none; border-color: var(--brand); }
+.cam-input:focus { outline: none; border-color: var(--color-primary); }
 
 /* Foot */
 .cam-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 16px 16px; }
 .cam-btn {
-  height: 36px; padding: 0 16px; border-radius: var(--r-sm);
+  height: 36px; padding: 0 16px; border-radius: var(--radius-md);
   font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
   border: 1px solid transparent; transition: 0.12s;
 }
 .cam-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.cam-btn--ghost { background: var(--surface); border-color: var(--line); color: var(--ink-2); }
-.cam-btn--ghost:hover:not(:disabled) { background: var(--surface-3); }
-.cam-btn--primary { background: var(--brand); color: #fff; }
-.cam-btn--primary:hover:not(:disabled) { background: var(--brand-600); }
-.cam-btn--danger { background: var(--error, #dc2626); color: #fff; }
+.cam-btn--ghost { background: var(--color-surface); border-color: var(--color-border); color: var(--color-text-secondary); }
+.cam-btn--ghost:hover:not(:disabled) { background: var(--color-surface-secondary); }
+.cam-btn--primary { background: var(--color-primary); color: #fff; }
+.cam-btn--primary:hover:not(:disabled) { background: var(--color-primary-hover); }
+.cam-btn--danger { background: var(--color-danger, #dc2626); color: #fff; }
 .cam-btn--danger:hover:not(:disabled) { background: #b91c1c; }
 
 .cam-spin {

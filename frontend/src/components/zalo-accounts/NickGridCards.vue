@@ -228,7 +228,7 @@ function initials(name?: string | null): string {
 
 <style scoped>
 .ngc { padding: 4px 0; }
-.ngc-empty { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 56px; color: var(--ink-3, #6b7280); }
+.ngc-empty { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 56px; color: var(--color-text-muted, #6b7280); }
 .ngc-empty p { font-style: italic; }
 
 /* Nhóm theo trạng thái (2026-06-10) */
@@ -268,9 +268,9 @@ function initials(name?: string | null): string {
 @media (min-width: 1920px) { .ngc-grid { grid-template-columns: repeat(5, 1fr); } }
 
 .ngc-card {
-  background: var(--surface, #fff);
-  border: 1px solid var(--line, #e7eaf0);
-  border-left: 3px solid var(--line, #e7eaf0); /* viền trái = màu trạng thái (Mẫu A) */
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #e7eaf0);
+  border-left: 3px solid var(--color-border, #e7eaf0); /* viền trái = màu trạng thái (Mẫu A) */
   border-radius: 12px;
   padding: 13px;
   cursor: pointer;
@@ -288,16 +288,16 @@ function initials(name?: string | null): string {
 /* Hàng 1: avatar + tên + SĐT + nút xóa */
 .ngc-head { display: flex; align-items: center; gap: 10px; }
 .ngc-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
-.ngc-avatar-ph { display: flex; align-items: center; justify-content: center; background: var(--brand-soft, #e6f3fb); color: var(--brand-700, #0f6ea3); font-weight: 700; font-size: 15px; }
+.ngc-avatar-ph { display: flex; align-items: center; justify-content: center; background: var(--color-primary-subtle, #e6f3fb); color: var(--color-primary-active, #0f6ea3); font-weight: 700; font-size: 15px; }
 .ngc-id { min-width: 0; flex: 1; }
-.ngc-name { font-size: 14px; font-weight: 600; color: var(--ink, #141a24); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ngc-phone { font-size: 12px; color: var(--ink-3, #6b7280); font-variant-numeric: tabular-nums; }
+.ngc-name { font-size: 14px; font-weight: 600; color: var(--color-text, #141a24); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ngc-phone { font-size: 12px; color: var(--color-text-muted, #6b7280); font-variant-numeric: tabular-nums; }
 .ngc-x { border: none; background: none; color: #c0c6d0; cursor: pointer; padding: 3px; border-radius: 6px; flex-shrink: 0; }
 .ngc-x:hover { background: #fde8e6; color: #b42318; }
 
 /* Hàng 2: phụ trách / trạng thái mất kết nối */
-.ngc-sub { font-size: 11.5px; color: var(--ink-4, #9ca3af); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ngc-sub b { color: var(--ink-2, #475066); font-weight: 500; }
+.ngc-sub { font-size: 11.5px; color: var(--color-text-disabled, #9ca3af); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ngc-sub b { color: var(--color-text-secondary, #475066); font-weight: 500; }
 .ngc-disc { display: flex; align-items: center; gap: 5px; font-size: 11.5px; padding: 3px 8px; border-radius: 6px; }
 .ngc-disc.manual { background: #f3f4f6; color: #6b7280; }
 .ngc-disc.passive { background: #fef2f2; color: #dc2626; font-variant-numeric: tabular-nums; }
@@ -313,8 +313,8 @@ function initials(name?: string | null): string {
 .ngc-statebtn.on:hover { background: #dc2626; color: #fff; }
 .ngc-statebtn.on:hover .lbl-on { display: none; }
 .ngc-statebtn.on:hover .lbl-hover { display: inline-flex; align-items: center; gap: 5px; }
-.ngc-statebtn.off { background: var(--brand-soft, #e4f1f8); color: var(--brand-700, #1786be); }
-.ngc-statebtn.off:hover:not(:disabled) { background: var(--brand-700, #1786be); color: #fff; }
+.ngc-statebtn.off { background: var(--color-primary-subtle, #e4f1f8); color: var(--color-primary-active, #1786be); }
+.ngc-statebtn.off:hover:not(:disabled) { background: var(--color-primary-active, #1786be); color: #fff; }
 .ngc-statebtn:disabled { opacity: .55; cursor: not-allowed; }
 .ngc-statebtn.readonly { cursor: default; }
 .ngc-statebtn.readonly.off { background: #f3f4f6; color: #6b7280; }

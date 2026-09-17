@@ -55,14 +55,18 @@ export async function registerTagRoutes(app: FastifyInstance): Promise<void> {
   // Tag definitions
   // ─────────────────────────────────────────────────────────────────────
 
-  app.get('/', async (req: FastifyRequest<{ Querystring: { scope?: string; source?: string; q?: string; cursor?: string; limit?: string; recount?: string; zaloAccountId?: string } }>, reply: FastifyReply) => {
+  app.get('/', async (req: FastifyRequest<{ Querystring: { scope?: string; source?: string; q?: string; cursor?: string; limit?: string; recount?: string; zaloAccountId?: string; archived?: string } }>, reply: FastifyReply) => {
     const user = req.user!;
-    const scope = (req.query.scope ?? 'friend') as TagScope;
-    if (scope !== 'friend' && scope !== 'crm') {
-      return reply.code(400).send({ error: 'INVALID_SCOPE' });
+    const isArchivedQuery = req.query.archived === 'true';
+    const scopeParam = req.query.scope;
+    let scope: TagScope | undefined;
+    if (scopeParam === 'friend' || scopeParam === 'crm') {
+      scope = scopeParam;
+    } else if (!isArchivedQuery) {
+      scope = 'friend';
     }
 
-    if (req.query.recount === '1') {
+    if (req.query.recount === '1' && scope) {
       const result = await recountUsage(user.orgId, scope);
       return reply.send({ recount: result.updated });
     }
@@ -78,8 +82,8 @@ export async function registerTagRoutes(app: FastifyInstance): Promise<void> {
     const tags = await prisma.tag.findMany({
       where: {
         orgId: user.orgId,
-        scope,
-        archivedAt: null,
+        ...(scope ? { scope } : {}),
+        archivedAt: isArchivedQuery ? { not: null } : null,
         ...(sourceFilter ? { source: sourceFilter } : {}),
         ...(req.query.zaloAccountId ? { zaloAccountId: req.query.zaloAccountId } : {}),
         ...(req.query.q
@@ -221,6 +225,17 @@ export async function registerTagRoutes(app: FastifyInstance): Promise<void> {
     if (!tag || tag.orgId !== user.orgId) return reply.code(404).send({ error: 'TAG_NOT_FOUND' });
     await prisma.tag.update({ where: { id: tag.id }, data: { archivedAt: new Date() } });
     return reply.send({ ok: true });
+  });
+
+  app.post('/:id/restore', async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    const user = req.user!;
+    const tag = await prisma.tag.findUnique({ where: { id: req.params.id } });
+    if (!tag || tag.orgId !== user.orgId) return reply.code(404).send({ error: 'TAG_NOT_FOUND' });
+    const restored = await prisma.tag.update({
+      where: { id: tag.id },
+      data: { archivedAt: null, isActive: true },
+    });
+    return reply.send({ tag: restored });
   });
 
   app.post('/merge', async (req: FastifyRequest<{ Body: { sourceTagId: string; targetTagId: string } }>, reply: FastifyReply) => {

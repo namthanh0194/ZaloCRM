@@ -490,13 +490,54 @@
       </div>
     </div>
 
-    <!-- ════════ TAB AI (placeholder) ════════ -->
-    <div v-if="mainTab === 'ai'" class="main-tab-body">
-      <div class="main-tab-placeholder">
-        <div class="mtp-icon">✨</div>
-        <h3>Trợ lý AI Bất động sản</h3>
-        <p>Hỏi đáp về sản phẩm, dự án BĐS, giá, ưu đãi để tư vấn KH.</p>
-        <div class="mtp-coming">🚧 Đang phát triển — kết nối knowledge base BĐS HS Holding</div>
+    <!-- ════════ TAB AI — Knowledge Base Repu Digital ════════ -->
+    <div v-if="mainTab === 'ai'" class="main-tab-body main-tab-body--no-padding main-tab-ai-container">
+      <div class="ai-assistant-chat">
+        <div class="ai-chat-header">
+          <div class="ai-brand-badge">🤖 Repu Digital AI</div>
+          <div class="ai-chat-desc">Tra cứu nhanh dịch vụ Digital Marketing, Martech & Automation để tư vấn KH.</div>
+        </div>
+
+        <div class="ai-messages-box">
+          <div v-if="aiChatMessages.length === 0" class="ai-chat-empty">
+            <div class="empty-sparkle">✨</div>
+            <strong>Hỏi đáp cùng Trợ lý Repu Digital</strong>
+            <p>Nhập câu hỏi bên dưới để tra cứu dịch vụ, giải pháp công nghệ hoặc soạn câu trả lời cho khách.</p>
+          </div>
+
+          <div
+            v-for="(msg, idx) in aiChatMessages"
+            :key="idx"
+            class="ai-bubble-row"
+            :class="msg.role"
+          >
+            <div class="ai-bubble">
+              <div class="ai-bubble-content">{{ msg.content }}</div>
+              <div v-if="msg.role === 'assistant'" class="ai-bubble-actions">
+                <button class="ai-copy-btn" @click="copyAiMessage(msg.content)">
+                  📋 Sao chép
+                </button>
+              </div>
+            </div>
+          </div>
+          <div v-if="aiQueryLoading" class="ai-typing">⏳ Trợ lý Repu Digital đang soạn câu trả lời...</div>
+        </div>
+
+        <div class="ai-input-box">
+          <textarea
+            v-model="aiUserQuery"
+            rows="2"
+            placeholder="Hỏi về dịch vụ, giải pháp Martech, chi phí..."
+            @keydown.enter.exact.prevent="sendAiQuery"
+          ></textarea>
+          <button
+            class="ai-send-btn"
+            :disabled="aiQueryLoading || !aiUserQuery.trim()"
+            @click="sendAiQuery"
+          >
+            Gửi
+          </button>
+        </div>
       </div>
     </div>
 
@@ -896,6 +937,38 @@ function removeExtraPhone(idx: number) {
 // AutomationCardList tự fetch /api/v1/contacts/:cid/automation-status
 // + tự poll 30s với Page Visibility API. Modal "+ Gắn thêm luồng" qua AddFlowModal.
 const automationCardListRef = ref<InstanceType<typeof AutomationCardList> | null>(null);
+
+type AiChatMessage = { role: 'user' | 'assistant'; content: string };
+const aiChatMessages = ref<AiChatMessage[]>([]);
+const aiUserQuery = ref('');
+const aiQueryLoading = ref(false);
+
+async function sendAiQuery() {
+  const q = aiUserQuery.value.trim();
+  if (!q || aiQueryLoading.value) return;
+  aiChatMessages.value.push({ role: 'user', content: q });
+  aiUserQuery.value = '';
+  aiQueryLoading.value = true;
+  try {
+    const res = await api.post<{ ok: boolean; answer: string }>('/ai/knowledge/ask', {
+      question: q,
+      conversationId: props.conversationId,
+    }, { timeout: 180000 });
+    aiChatMessages.value.push({ role: 'assistant', content: res.data.answer || 'Không có phản hồi' });
+  } catch (err: any) {
+    aiChatMessages.value.push({
+      role: 'assistant',
+      content: '❌ Lỗi: ' + (err?.response?.data?.error || err?.message || 'Không thể kết nối AI'),
+    });
+  } finally {
+    aiQueryLoading.value = false;
+  }
+}
+
+function copyAiMessage(text: string) {
+  navigator.clipboard.writeText(text);
+  alert('Đã sao chép câu trả lời của AI!');
+}
 const showAddFlowModal = ref(false);
 
 function openAddFlowModal(): void {
@@ -1274,8 +1347,8 @@ async function onRegenerateHandoff() {
 
 <style scoped>
 .info-panel {
-  background: var(--smax-bg);
-  border-left: 1px solid var(--smax-grey-200);
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
   display: flex; flex-direction: column;
   height: 100%; overflow: hidden;
   flex-shrink: 0;
@@ -1285,7 +1358,7 @@ async function onRegenerateHandoff() {
 .ip-header {
   padding: 0;
   text-align: left;
-  border-bottom: 1px solid var(--smax-grey-200);
+  border-bottom: 1px solid var(--color-border);
   position: relative;
   flex-shrink: 0;
 }
@@ -1325,11 +1398,11 @@ async function onRegenerateHandoff() {
   width: 26px; height: 26px;
   background: transparent; border: none;
   font-size: 20px; cursor: pointer;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   border-radius: 50%;
   z-index: 5;
 }
-.ip-close:hover { background: var(--smax-grey-100); }
+.ip-close:hover { background: var(--color-bg); }
 
 
 .ip-avatar-wrap {
@@ -1346,7 +1419,7 @@ async function onRegenerateHandoff() {
   position: absolute;
   bottom: -3px;
   right: -8px;
-  background: var(--smax-bg, #fff);
+  background: var(--color-surface, #fff);
   border: 2px solid #fff;
   border-radius: 11px;
   padding: 1px 7px 1px 6px;
@@ -1360,18 +1433,18 @@ async function onRegenerateHandoff() {
 .lead-score-badge.tier-hot   { background: #ffebee; color: #c62828; border-color: #ffcdd2; }
 .lead-score-badge.tier-warm  { background: #fff3e0; color: #ef6c00; border-color: #ffe0b2; }
 .lead-score-badge.tier-cool  { background: #e3f2fd; color: #1565c0; border-color: #bbdefb; }
-.lead-score-badge.tier-cold  { background: #f5f6fa; color: var(--smax-grey-600); border-color: #e0e0e0; }
+.lead-score-badge.tier-cold  { background: #f5f6fa; color: var(--color-text-secondary); border-color: #e0e0e0; }
 
 .ip-name-line {
   margin-top: 7px;
   font-size: 14px; font-weight: 600;
-  color: var(--smax-text);
+  color: var(--color-text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   padding: 0 17px;
 }
 .ip-id {
   font-size: 10.5px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   margin-top: 3px;
   font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
   word-break: break-all;
@@ -1393,8 +1466,8 @@ async function onRegenerateHandoff() {
 /* ════════ Tab bar ════════ */
 .ip-tabs {
   display: flex;
-  border-bottom: 1px solid var(--smax-grey-200);
-  background: var(--smax-grey-50);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-secondary);
   flex-shrink: 0;
 }
 .ip-tab {
@@ -1403,7 +1476,7 @@ async function onRegenerateHandoff() {
   padding: 9px 7px;
   cursor: pointer;
   font-size: 12.5px; font-weight: 500;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
   display: inline-flex; align-items: center; justify-content: center; gap: 4px;
@@ -1413,17 +1486,17 @@ async function onRegenerateHandoff() {
 }
 .ip-tab .ic { font-size: 13px; line-height: 1; display: inline-flex; align-items: center; }
 .ip-tab .ic > svg { display: block; }
-.ip-tab:hover { color: var(--smax-primary); background: var(--smax-grey-100); }
+.ip-tab:hover { color: var(--color-primary); background: var(--color-bg); }
 .ip-tab.active {
-  color: var(--smax-primary);
-  border-bottom-color: var(--smax-primary);
-  background: var(--smax-bg);
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  background: var(--color-surface);
   font-weight: 600;
 }
 .tab-badge {
   position: absolute;
   top: 5px; right: 9px;
-  background: var(--smax-primary);
+  background: var(--color-primary);
   color: white;
   font-size: 10px; font-weight: 700;
   padding: 0 5px;
@@ -1438,10 +1511,10 @@ async function onRegenerateHandoff() {
   animation: badgeBump 0.6s ease;
 }
 @keyframes badgeBump {
-  0%   { transform: scale(1); background: var(--smax-primary); }
+  0%   { transform: scale(1); background: var(--color-primary); }
   30%  { transform: scale(1.5); background: #f57c00; box-shadow: 0 0 0 6px rgba(245, 124, 0, 0.25); }
   60%  { transform: scale(1.1); background: #f57c00; }
-  100% { transform: scale(1); background: var(--smax-primary); box-shadow: none; }
+  100% { transform: scale(1); background: var(--color-primary); box-shadow: none; }
 }
 
 /* ════════ Tab content (scroll) ════════ */
@@ -1455,7 +1528,7 @@ async function onRegenerateHandoff() {
 .tab-empty {
   padding: 26px 17px;
   font-size: 12px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   text-align: center;
   font-style: italic;
 }
@@ -1466,22 +1539,22 @@ async function onRegenerateHandoff() {
   max-width: 250px;
 }
 .tab-empty li { margin: 4px 0; }
-.parent-card { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--smax-grey-200); border-radius: 8px; background: rgba(0,242,255,0.04); }
+.parent-card { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--color-border); border-radius: 8px; background: rgba(0,242,255,0.04); }
 .parent-info { flex: 1; min-width: 0; }
 .parent-name { font-weight: 600; font-size: 13px; }
 .parent-meta { display: flex; gap: 8px; align-items: center; font-size: 11px; flex-wrap: wrap; margin-top: 4px; }
 .friends-list { display: flex; flex-direction: column; gap: 10px; }
-.friend-card { border: 1px solid var(--smax-grey-200); border-radius: 8px; padding: 10px 12px; background: var(--smax-bg); }
+.friend-card { border: 1px solid var(--color-border); border-radius: 8px; padding: 10px 12px; background: var(--color-surface); }
 .friend-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .friend-card-title { flex: 1; min-width: 0; }
 .friend-name { font-weight: 600; font-size: 13px; }
-.friend-sub { font-size: 11px; color: var(--smax-grey-600); margin-top: 2px; }
+.friend-sub { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
 .sale-name { font-weight: 500; }
 .friend-card-row { display: flex; align-items: center; gap: 6px; font-size: 11.5px; padding: 3px 0; flex-wrap: wrap; }
-.friend-card-row .lbl { color: var(--smax-grey-600); }
+.friend-card-row .lbl { color: var(--color-text-secondary); }
 .friend-card-row .ml-auto { margin-left: auto; }
-.friend-card-row.meta-line { padding-top: 6px; border-top: 1px dashed var(--smax-grey-200); margin-top: 4px; color: var(--smax-grey-700); }
-.friend-card-row.meta-line strong { color: var(--smax-text); }
+.friend-card-row.meta-line { padding-top: 6px; border-top: 1px dashed var(--color-border); margin-top: 4px; color: var(--color-text-secondary); }
+.friend-card-row.meta-line strong { color: var(--color-text); }
 .conv-badge {
   font-size: 11px; font-weight: 700;
   padding: 1px 6px; border-radius: 4px;
@@ -1492,35 +1565,35 @@ async function onRegenerateHandoff() {
 .friend-customer-row {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 8px; margin: 4px 0 6px;
-  background: var(--smax-grey-50);
+  background: var(--color-surface-secondary);
   border-radius: 6px;
-  border-left: 3px solid var(--smax-primary);
+  border-left: 3px solid var(--color-primary);
 }
 .friend-customer-info { flex: 1; min-width: 0; }
 .friend-customer-name {
   font-size: 12.5px; font-weight: 600;
-  color: var(--smax-text);
+  color: var(--color-text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .friend-customer-row .uid {
   display: inline-block;
   margin-top: 2px;
 }
-.friend-card-actions { display: flex; justify-content: flex-end; gap: 6px; padding-top: 8px; border-top: 1px dashed var(--smax-grey-200); margin-top: 6px; }
+.friend-card-actions { display: flex; justify-content: flex-end; gap: 6px; padding-top: 8px; border-top: 1px dashed var(--color-border); margin-top: 6px; }
 .btn-sm-danger { padding: 4px 10px; font-size: 11px; border: 1px solid #ffcdd2; color: #c62828; border-radius: 4px; background: rgba(255,82,82,0.05); cursor: pointer; }
 .btn-sm-danger:hover { background: rgba(255,82,82,0.15); }
 .status-edit { cursor: pointer; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
 .status-edit:hover { filter: brightness(1.1); }
-.uid { font-family: monospace; font-size: 10.5px; color: var(--smax-grey-700); background: rgba(0,0,0,0.04); padding: 1px 4px; border-radius: 3px; }
-.chip-grey { background: rgba(90,100,120,0.10); color: var(--smax-grey-700); padding: 1px 7px; border-radius: 9px; font-size: 10.5px; }
+.uid { font-family: monospace; font-size: 10.5px; color: var(--color-text-secondary); background: rgba(0,0,0,0.04); padding: 1px 4px; border-radius: 3px; }
+.chip-grey { background: rgba(90,100,120,0.10); color: var(--color-text-secondary); padding: 1px 7px; border-radius: 9px; font-size: 10.5px; }
 .tab-empty code {
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
   padding: 0 4px; border-radius: 3px;
   font-size: 10.5px;
 }
 
 /* ════════ Inline form ════════ */
-.ip-form { padding: 4px 0; border-bottom: 1px solid var(--smax-grey-200); }
+.ip-form { padding: 4px 0; border-bottom: 1px solid var(--color-border); }
 .info-expand-toggle {
   width: 100%;
   background: transparent;
@@ -1528,13 +1601,13 @@ async function onRegenerateHandoff() {
   cursor: pointer;
   font-family: inherit;
   font-size: 11px;
-  color: var(--smax-primary, #2962ff);
+  color: var(--color-primary, #2962ff);
   font-weight: 500;
   padding: 6px 13px;
   text-align: left;
   transition: background 0.12s;
 }
-.info-expand-toggle:hover { background: var(--smax-primary-soft, #e3f2fd); }
+.info-expand-toggle:hover { background: var(--color-primary-subtle, #e3f2fd); }
 .info-expand-toggle.is-sticky {
   background: linear-gradient(135deg, #FEF3C7, #FDE68A);
   color: #92400E;
@@ -1575,7 +1648,7 @@ async function onRegenerateHandoff() {
   align-items: center;
   gap: 7px;
   padding: 7px 13px;
-  border-bottom: 1px solid var(--smax-grey-100);
+  border-bottom: 1px solid var(--color-bg);
 }
 .ip-form-row.sub {
   grid-template-columns: 22px 80px 1fr;
@@ -1583,7 +1656,7 @@ async function onRegenerateHandoff() {
 }
 .ip-form-row:last-child { border-bottom: none; }
 .ip-icon { font-size: 14px; opacity: 0.85; text-align: center; }
-.ip-label { font-size: 12px; color: var(--smax-grey-700); }
+.ip-label { font-size: 12px; color: var(--color-text-secondary); }
 .ip-form-row input,
 .ip-form-row select {
   border: none; outline: none;
@@ -1593,28 +1666,28 @@ async function onRegenerateHandoff() {
   padding: 3px 4px;
   border-radius: 4px;
   font-family: inherit;
-  color: var(--smax-text);
+  color: var(--color-text);
 }
 .ip-form-row input:hover,
-.ip-form-row select:hover { background: var(--smax-grey-50); }
+.ip-form-row select:hover { background: var(--color-surface-secondary); }
 .ip-form-row input:focus,
-.ip-form-row select:focus { background: var(--smax-primary-soft); }
+.ip-form-row select:focus { background: var(--color-primary-subtle); }
 .phone-cell {
   display: flex; align-items: center; gap: 5px;
   width: 100%;
 }
 .phone-cell input { flex: 1; }
 .show-extra-phones {
-  background: var(--smax-grey-100);
-  border: 1px solid var(--smax-grey-300);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-strong);
   border-radius: 9px;
   padding: 1px 7px;
   font-size: 11px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   cursor: pointer;
   flex-shrink: 0;
 }
-.show-extra-phones:hover { background: var(--smax-primary-soft); color: var(--smax-primary); }
+.show-extra-phones:hover { background: var(--color-primary-subtle); color: var(--color-primary); }
 
 /* ════════ SĐT phụ — list động nhãn tự nhập (2026-06-06) ════════
    Override grid của .ip-form-row.sub: dùng flex để nhãn + số + nút xoá nằm 1 hàng,
@@ -1629,7 +1702,7 @@ async function onRegenerateHandoff() {
   flex: 0 0 96px;
   min-width: 0;
   font-size: 12px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
 }
 .phone-extra-row .pex-phone {
   flex: 1 1 auto;
@@ -1640,41 +1713,41 @@ async function onRegenerateHandoff() {
   flex: 0 0 auto;
   background: none;
   border: none;
-  color: var(--smax-grey-500);
+  color: var(--color-text-muted);
   font-size: 16px;
   line-height: 1;
   cursor: pointer;
   padding: 0 4px;
 }
-.phone-extra-row .pex-remove:hover { color: var(--smax-danger, #e53935); }
+.phone-extra-row .pex-remove:hover { color: var(--color-danger, #e53935); }
 .pex-add {
   margin: 4px 0 4px 32px;
   background: none;
-  border: 1px dashed var(--smax-grey-300);
+  border: 1px dashed var(--color-border-strong);
   border-radius: 8px;
   padding: 3px 10px;
   font-size: 12px;
-  color: var(--smax-primary, #1786be);
+  color: var(--color-primary, #1786be);
   cursor: pointer;
 }
-.pex-add:hover { background: var(--smax-primary-soft); }
+.pex-add:hover { background: var(--color-primary-subtle); }
 
 /* ════════ Section ════════ */
 .ip-section {
   padding: 11px 17px;
-  border-bottom: 1px solid var(--smax-grey-200);
+  border-bottom: 1px solid var(--color-border);
 }
 .ip-section:last-child { border-bottom: none; }
 .ip-section-title {
   display: flex; align-items: center; gap: 7px;
   font-size: 13px; font-weight: 600;
-  color: var(--smax-text);
+  color: var(--color-text);
   margin-bottom: 7px;
 }
 .ip-section-title .accent {
   width: 3px; height: 14px;
   border-radius: 2px;
-  background: var(--smax-grey-300);
+  background: var(--color-border-strong);
 }
 .scope-tag {
   font-size: 10px; padding: 1px 6px;
@@ -1693,19 +1766,19 @@ async function onRegenerateHandoff() {
   margin-left: auto;
   width: 22px; height: 22px;
   border-radius: 50%;
-  border: 1px solid var(--smax-grey-300);
-  background: var(--smax-bg);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
   cursor: pointer;
-  font-size: 12px; color: var(--smax-grey-700);
+  font-size: 12px; color: var(--color-text-secondary);
 }
-.refresh-mini:hover:not(:disabled) { background: var(--smax-grey-50); color: var(--smax-primary); }
+.refresh-mini:hover:not(:disabled) { background: var(--color-surface-secondary); color: var(--color-primary); }
 .refresh-mini:disabled { opacity: 0.5; cursor: not-allowed; }
 .sentiment-reason {
   font-size: 12px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   margin-top: 7px;
   padding: 7px 9px;
-  background: var(--smax-grey-50);
+  background: var(--color-surface-secondary);
   border-radius: 5px;
   font-style: italic;
 }
@@ -1714,8 +1787,8 @@ async function onRegenerateHandoff() {
   display: flex; flex-wrap: wrap; gap: 4px;
 }
 .tag-chip {
-  background: var(--smax-grey-100);
-  color: var(--smax-grey-700);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
   padding: 3px 7px;
   border-radius: 7px;
   font-size: 11px;
@@ -1727,16 +1800,16 @@ async function onRegenerateHandoff() {
   opacity: 0.55;
   font-weight: 700;
 }
-.tag-chip .x:hover { opacity: 1; color: var(--smax-error); }
+.tag-chip .x:hover { opacity: 1; color: var(--color-danger); }
 .tag-chip.add {
   background: transparent;
-  border: 1px dashed var(--smax-grey-300);
+  border: 1px dashed var(--color-border-strong);
   cursor: pointer;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
 }
-.tag-chip.add:hover { background: var(--smax-grey-50); border-color: var(--smax-primary); color: var(--smax-primary); }
+.tag-chip.add:hover { background: var(--color-surface-secondary); border-color: var(--color-primary); color: var(--color-primary); }
 .tag-input {
-  border: 1px solid var(--smax-primary);
+  border: 1px solid var(--color-primary);
   outline: none;
   padding: 2px 7px;
   border-radius: 7px;
@@ -1749,19 +1822,19 @@ async function onRegenerateHandoff() {
   align-items: center;
   margin-top: 6px;
   padding-top: 6px;
-  border-top: 1px dashed var(--smax-grey-200);
+  border-top: 1px dashed var(--color-border);
 }
 .suggestion-label {
   font-size: 10.5px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.3px;
   font-weight: 600;
 }
 .tag-chip.suggestion {
   background: transparent;
-  border: 1px dashed var(--smax-primary);
-  color: var(--smax-primary);
+  border: 1px dashed var(--color-primary);
+  color: var(--color-primary);
   font-size: 10.5px;
   padding: 2px 7px;
   cursor: pointer;
@@ -1769,26 +1842,26 @@ async function onRegenerateHandoff() {
   font-family: inherit;
 }
 .tag-chip.suggestion:hover {
-  background: var(--smax-primary-soft);
+  background: var(--color-primary-subtle);
 }
 
 .metrics-row {
   display: flex; align-items: baseline; gap: 5px;
   font-size: 13px;
 }
-.metric-num { font-size: 24px; font-weight: 700; color: var(--smax-success); }
-.metric-label { color: var(--smax-grey-700); }
-.metric-aux  { color: var(--smax-grey-700); font-size: 12px; }
+.metric-num { font-size: 24px; font-weight: 700; color: var(--color-success); }
+.metric-label { color: var(--color-text-secondary); }
+.metric-aux  { color: var(--color-text-secondary); font-size: 12px; }
 
 /* ════════ Per-nick state section ════════ */
 .kv-list { display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 1.55; }
 .kv-row { display: flex; align-items: baseline; gap: 5px; flex-wrap: wrap; }
-.kv-row .k { color: var(--smax-grey-700); min-width: 100px; }
-.kv-row .v { color: var(--smax-text); font-weight: 500; }
-.kv-row .muted { color: var(--smax-grey-300); font-size: 10.5px; font-style: italic; }
+.kv-row .k { color: var(--color-text-secondary); min-width: 100px; }
+.kv-row .v { color: var(--color-text); font-weight: 500; }
+.kv-row .muted { color: var(--color-border-strong); font-size: 10.5px; font-style: italic; }
 .kv-row code {
   font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
   padding: 0 4px; border-radius: 3px;
   font-size: 10px;
 }
@@ -1802,7 +1875,7 @@ async function onRegenerateHandoff() {
 .pill-info    { background: rgba(33,150,243,0.12); color: #1565c0; }
 
 .empty-section {
-  font-size: 11px; color: var(--smax-grey-700);
+  font-size: 11px; color: var(--color-text-secondary);
   font-style: italic;
   padding: 4px 0;
 }
@@ -1813,7 +1886,7 @@ async function onRegenerateHandoff() {
   display: flex; align-items: center; gap: 7px;
   padding: 5px 0;
 }
-.ni-name { flex: 1; font-size: 12px; color: var(--smax-text); }
+.ni-name { flex: 1; font-size: 12px; color: var(--color-text); }
 
 /* ════════ Notes section in Tab Hồ Sơ ════════ */
 .ip-notes-section {
@@ -1831,7 +1904,7 @@ async function onRegenerateHandoff() {
 }
 .crm-widget {
   background: #fff;
-  border: 1px solid var(--smax-grey-200);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   padding: 10px 12px;
   display: flex;
@@ -1848,30 +1921,30 @@ async function onRegenerateHandoff() {
 .crm-w-title {
   font-size: 12.5px;
   font-weight: 700;
-  color: var(--smax-grey-800);
+  color: var(--color-text);
   flex: 1;
 }
 .crm-w-refresh {
   background: transparent;
-  border: 1px solid var(--smax-grey-300);
+  border: 1px solid var(--color-border-strong);
   border-radius: 6px;
   width: 24px; height: 22px;
   font-size: 11.5px;
   cursor: pointer;
-  color: var(--smax-grey-600);
+  color: var(--color-text-secondary);
 }
-.crm-w-refresh:hover:not(:disabled) { background: var(--smax-grey-100); }
+.crm-w-refresh:hover:not(:disabled) { background: var(--color-bg); }
 .crm-w-refresh:disabled { opacity: 0.5; cursor: wait; }
 
 .crm-w-loading {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 0;
-  color: var(--smax-grey-600);
+  color: var(--color-text-secondary);
   font-size: 12px;
 }
 .crm-spinner {
   width: 14px; height: 14px;
-  border: 2px solid var(--smax-grey-200);
+  border: 2px solid var(--color-border);
   border-top-color: #4f46e5;
   border-radius: 50%;
   animation: crm-spin 700ms linear infinite;
@@ -1881,7 +1954,7 @@ async function onRegenerateHandoff() {
 }
 
 .crm-w-empty {
-  color: var(--smax-grey-500);
+  color: var(--color-text-muted);
   font-size: 11.5px;
   padding: 4px 0;
 }
@@ -1897,14 +1970,14 @@ async function onRegenerateHandoff() {
 .getfly-pill.off { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
 .crm-btn-ghost {
   background: #fff;
-  border: 1px solid var(--smax-grey-300);
+  border: 1px solid var(--color-border-strong);
   border-radius: 7px;
   padding: 4px 10px;
   font-size: 11.5px;
   cursor: pointer;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
 }
-.crm-btn-ghost:hover:not(:disabled) { background: var(--smax-grey-100); }
+.crm-btn-ghost:hover:not(:disabled) { background: var(--color-bg); }
 .crm-btn-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ── Widget 2: AI suggest ── */
@@ -1949,7 +2022,7 @@ async function onRegenerateHandoff() {
 .heat-bar {
   flex: 1;
   height: 10px;
-  background: var(--smax-grey-200);
+  background: var(--color-border);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -1961,7 +2034,7 @@ async function onRegenerateHandoff() {
 .heat-bar-num {
   font-size: 11.5px;
   font-weight: 700;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   min-width: 54px;
   text-align: right;
 }
@@ -1969,8 +2042,8 @@ async function onRegenerateHandoff() {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   font-size: 11.5px;
 }
-.heat-pattern { font-weight: 600; color: var(--smax-grey-800); }
-.heat-trend { font-weight: 600; color: var(--smax-grey-600); }
+.heat-pattern { font-weight: 600; color: var(--color-text); }
+.heat-trend { font-weight: 600; color: var(--color-text-secondary); }
 .heat-trend.up { color: #15803d; }
 .heat-trend.down { color: #b91c1c; }
 .heat-stuck {
@@ -1987,12 +2060,12 @@ async function onRegenerateHandoff() {
   display: flex; flex-direction: column;
   gap: 4px;
   font-size: 11.5px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
 }
 .tl-line { line-height: 1.4; }
-.tl-sep { margin: 0 5px; color: var(--smax-grey-400); }
+.tl-sep { margin: 0 5px; color: var(--color-text-disabled); }
 .tl-appt { color: #065f46; font-weight: 600; }
-.tl-appt-rel { font-weight: 500; color: var(--smax-grey-600); }
+.tl-appt-rel { font-weight: 500; color: var(--color-text-secondary); }
 
 /* ── Widget 5: Placeholder interest ── */
 .crm-w-placeholder {
@@ -2000,13 +2073,13 @@ async function onRegenerateHandoff() {
   gap: 8px;
   align-items: flex-start;
   font-size: 11.5px;
-  color: var(--smax-grey-600);
-  background: var(--smax-grey-100);
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
   border-radius: 7px;
   padding: 7px 9px;
   line-height: 1.45;
 }
-.ph-icon { font-style: italic; color: var(--smax-grey-500); flex-shrink: 0; }
+.ph-icon { font-style: italic; color: var(--color-text-muted); flex-shrink: 0; }
 
 /* ── Widget 6: Đồng đội ── */
 .team-banner {
@@ -2035,7 +2108,7 @@ async function onRegenerateHandoff() {
   gap: 8px;
   padding: 6px 8px;
   background: #fafbfc;
-  border: 1px solid var(--smax-grey-200);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
 }
 .cc-avatar-circle {
@@ -2055,7 +2128,7 @@ async function onRegenerateHandoff() {
 .cc-name {
   font-size: 12px;
   font-weight: 600;
-  color: var(--smax-text);
+  color: var(--color-text);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -2081,11 +2154,11 @@ async function onRegenerateHandoff() {
 }
 .cc-meta {
   font-size: 10px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   margin-top: 1px;
 }
 .team-card {
-  border: 1px solid var(--smax-grey-200);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 8px 9px;
   display: flex;
@@ -2103,14 +2176,14 @@ async function onRegenerateHandoff() {
 .team-name {
   font-size: 12.5px;
   font-weight: 700;
-  color: var(--smax-grey-900);
+  color: var(--color-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .team-sub {
   font-size: 11px;
-  color: var(--smax-grey-600);
+  color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2118,11 +2191,11 @@ async function onRegenerateHandoff() {
 .team-status.active { color: #15803d; }
 .team-status.warm { color: #b45309; }
 .team-status.cold { color: #1d4ed8; }
-.team-status.grey { color: var(--smax-grey-500); }
+.team-status.grey { color: var(--color-text-muted); }
 .team-counts {
   display: flex; gap: 12px;
   font-size: 11.5px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
 }
 .crm-btn-handoff {
   background: linear-gradient(135deg, #6366f1, #8b5cf6);
@@ -2145,13 +2218,13 @@ async function onRegenerateHandoff() {
   border-radius: 8px;
   padding: 10px;
   font-size: 12px;
-  color: var(--smax-grey-600);
+  color: var(--color-text-secondary);
   cursor: not-allowed;
   width: 100%;
 }
 .crm-w-hint {
   font-size: 10.5px;
-  color: var(--smax-grey-500);
+  color: var(--color-text-muted);
   text-align: center;
   font-style: italic;
 }
@@ -2233,6 +2306,40 @@ async function onRegenerateHandoff() {
   line-height: 1.5;
   margin: 0 0 16px;
 }
+
+.main-tab-ai-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.ai-assistant-chat {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+.ai-chat-header { padding: 12px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+.ai-brand-badge { font-weight: 700; font-size: 14px; color: #1e3a8a; margin-bottom: 4px; }
+.ai-chat-desc { font-size: 12px; color: #64748b; }
+.ai-messages-box { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.ai-chat-empty { text-align: center; padding: 24px 12px; color: #64748b; }
+.ai-chat-empty .empty-sparkle { font-size: 28px; margin-bottom: 8px; }
+.ai-bubble-row { display: flex; }
+.ai-bubble-row.user { justify-content: flex-end; }
+.ai-bubble-row.assistant { justify-content: flex-start; }
+.ai-bubble { max-width: 88%; padding: 8px 12px; border-radius: 10px; font-size: 13px; line-height: 1.5; }
+.ai-bubble-row.user .ai-bubble { background: #2563eb; color: #fff; }
+.ai-bubble-row.assistant .ai-bubble { background: #f1f5f9; color: #1e293b; border: 1px solid #e2e8f0; }
+.ai-bubble-actions { margin-top: 6px; display: flex; justify-content: flex-end; }
+.ai-copy-btn { background: none; border: none; color: #2563eb; cursor: pointer; font-size: 11px; font-weight: 600; padding: 2px 4px; }
+.ai-typing { font-size: 12px; color: #64748b; font-style: italic; }
+.ai-input-box { padding: 10px; border-top: 1px solid #e2e8f0; display: flex; gap: 8px; background: #fff; }
+.ai-input-box textarea { flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; font-size: 13px; font-family: inherit; resize: none; }
+.ai-send-btn { padding: 0 14px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.ai-send-btn:disabled { background: #94a3b8; cursor: not-allowed; }
 .mtp-coming {
   display: inline-block;
   padding: 6px 12px;

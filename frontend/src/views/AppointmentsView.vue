@@ -478,33 +478,33 @@ onBeforeUnmount(() => {
 /* Page shell — Airtable design */
 .apt-page {
   display: flex; flex-direction: column;
-  height: calc(100vh - var(--smax-topnav-h, 52px));
+  height: calc(100vh - var(--layout-topnav-height, 52px));
   width: 100%;
-  background: var(--at-canvas);
+  background: var(--color-surface);
   overflow: hidden;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  color: var(--at-body);
+  color: var(--color-text-secondary);
 }
 
 /* ── Hero band (white canvas, 2 rows) ────────────────────────────────── */
 .apt-hero {
-  background: var(--at-canvas);
-  padding: var(--at-s-lg) var(--at-s-xl) var(--at-s-md);
-  border-bottom: 1px solid var(--at-hairline);
+  background: var(--color-surface);
+  padding: var(--space-6) var(--space-8) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
 }
 .apt-hero-row1 {
   display: flex; align-items: flex-start; justify-content: space-between;
-  gap: var(--at-s-md);
-  margin-bottom: var(--at-s-md);
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
 }
 .apt-hero-row2 {
   display: flex; align-items: center; justify-content: space-between;
-  gap: var(--at-s-md);
+  gap: var(--space-4);
   flex-wrap: wrap;
 }
 .title-block {
-  display: flex; align-items: flex-start; gap: var(--at-s-sm);
+  display: flex; align-items: flex-start; gap: var(--space-3);
   min-width: 0; flex: 1;
 }
 .apt-hero-title {
@@ -512,20 +512,20 @@ onBeforeUnmount(() => {
   font-size: 28px;
   font-weight: 400;
   line-height: 1.2;
-  color: var(--at-ink);
+  color: var(--color-text);
   letter-spacing: 0;
 }
 .apt-hero-sub {
   font-size: 12px;
   font-weight: 500;
-  color: var(--at-muted);
+  color: var(--color-text-muted);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   margin-top: 4px;
 }
-.apt-hero-sub b { color: var(--at-ink); font-weight: 500; }
+.apt-hero-sub b { color: var(--color-text); font-weight: 500; }
 
-.apt-hero-actions { display: flex; align-items: center; gap: var(--at-s-xs); flex-shrink: 0; }
+.apt-hero-actions { display: flex; align-items: center; gap: var(--space-2); flex-shrink: 0; }
 .drawer-toggle { display: none; }
 
 /* ── At-btn / icon-btn (Airtable spec) ───────────────────────────────── */
@@ -533,7 +533,7 @@ onBeforeUnmount(() => {
   display: inline-flex; align-items: center; justify-content: center;
   gap: 6px;
   padding: 10px 16px;
-  border-radius: var(--at-r-lg);
+  border-radius: var(--radius-lg);
   font-size: 13px;
   font-weight: 500;
   line-height: 1.4;
@@ -544,39 +544,39 @@ onBeforeUnmount(() => {
   transition: background 0.12s, border-color 0.12s;
 }
 .at-btn--primary {
-  background: var(--at-primary);
-  color: var(--at-on-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
 }
-.at-btn--primary:active { background: var(--at-primary-active); }
+.at-btn--primary:active { background: var(--color-primary-active); }
 .at-btn--secondary {
-  background: var(--at-canvas);
-  color: var(--at-ink);
-  border: 1px solid var(--at-hairline);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
-.at-btn--secondary:active { background: var(--at-surface-soft); }
+.at-btn--secondary:active { background: var(--color-surface-secondary); }
 .at-btn .ic { font-size: 15px; line-height: 1; }
 .at-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
 .icon-btn {
   width: 32px; height: 32px;
-  border-radius: var(--at-r-md);
+  border-radius: var(--radius-md);
   background: transparent;
-  color: var(--at-body);
+  color: var(--color-text-secondary);
   cursor: pointer;
   font-size: 14px;
   display: inline-flex; align-items: center; justify-content: center;
   border: 1px solid transparent;
   font-family: inherit;
 }
-.icon-btn:active { background: var(--at-surface-soft); }
-.icon-btn--bordered { border-color: var(--at-hairline); background: var(--at-canvas); }
+.icon-btn:active { background: var(--color-surface-secondary); }
+.icon-btn--bordered { border-color: var(--color-border); background: var(--color-surface); }
 
 /* ── Segmented view toggle ───────────────────────────────────────────── */
 .at-segmented {
   display: inline-flex;
-  background: var(--at-surface-soft);
-  border: 1px solid var(--at-hairline);
-  border-radius: var(--at-r-md);
+  background: var(--color-surface-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 3px;
   gap: 2px;
 }
@@ -585,15 +585,15 @@ onBeforeUnmount(() => {
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--at-body);
+  color: var(--color-text-secondary);
   background: transparent;
   border: none;
   cursor: pointer;
   font-family: inherit;
 }
 .at-segmented button.active {
-  background: var(--at-ink);
-  color: var(--at-on-primary);
+  background: var(--color-text);
+  color: var(--color-on-primary);
 }
 .at-segmented button:disabled { opacity: 0.35; cursor: not-allowed; }
 
@@ -603,35 +603,35 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  background: var(--at-canvas);
-  border: 1px solid var(--at-hairline);
-  border-radius: var(--at-r-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   font-size: 13px;
   font-weight: 500;
-  color: var(--at-body);
+  color: var(--color-text-secondary);
   cursor: pointer;
   font-family: inherit;
   white-space: nowrap;
   height: 36px;
 }
-.filter-trigger:active { background: var(--at-surface-soft); }
+.filter-trigger:active { background: var(--color-surface-secondary); }
 .filter-trigger.active {
-  border-color: var(--at-ink);
-  color: var(--at-ink);
+  border-color: var(--color-text);
+  color: var(--color-text);
 }
 .filter-trigger .trigger-count {
   font-size: 11.5px;
-  background: var(--at-surface-soft);
-  color: var(--at-muted);
+  background: var(--color-surface-secondary);
+  color: var(--color-text-muted);
   padding: 1px 7px;
-  border-radius: var(--at-r-pill);
+  border-radius: var(--radius-pill);
   font-variant-numeric: tabular-nums;
 }
 .filter-trigger.active .trigger-count {
-  background: var(--at-ink);
-  color: var(--at-on-primary);
+  background: var(--color-text);
+  color: var(--color-on-primary);
 }
-.filter-trigger .caret { font-size: 10px; color: var(--at-muted); }
+.filter-trigger .caret { font-size: 10px; color: var(--color-text-muted); }
 
 /* Menu items inside dropdown */
 :global(.filter-menu .v-list-item) {
@@ -644,7 +644,7 @@ onBeforeUnmount(() => {
 :global(.filter-menu .menu-pill) {
   display: inline-flex; align-items: center;
   padding: 2px 8px;
-  border-radius: var(--at-r-pill);
+  border-radius: var(--radius-pill);
   font-size: 11.5px;
   font-weight: 500;
   letter-spacing: 0.16px;
@@ -668,38 +668,38 @@ onBeforeUnmount(() => {
 .hero-row2-spacer { flex: 1; }
 
 /* ── Date nav ────────────────────────────────────────────────────────── */
-.apt-date-nav { display: inline-flex; align-items: center; gap: var(--at-s-xs); }
+.apt-date-nav { display: inline-flex; align-items: center; gap: var(--space-2); }
 .apt-date-nav.hidden { display: none; }
 .apt-date-nav .week-range {
   font-size: 13px;
   font-weight: 500;
-  color: var(--at-ink);
-  padding: 0 var(--at-s-sm);
+  color: var(--color-text);
+  padding: 0 var(--space-3);
   min-width: 170px;
   text-align: center;
 }
 
 /* ── Filter chips strip (surface-soft bg) ─────────────────────────────── */
 .apt-filter-strip {
-  display: flex; align-items: center; gap: var(--at-s-xs);
-  padding: var(--at-s-sm) var(--at-s-xl);
-  background: var(--at-surface-soft);
-  border-bottom: 1px solid var(--at-hairline);
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-3) var(--space-8);
+  background: var(--color-surface-secondary);
+  border-bottom: 1px solid var(--color-border);
   flex-wrap: wrap;
   flex-shrink: 0;
 }
 .apt-filter-strip .lbl {
   font-size: 11px;
   font-weight: 500;
-  color: var(--at-muted);
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin-right: var(--at-s-xs);
+  margin-right: var(--space-2);
 }
 .apt-filter-strip .spacer { flex: 1; }
 .apt-filter-strip .kb-hint {
   font-size: 11.5px;
-  color: var(--at-muted);
+  color: var(--color-text-muted);
   display: inline-flex;
   align-items: center;
   gap: 3px;
@@ -707,32 +707,32 @@ onBeforeUnmount(() => {
 .apt-filter-strip .kb-hint kbd {
   display: inline-block;
   padding: 1px 5px;
-  background: var(--at-canvas);
-  border: 1px solid var(--at-hairline);
-  border-radius: var(--at-r-xs);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   font-family: ui-monospace, 'SF Mono', Consolas, monospace;
   font-size: 10.5px;
-  color: var(--at-ink);
+  color: var(--color-text);
   margin: 0 1px;
 }
 
 .at-chip {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 11px;
-  background: var(--at-canvas);
-  border: 1px solid var(--at-hairline);
-  border-radius: var(--at-r-pill);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
   font-size: 12.5px;
   font-weight: 500;
-  color: var(--at-body);
+  color: var(--color-text-secondary);
   white-space: nowrap;
   cursor: pointer;
 }
-.at-chip:active { background: var(--at-surface-soft); }
+.at-chip:active { background: var(--color-surface-secondary); }
 .at-chip--active {
-  background: var(--at-ink);
-  color: var(--at-on-primary);
-  border-color: var(--at-ink);
+  background: var(--color-text);
+  color: var(--color-on-primary);
+  border-color: var(--color-text);
 }
 .at-chip .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .at-chip .chip-info { opacity: 0.8; font-weight: 400; }
@@ -746,19 +746,19 @@ onBeforeUnmount(() => {
   min-height: 0;
   overflow: hidden;
   position: relative;
-  background: var(--at-canvas);
+  background: var(--color-surface);
   transition: grid-template-columns 0.18s ease;
 }
 .apt-body.with-panel {
   grid-template-columns: 280px 1fr 380px;
 }
-.sidebar-wrap { overflow: hidden; background: var(--at-surface-soft); border-right: 1px solid var(--at-hairline); }
+.sidebar-wrap { overflow: hidden; background: var(--color-surface-secondary); border-right: 1px solid var(--color-border); }
 .sidebar-backdrop { display: none; }
 .apt-content {
   overflow: hidden;
   display: flex; flex-direction: column;
   min-width: 0;
-  background: var(--at-canvas);
+  background: var(--color-surface);
 }
 
 /* Tablet */
@@ -768,7 +768,7 @@ onBeforeUnmount(() => {
 @media (max-width: 1100px) {
   .apt-body { grid-template-columns: 240px 1fr; }
   .apt-body.with-panel { grid-template-columns: 240px 1fr 320px; }
-  .apt-hero { padding: var(--at-s-md) var(--at-s-lg); }
+  .apt-hero { padding: var(--space-4) var(--space-6); }
   .apt-hero-title { font-size: 24px; }
 }
 
@@ -801,10 +801,10 @@ onBeforeUnmount(() => {
 
 /* Mobile portrait */
 @media (max-width: 600px) {
-  .apt-hero { padding: var(--at-s-md); }
-  .apt-filter-strip { padding: var(--at-s-xs) var(--at-s-md); overflow-x: auto; flex-wrap: nowrap; }
+  .apt-hero { padding: var(--space-4); }
+  .apt-filter-strip { padding: var(--space-2) var(--space-4); overflow-x: auto; flex-wrap: nowrap; }
   .apt-filter-strip .kb-hint, .apt-filter-strip .spacer { display: none; }
-  .apt-hero-row2 { flex-wrap: wrap; gap: var(--at-s-xs); }
+  .apt-hero-row2 { flex-wrap: wrap; gap: var(--space-2); }
   .at-segmented { flex: 1 1 100%; }
   .at-segmented button { flex: 1; padding: 6px 10px; font-size: 12px; }
   .filter-trigger { padding: 6px 10px; font-size: 12px; height: 32px; }

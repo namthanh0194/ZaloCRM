@@ -105,7 +105,7 @@ onMounted(() => {
   font-weight: 700;
   margin: 0;
   flex: 1;
-  color: #111827;
+  color: var(--color-text);
 }
 .badge-skeleton {
   display: inline-block;
@@ -113,7 +113,7 @@ onMounted(() => {
   color: #92400E;
   font-size: 10px;
   padding: 3px 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   margin-left: 8px;
   vertical-align: middle;
   font-weight: 700;
@@ -121,10 +121,10 @@ onMounted(() => {
 }
 
 .back-btn {
-  background: white;
+  background: var(--color-surface);
   border: 1px solid #E5E7EB;
   padding: 8px 14px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
@@ -144,14 +144,14 @@ onMounted(() => {
 
 .cp-loading,
 .cp-error {
-  background: white;
-  border-radius: 12px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
   padding: 48px;
   text-align: center;
-  color: #6B7280;
+  color: var(--color-text-muted);
 }
 .cp-error {
-  color: #DC2626;
+  color: var(--color-danger);
 }
 
 .cp-content {
@@ -161,8 +161,8 @@ onMounted(() => {
 }
 
 .cp-card {
-  background: white;
-  border-radius: 12px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
   padding: 20px 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
@@ -170,7 +170,7 @@ onMounted(() => {
   font-size: 16px;
   font-weight: 700;
   margin: 0 0 12px;
-  color: #111827;
+  color: var(--color-text);
 }
 
 .cp-info-grid {
@@ -187,25 +187,25 @@ onMounted(() => {
 }
 .cp-label {
   font-weight: 600;
-  color: #6B7280;
+  color: var(--color-text-muted);
 }
 .cp-value {
-  color: #111827;
+  color: var(--color-text);
 }
 .cp-value.score {
   display: inline-block;
   font-size: 16px;
   font-weight: 700;
-  color: #10B981;
-  background: #ECFDF5;
+  color: var(--color-success);
+  background: var(--color-success-subtle);
   padding: 2px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   width: fit-content;
 }
 
 .cp-skeleton-note {
   background: linear-gradient(135deg, #FEF3C7, #FFFBEB);
-  border-left: 4px solid #F59E0B;
+  border-left: 4px solid var(--color-warning);
 }
 .cp-skeleton-note p {
   font-size: 13px;
@@ -230,7 +230,7 @@ onMounted(() => {
 .cp-hint {
   background: rgba(255, 255, 255, 0.5);
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 12px;
   color: #78350F;
   margin-top: 12px;

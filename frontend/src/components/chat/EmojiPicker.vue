@@ -80,11 +80,11 @@ function onPick(e: string) {
   border-radius: 6px;
   cursor: pointer;
   font-size: 16px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   background: transparent; border: none;
   font-family: inherit;
 }
-.icon-tool:hover { background: var(--smax-grey-100); }
+.icon-tool:hover { background: var(--color-bg); }
 
 .emoji-card {
   width: 320px;
@@ -95,7 +95,7 @@ function onPick(e: string) {
   display: flex; gap: 2px;
   margin-bottom: 6px;
   padding-bottom: 6px;
-  border-bottom: 1px solid var(--smax-grey-200);
+  border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
 }
 .emoji-tab {
@@ -107,8 +107,8 @@ function onPick(e: string) {
   border-radius: 6px;
   font-family: inherit;
 }
-.emoji-tab:hover { background: var(--smax-grey-100); }
-.emoji-tab.active { background: var(--smax-primary-soft); }
+.emoji-tab:hover { background: var(--color-bg); }
+.emoji-tab.active { background: var(--color-primary-subtle); }
 
 .emoji-grid {
   display: grid;
@@ -127,7 +127,7 @@ function onPick(e: string) {
   padding: 0;
 }
 .emoji-cell:hover {
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
   transform: scale(1.15);
   transition: transform 0.1s;
 }

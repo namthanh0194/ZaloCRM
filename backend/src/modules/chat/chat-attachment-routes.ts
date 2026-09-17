@@ -15,6 +15,7 @@ import { emitChatMessage } from '../../shared/realtime/emit-chat.js';
 import { prisma } from '../../shared/database/prisma-client.js';
 import { authMiddleware } from '../auth/auth-middleware.js';
 import { requireZaloAccess } from '../zalo/zalo-access-middleware.js';
+import { requireConversationAccess } from './conversation-access.js';
 import { zaloPool } from '../zalo/zalo-pool.js';
 import { zaloRateLimiter } from '../zalo/zalo-rate-limiter.js';
 import { zaloOps } from '../../shared/zalo-operations.js';
@@ -69,7 +70,7 @@ export async function chatAttachmentRoutes(app: FastifyInstance) {
 
   app.post(
     '/api/v1/conversations/:id/attachments',
-    { preHandler: requireZaloAccess('chat') },
+    { preHandler: [requireZaloAccess('chat'), requireConversationAccess('chat')] },
     async (request: FastifyRequest, reply: FastifyReply) => {
       const user = request.user!;
       const { id } = request.params as { id: string };

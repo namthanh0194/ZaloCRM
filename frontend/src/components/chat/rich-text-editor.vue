@@ -771,9 +771,9 @@ onBeforeUnmount(() => { editor.value?.destroy(); });
 
 <style scoped>
 .rich-text-editor {
-  border: 1.5px solid var(--smax-grey-200, #ebedf0);
+  border: 1.5px solid var(--color-border, #ebedf0);
   border-radius: 9px;
-  background: var(--smax-bg, #fff);
+  background: var(--color-surface, #fff);
   transition: border-color 0.2s, box-shadow 0.2s;
   position: relative;
   /* Anh chốt 2026-05-22 (issue 1): overflow:hidden để border-radius CLIP content
@@ -782,16 +782,16 @@ onBeforeUnmount(() => { editor.value?.destroy(); });
 }
 .rich-text-editor.focused,
 .rich-text-editor:focus-within {
-  border-color: var(--smax-primary, #2962ff);
+  border-color: var(--color-primary, #2962ff);
   box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.10);
 }
 
 .editor-toolbar {
   height: 30px;
   padding: 3px 4px;
-  border-bottom: 1px solid var(--smax-grey-100, #f5f6fa);
+  border-bottom: 1px solid var(--color-bg, #f5f6fa);
   overflow: hidden;
-  background: var(--smax-grey-50, #fafbfc);
+  background: var(--color-surface-secondary, #fafbfc);
 }
 
 /* Color trigger — kiểu Word/Office: chữ A có gạch dưới = màu hiện tại */
@@ -805,10 +805,10 @@ onBeforeUnmount(() => { editor.value?.destroy(); });
   transition: background 0.12s ease;
   position: relative;
 }
-.color-trigger:hover { background: var(--smax-grey-100, #f3f4f6); }
+.color-trigger:hover { background: var(--color-bg, #f3f4f6); }
 .color-trigger-A {
   font-size: 14px; font-weight: 700;
-  color: var(--smax-text, #212121);
+  color: var(--color-text, #212121);
   line-height: 1;
   margin-bottom: 2px;
 }
@@ -816,7 +816,7 @@ onBeforeUnmount(() => { editor.value?.destroy(); });
   display: block;
   width: 18px; height: 4px;
   border-radius: 1px;
-  border: 1px solid var(--smax-grey-200, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   background: transparent;
 }
 
@@ -830,7 +830,7 @@ onBeforeUnmount(() => { editor.value?.destroy(); });
 }
 .palette-title {
   font-size: 11px; font-weight: 700; text-transform: uppercase;
-  color: var(--smax-grey-500, #6b7280);
+  color: var(--color-text-muted, #6b7280);
   margin-bottom: 8px;
   letter-spacing: 0.04em;
 }
@@ -848,7 +848,7 @@ onBeforeUnmount(() => { editor.value?.destroy(); });
   padding: 0;
   display: flex; align-items: center; justify-content: center;
   font-size: 14px; font-weight: 700;
-  color: var(--smax-text);
+  color: var(--color-text);
   transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 .color-swatch-v2:hover {
@@ -856,10 +856,10 @@ onBeforeUnmount(() => { editor.value?.destroy(); });
   box-shadow: 0 2px 6px rgba(0,0,0,0.12);
 }
 .color-swatch-v2.active {
-  border-color: var(--smax-primary, #2962ff);
-  box-shadow: 0 0 0 2px var(--smax-primary-soft, #e3f2fd);
+  border-color: var(--color-primary, #2962ff);
+  box-shadow: 0 0 0 2px var(--color-primary-subtle, #e3f2fd);
 }
-.swatch-default-mark { color: var(--smax-text); font-size: 13px; }
+.swatch-default-mark { color: var(--color-text); font-size: 13px; }
 .swatch-check { color: white; font-size: 13px; font-weight: 700; text-shadow: 0 0 2px rgba(0,0,0,0.4); }
 
 /* Size trigger — button có icon + label hiện size đang chọn */
@@ -870,10 +870,10 @@ onBeforeUnmount(() => { editor.value?.destroy(); });
   border: 0; background: transparent;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 12px; color: var(--smax-text);
+  font-size: 12px; color: var(--color-text);
   transition: background 0.12s ease;
 }
-.size-trigger:hover { background: var(--smax-grey-100, #f3f4f6); }
+.size-trigger:hover { background: var(--color-bg, #f3f4f6); }
 .size-trigger-label { font-weight: 500; }
 
 /* Size dropdown */
@@ -894,16 +894,16 @@ onBeforeUnmount(() => { editor.value?.destroy(); });
   cursor: pointer;
   border-radius: 5px;
   font-family: inherit;
-  color: var(--smax-text);
+  color: var(--color-text);
   transition: background 0.12s ease;
 }
-.size-item:hover { background: var(--smax-grey-100, #f3f4f6); }
+.size-item:hover { background: var(--color-bg, #f3f4f6); }
 .size-item.active {
-  background: var(--smax-primary-soft, #e3f2fd);
-  color: var(--smax-primary, #2962ff);
+  background: var(--color-primary-subtle, #e3f2fd);
+  color: var(--color-primary, #2962ff);
   font-weight: 600;
 }
-.size-check { color: var(--smax-primary, #2962ff); font-weight: 700; }
+.size-check { color: var(--color-primary, #2962ff); font-weight: 700; }
 
 /* AI Format button — gradient tím-xanh kiểu "magic" */
 .ai-format-btn {
@@ -940,7 +940,7 @@ onBeforeUnmount(() => { editor.value?.destroy(); });
   outline: none;
   font-size: 14px;
   line-height: 1.5;
-  color: var(--smax-text, #212121);
+  color: var(--color-text, #212121);
   box-sizing: border-box;
 }
 .editor-content :deep(.tiptap-input p) { margin: 0; }
@@ -954,21 +954,21 @@ onBeforeUnmount(() => { editor.value?.destroy(); });
 .editor-content :deep(.tiptap-input p.is-editor-empty:first-child::before) {
   content: attr(data-placeholder);
   float: left;
-  color: var(--smax-grey-300, #d4d8de);
+  color: var(--color-border-strong, #d4d8de);
   font-style: italic;
   pointer-events: none;
   height: 0;
 }
 .editor-content :deep(.tiptap-input code) {
-  background: var(--smax-primary-soft, #e3f2fd);
-  color: var(--smax-primary, #2962ff);
+  background: var(--color-primary-subtle, #e3f2fd);
+  color: var(--color-primary, #2962ff);
   padding: 2px 5px;
   border-radius: 4px;
   font-size: 0.9em;
   font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
 }
 .editor-content :deep(.tiptap-input pre) {
-  background: var(--smax-grey-100, #f5f6fa);
+  background: var(--color-bg, #f5f6fa);
   padding: 8px 12px;
   border-radius: 7px;
   font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
@@ -977,8 +977,8 @@ onBeforeUnmount(() => { editor.value?.destroy(); });
 
 /* @mention node trong editor — pill xanh nhạt giống Zalo */
 .editor-content :deep(.tiptap-input .mention) {
-  color: var(--smax-primary, #2962ff);
-  background: var(--smax-primary-soft, #e3f2fd);
+  color: var(--color-primary, #2962ff);
+  background: var(--color-primary-subtle, #e3f2fd);
   border-radius: 4px;
   padding: 0 3px;
   font-weight: 600;

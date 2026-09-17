@@ -270,53 +270,53 @@ onMounted(reload);
 <style scoped>
 .mp-pop { position:absolute; inset:0 0 auto 0; bottom:100%; z-index:40; }
 .mp-card {
-  --ink:#181d26; --muted:#41454d; --hairline:#dddddd; --canvas:#fff; --soft:#f8fafc; --coral:#aa2d00; --forest:#006400;
-  background:var(--soft); border:1px solid var(--hairline); border-radius:10px 10px 0 0;
+  --coral:#aa2d00; --forest:#006400;
+  background:var(--color-surface-secondary); border:1px solid var(--color-border); border-radius:10px 10px 0 0;
   border-bottom:none; padding:12px 14px; max-height:400px; display:flex; flex-direction:column;
   box-shadow:0 -4px 16px rgba(0,0,0,.06);
 }
 .mp-row1 { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-.mp-search { flex:1; border:1px solid var(--hairline); border-radius:6px; padding:5px 10px; font-size:12px; outline:none; }
-.mp-filter-btn { border:1px solid var(--hairline); background:var(--canvas); border-radius:6px; padding:5px 10px; font-size:11.5px; cursor:pointer; color:var(--muted); }
-.mp-filter-btn.on { background:var(--ink); color:#fff; border-color:var(--ink); }
-.mp-x { border:none; background:none; cursor:pointer; color:var(--muted); }
+.mp-search { flex:1; border:1px solid var(--color-border); border-radius:6px; padding:5px 10px; font-size:12px; outline:none; }
+.mp-filter-btn { border:1px solid var(--color-border); background:var(--color-surface); border-radius:6px; padding:5px 10px; font-size:11.5px; cursor:pointer; color:var(--color-text-muted); }
+.mp-filter-btn.on { background:var(--color-text); color:#fff; border-color:var(--color-text); }
+.mp-x { border:none; background:none; cursor:pointer; color:var(--color-text-muted); }
 .mp-lever1 { display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
-.seg { display:inline-flex; border:1px solid var(--hairline); border-radius:9999px; overflow:hidden; font-size:11.5px; background:var(--canvas); }
-.seg span { padding:4px 11px; cursor:pointer; color:var(--muted); white-space:nowrap; }
-.seg span.on { background:var(--ink); color:#fff; }
+.seg { display:inline-flex; border:1px solid var(--color-border); border-radius:9999px; overflow:hidden; font-size:11.5px; background:var(--color-surface); }
+.seg span { padding:4px 11px; cursor:pointer; color:var(--color-text-muted); white-space:nowrap; }
+.seg span.on { background:var(--color-text); color:#fff; }
 .mp-lever2 { display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap; }
-.mp-sel { border:1px solid var(--hairline); border-radius:6px; padding:4px 8px; font-size:11.5px; color:var(--ink); background:var(--canvas); outline:none; }
-.mp-tag-input { border:1px solid var(--hairline); border-radius:6px; padding:4px 9px; font-size:11.5px; width:90px; outline:none; }
-.mp-multibar { display:flex; align-items:center; gap:12px; margin-bottom:8px; font-size:12px; color:var(--muted); }
+.mp-sel { border:1px solid var(--color-border); border-radius:6px; padding:4px 8px; font-size:11.5px; color:var(--color-text); background:var(--color-surface); outline:none; }
+.mp-tag-input { border:1px solid var(--color-border); border-radius:6px; padding:4px 9px; font-size:11.5px; width:90px; outline:none; }
+.mp-multibar { display:flex; align-items:center; gap:12px; margin-bottom:8px; font-size:12px; color:var(--color-text-muted); }
 .mp-toggle { display:inline-flex; align-items:center; gap:6px; cursor:pointer; user-select:none; }
-.mp-toggle input { accent-color:var(--ink); cursor:pointer; }
-.mp-count { color:var(--ink); font-weight:500; }
-.mp-send-album { margin-left:auto; border:none; background:var(--ink); color:#fff; border-radius:6px; padding:5px 14px; font-size:12px; font-weight:500; cursor:pointer; }
+.mp-toggle input { accent-color:var(--color-text); cursor:pointer; }
+.mp-count { color:var(--color-text); font-weight:500; }
+.mp-send-album { margin-left:auto; border:none; background:var(--color-text); color:#fff; border-radius:6px; padding:5px 14px; font-size:12px; font-weight:500; cursor:pointer; }
 .mp-send-album:disabled { opacity:.45; cursor:default; }
 .mp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(78px,1fr)); gap:8px; overflow:auto; }
-.mp-cell { border:1px solid var(--hairline); border-radius:6px; overflow:hidden; cursor:pointer; background:var(--canvas); padding:0; position:relative; }
+.mp-cell { border:1px solid var(--color-border); border-radius:6px; overflow:hidden; cursor:pointer; background:var(--color-surface); padding:0; position:relative; }
 .mp-cell:disabled { opacity:.6; }
-.mp-cell.picked { border-color:var(--ink); box-shadow:0 0 0 2px var(--ink) inset; }
+.mp-cell.picked { border-color:var(--color-text); box-shadow:0 0 0 2px var(--color-text) inset; }
 .mp-cell img { width:100%; height:56px; object-fit:cover; display:block; }
-.mp-cell .ph { display:flex; align-items:center; justify-content:center; height:56px; font-size:22px; background:#e0e2e6; color:var(--muted); }
+.mp-cell .ph { display:flex; align-items:center; justify-content:center; height:56px; font-size:22px; background:#e0e2e6; color:var(--color-text-muted); }
 .mp-play { position:absolute; top:50%; left:50%; transform:translate(-50%,-58%); width:24px; height:24px; border-radius:9999px; background:rgba(0,0,0,.5); color:#fff; font-size:11px; display:flex; align-items:center; justify-content:center; pointer-events:none; }
 .mp-dur { position:absolute; bottom:22px; right:3px; background:rgba(0,0,0,.72); color:#fff; border-radius:3px; padding:0 4px; font-size:9.5px; font-variant-numeric:tabular-nums; pointer-events:none; }
-.mp-name { display:block; font-size:10px; padding:3px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--ink); }
+.mp-name { display:block; font-size:10px; padding:3px 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--color-text); }
 
 /* TỆP — list theo dòng (anh chốt: grid card không phân biệt được tệp nào). */
 .mp-list { overflow:auto; display:flex; flex-direction:column; }
-.mp-fitem { display:flex; align-items:center; gap:10px; width:100%; padding:8px 8px; border:none; background:none; border-bottom:1px solid var(--hairline); cursor:pointer; text-align:left; }
+.mp-fitem { display:flex; align-items:center; gap:10px; width:100%; padding:8px 8px; border:none; background:none; border-bottom:1px solid var(--color-border); cursor:pointer; text-align:left; }
 .mp-fitem:last-child { border-bottom:none; }
-.mp-fitem:hover { background:var(--canvas); }
+.mp-fitem:hover { background:var(--color-surface); }
 .mp-fitem:disabled { opacity:.55; }
 .mp-ficon { width:38px; height:38px; flex-shrink:0; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:700; letter-spacing:.02em; }
 .mp-finfo { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
-.mp-fname { font-size:12.5px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.mp-fmeta { font-size:11px; color:var(--muted); }
-.mp-fsend { font-size:11.5px; color:var(--ink); font-weight:500; flex-shrink:0; }
-.mp-fsending { font-size:11px; color:var(--muted); flex-shrink:0; }
+.mp-fname { font-size:12.5px; color:var(--color-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mp-fmeta { font-size:11px; color:var(--color-text-muted); }
+.mp-fsend { font-size:11.5px; color:var(--color-text); font-weight:500; flex-shrink:0; }
+.mp-fsending { font-size:11px; color:var(--color-text-muted); flex-shrink:0; }
 .mp-check { position:absolute; top:4px; right:4px; width:19px; height:19px; border-radius:9999px; border:1.5px solid #fff; background:rgba(24,29,38,.35); color:#fff; font-size:11.5px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 1px 3px rgba(0,0,0,.25); }
-.mp-check.on { background:var(--ink); }
-.mp-sending { position:absolute; inset:0; background:rgba(255,255,255,.8); display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--ink); }
-.mp-empty { padding:24px 12px; text-align:center; font-size:12.5px; color:var(--muted); }
+.mp-check.on { background:var(--color-text); }
+.mp-sending { position:absolute; inset:0; background:rgba(255,255,255,.8); display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--color-text); }
+.mp-empty { padding:24px 12px; text-align:center; font-size:12.5px; color:var(--color-text-muted); }
 </style>

@@ -618,7 +618,7 @@ function onboardingTooltip(s: OnboardingSummary): string {
   color: #41454d;
   background: #f0f1f3;
   padding: 6px 12px;
-  border-radius: 9999px;
+  border-radius: var(--radius-pill);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -637,7 +637,7 @@ function onboardingTooltip(s: OnboardingSummary): string {
   background: #f0f1f3;
   border: 1px solid transparent;
   padding: 6px 13px;
-  border-radius: 9999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.12s;
@@ -645,27 +645,27 @@ function onboardingTooltip(s: OnboardingSummary): string {
 }
 .status-chip:hover { background: #e4e6e9; }
 .status-chip.active {
-  background: var(--smax-primary-soft, #e4f1f8);
-  border-color: var(--smax-primary, #1786be);
-  color: var(--smax-primary, #1786be);
+  background: var(--color-primary-subtle, #e4f1f8);
+  border-color: var(--color-primary, #1786be);
+  color: var(--color-primary, #1786be);
   font-weight: 600;
 }
-.status-chip:focus-visible { outline: 2px solid var(--smax-primary, #1786be); outline-offset: 1px; }
+.status-chip:focus-visible { outline: 2px solid var(--color-primary, #1786be); outline-offset: 1px; }
 
 /* 2026-06-09 — Thao tác hàng loạt */
 .bulk-bar {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  background: #e4f1f8; border: 1px solid #1786be; border-radius: 10px;
+  background: var(--color-primary-subtle); border: 1px solid var(--color-primary); border-radius: var(--radius-lg);
   padding: 10px 14px; margin-bottom: 12px;
 }
 .bulk-count { font-weight: 600; color: #0e6491; font-size: 13px; }
 .bulk-select {
-  font-size: 13px; padding: 6px 10px; border: 1px solid #bae6fd; border-radius: 8px;
-  background: #fff; color: #2b2f36;
+  font-size: 13px; padding: 6px 10px; border: 1px solid #bae6fd; border-radius: var(--radius-md);
+  background: var(--color-surface); color: #2b2f36;
 }
 .bulk-apply {
-  background: #1786be; color: #fff; border: none; font-weight: 600;
-  padding: 7px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;
+  background: #1786be; color: var(--color-on-primary); border: none; font-weight: 600;
+  padding: 7px 16px; border-radius: var(--radius-md); cursor: pointer; font-size: 13px;
 }
 .bulk-apply:hover:not(:disabled) { background: #0e6491; }
 .bulk-apply:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -753,7 +753,7 @@ function onboardingTooltip(s: OnboardingSummary): string {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  color: white;
+  color: var(--color-on-primary);
   font-size: 11px;
   font-weight: 700;
   display: flex;
@@ -813,7 +813,7 @@ function onboardingTooltip(s: OnboardingSummary): string {
   align-items: center;
   gap: 6px;
   padding: 3px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: #fef3e2;
   border: 1px solid #fbc02d55;
   font-size: 12px;
@@ -840,7 +840,7 @@ function onboardingTooltip(s: OnboardingSummary): string {
   align-items: center;
   gap: 6px;
   padding: 3px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: #ECFDF5;
   border: 1px solid #10B98155;
   font-size: 12px;
@@ -854,7 +854,7 @@ function onboardingTooltip(s: OnboardingSummary): string {
   font-size: 10px;
   font-weight: 600;
   background: #10B981;
-  color: white;
+  color: var(--color-on-primary);
   padding: 1px 6px;
   border-radius: 4px;
   letter-spacing: 0.2px;
@@ -864,7 +864,7 @@ function onboardingTooltip(s: OnboardingSummary): string {
   display: inline-flex;
   align-items: center;
   padding: 3px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: #FEF3C7;
   border: 1px solid #F59E0B55;
   color: #92400E;
@@ -876,7 +876,7 @@ function onboardingTooltip(s: OnboardingSummary): string {
   display: inline-flex;
   align-items: center;
   padding: 3px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: #DBEAFE;
   border: 1px solid #3B82F655;
   color: #1E40AF;
@@ -888,7 +888,7 @@ function onboardingTooltip(s: OnboardingSummary): string {
   display: inline-flex;
   align-items: center;
   padding: 3px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: #FEE2E2;
   border: 1px solid #EF444455;
   color: #B91C1C;
@@ -913,7 +913,7 @@ function onboardingTooltip(s: OnboardingSummary): string {
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  border-radius: 9999px;
+  border-radius: var(--radius-pill);
   font-size: 11px;
   font-weight: 500;
   white-space: nowrap;
@@ -957,7 +957,7 @@ function onboardingTooltip(s: OnboardingSummary): string {
   border: 1px solid #dddddd;
   width: 28px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   color: #41454d;
   font-size: 12px;
@@ -965,7 +965,7 @@ function onboardingTooltip(s: OnboardingSummary): string {
 }
 .at-btn-icon:hover {
   background: #181d26;
-  color: white;
+  color: var(--color-on-primary);
   border-color: #181d26;
 }
 
@@ -974,8 +974,8 @@ function onboardingTooltip(s: OnboardingSummary): string {
 .hero-right { flex-shrink: 0; }
 
 .btn-primary {
-  background: #5E6AD2; color: white; border: none;
-  padding: 10px 18px; border-radius: 10px;
+  background: #5E6AD2; color: var(--color-on-primary); border: none;
+  padding: 10px 18px; border-radius: var(--radius-lg);
   font-weight: 700; font-size: 13.5px; cursor: pointer; font-family: inherit;
   display: inline-flex; align-items: center; gap: 6px;
   transition: background 0.15s;
@@ -986,8 +986,8 @@ function onboardingTooltip(s: OnboardingSummary): string {
 .mt-3 { margin-top: 12px; }
 
 .btn-cancel {
-  background: white; color: #374151; border: 1px solid #D1D5DB;
-  padding: 10px 18px; border-radius: 10px;
+  background: white; color: var(--color-text-secondary); border: 1px solid #D1D5DB;
+  padding: 10px 18px; border-radius: var(--radius-lg);
   font-weight: 600; font-size: 13px; cursor: pointer; font-family: inherit;
 }
 .btn-cancel:hover:not(:disabled) { background: #F9FAFB; }
@@ -1012,18 +1012,18 @@ function onboardingTooltip(s: OnboardingSummary): string {
 .create-head h2 { margin: 0; font-size: 17px; font-weight: 700; color: #0F172A; }
 .create-close {
   background: transparent; border: none; cursor: pointer;
-  color: #6B7280; font-size: 18px; font-weight: 700; font-family: inherit;
-  padding: 4px 10px; border-radius: 6px;
+  color: var(--color-text-muted); font-size: 18px; font-weight: 700; font-family: inherit;
+  padding: 4px 10px; border-radius: var(--radius-sm);
 }
-.create-close:hover { background: #F3F4F6; color: #DC2626; }
+.create-close:hover { background: var(--color-surface-secondary); color: #DC2626; }
 
 .create-form { padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; }
 .create-label {
   display: flex; flex-direction: column; gap: 5px;
-  font-size: 12.5px; font-weight: 600; color: #374151;
+  font-size: 12.5px; font-weight: 600; color: var(--color-text-secondary);
 }
 .create-label input, .create-label select {
-  padding: 10px 12px; border: 1.5px solid #E5E7EB; border-radius: 9px;
+  padding: 10px 12px; border: 1.5px solid var(--color-border); border-radius: 9px;
   font-size: 14px; font-family: inherit; outline: none; transition: border-color 0.15s;
 }
 .create-label input:focus, .create-label select:focus { border-color: #5E6AD2; }
@@ -1032,17 +1032,17 @@ function onboardingTooltip(s: OnboardingSummary): string {
 .pw-row { display: flex; gap: 6px; align-items: center; }
 .pw-row input { flex: 1; }
 .pw-toggle, .pw-gen {
-  background: white; border: 1.5px solid #E5E7EB; border-radius: 8px;
+  background: white; border: 1.5px solid var(--color-border); border-radius: var(--radius-md);
   width: 38px; height: 38px; cursor: pointer; font-size: 15px; font-family: inherit;
   display: flex; align-items: center; justify-content: center;
 }
 .pw-toggle:hover, .pw-gen:hover { background: #F9FAFB; border-color: #C7D2FE; }
 
-.hint { color: #6B7280; font-size: 11.5px; font-weight: 400; line-height: 1.5; }
+.hint { color: var(--color-text-muted); font-size: 11.5px; font-weight: 400; line-height: 1.5; }
 
 .create-error {
   background: #FEF2F2; color: #B91C1C; border: 1px solid #FCA5A5;
-  padding: 9px 13px; border-radius: 8px; font-size: 12.5px;
+  padding: 9px 13px; border-radius: var(--radius-md); font-size: 12.5px;
 }
 
 .create-actions { display: flex; gap: 10px; justify-content: flex-end; padding-top: 6px; }
@@ -1059,19 +1059,19 @@ function onboardingTooltip(s: OnboardingSummary): string {
   font-size: 32px;
 }
 .create-success h3 { margin: 0; font-size: 18px; font-weight: 700; color: #047857; }
-.create-success p { margin: 0; font-size: 13.5px; color: #374151; }
+.create-success p { margin: 0; font-size: 13.5px; color: var(--color-text-secondary); }
 .cs-credentials {
-  width: 100%; background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 10px;
+  width: 100%; background: #F9FAFB; border: 1px solid var(--color-border); border-radius: var(--radius-lg);
   padding: 12px 16px; display: flex; flex-direction: column; gap: 8px;
 }
 .cs-row { display: flex; align-items: baseline; gap: 10px; font-size: 12.5px; flex-wrap: wrap; }
-.cs-row span { color: #6B7280; min-width: 110px; }
+.cs-row span { color: var(--color-text-muted); min-width: 110px; }
 .cs-row code {
   background: white; padding: 3px 9px; border-radius: 5px;
-  border: 1px solid #E5E7EB; font-family: ui-monospace, monospace; font-size: 12px;
+  border: 1px solid var(--color-border); font-family: ui-monospace, monospace; font-size: 12px;
   word-break: break-all; flex: 1;
 }
-.cs-note { font-size: 11.5px; color: #6B7280; font-style: italic; }
+.cs-note { font-size: 11.5px; color: var(--color-text-muted); font-style: italic; }
 .cs-actions { display: flex; gap: 10px; width: 100%; margin-top: 4px; }
 .cs-actions button { flex: 1; }
 </style>

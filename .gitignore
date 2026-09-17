@@ -5,6 +5,22 @@ dist/
 backups/
 .DS_Store
 .gstack/
+tmp/
+test/
+.agents/
+.env.local
+.local/
+.claude/
+.understand-anything/
+CLAUDE.md
+inspect-*.mjs
+inspect-log.mjs
+.llms-ai-backend/
+frontend/.capture-submit.js
+_chat_ui_backups/
+.agent-sync.yml
+.plan.yml
+
 
 # Local dev artifacts — không commit
 .backfill*.sql
@@ -32,7 +48,6 @@ screenshots/
 inspect-log.mjs
 inspect-*.mjs
 /plans/
-AGENTS.md
 TODOS.md
 frontend/public/mockups/
 
@@ -49,3 +64,5 @@ secrets/
 # Telegram
 public-key-telegram
 public-key-telegram-product
+.codegraph/
+backend/uploads/

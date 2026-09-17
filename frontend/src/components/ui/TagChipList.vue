@@ -82,7 +82,7 @@ function remove(tag: string) {
   font-size: 11px;
   display: inline-flex; align-items: center; gap: 4px;
 }
-.chip-grey    { background: rgba(90,100,120,0.10); color: var(--smax-grey-700); }
+.chip-grey    { background: rgba(90,100,120,0.10); color: var(--color-text-secondary); }
 .chip-info    { background: rgba(33,150,243,0.12); color: #1565c0; }
 .chip-zalo    { background: rgba(255,167,38,0.18); color: #ef6c00; }
 .chip-success { background: rgba(0,200,83,0.12);   color: #00897b; }
@@ -92,12 +92,12 @@ function remove(tag: string) {
   opacity: 0.55;
   font-weight: 700;
 }
-.tag-chip .x:hover { opacity: 1; color: var(--smax-error); }
+.tag-chip .x:hover { opacity: 1; color: var(--color-danger); }
 
 .tag-chip.add {
   background: transparent;
-  border: 1px dashed var(--smax-grey-300);
-  color: var(--smax-grey-700);
+  border: 1px dashed var(--color-border-strong);
+  color: var(--color-text-secondary);
   cursor: pointer;
   padding: 2px 7px;
   border-radius: 7px;
@@ -105,13 +105,13 @@ function remove(tag: string) {
   font-size: 11px;
 }
 .tag-chip.add:hover {
-  background: var(--smax-grey-50);
-  border-color: var(--smax-primary);
-  color: var(--smax-primary);
+  background: var(--color-surface-secondary);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .tag-input {
-  border: 1px solid var(--smax-primary);
+  border: 1px solid var(--color-primary);
   outline: none;
   padding: 2px 7px;
   border-radius: 7px;
@@ -120,5 +120,5 @@ function remove(tag: string) {
   font-family: inherit;
 }
 
-.empty { color: var(--smax-grey-300); font-size: 11px; }
+.empty { color: var(--color-border-strong); font-size: 11px; }
 </style>

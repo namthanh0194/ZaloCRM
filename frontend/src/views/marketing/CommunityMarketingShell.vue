@@ -51,17 +51,17 @@ function isActive(to: string): boolean {
 <style scoped>
 .ce-marketing-shell { display: flex; height: 100%; min-height: 0; }
 .ce-mkt-sidebar {
-  flex: 0 0 220px; border-right: 1px solid var(--border, #e5e4e7);
-  background: #fbfbfc; display: flex; flex-direction: column; padding: 12px 8px;
+  flex: 0 0 220px; border-right: 1px solid var(--color-border, #e7eaf0);
+  background: var(--color-surface-secondary); display: flex; flex-direction: column; padding: 12px 8px;
 }
 .ce-mkt-header {
   display: flex; align-items: center; gap: 8px; padding: 8px 10px 12px;
-  font-weight: 700; color: #0e445a; font-size: 15px;
+  font-weight: 700; color: var(--color-text); font-size: 15px;
 }
 .ce-mkt-nav { display: flex; flex-direction: column; gap: 2px; }
 .ce-mkt-link {
   display: flex; align-items: center; gap: 10px; padding: 9px 12px;
-  border-radius: 8px; color: #44505c; text-decoration: none; font-size: 14px;
+  border-radius: var(--radius-md); color: var(--color-text-secondary); text-decoration: none; font-size: 14px;
 }
 .ce-mkt-link:hover { background: rgba(15, 111, 160, 0.08); }
 .ce-mkt-link.is-active { background: rgba(15, 111, 160, 0.14); color: #0e445a; font-weight: 600; }

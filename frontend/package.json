@@ -1,16 +1,20 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "3.4.0",
+  "version": "3.6.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
+    "check:legacy-tokens": "node scripts/check-legacy-tokens.mjs",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check:ui-tokens": "node scripts/check-ui-tokens.mjs"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/roboto-mono": "^5.3.0",
     "@mdi/font": "^7.4.47",
     "@tiptap/extension-mention": "^3.22.3",
     "@tiptap/extension-placeholder": "^3.22.3",

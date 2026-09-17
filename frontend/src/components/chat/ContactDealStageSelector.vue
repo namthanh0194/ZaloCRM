@@ -274,8 +274,8 @@ onMounted(() => {
 }
 
 .is-selected {
-  background: var(--smax-primary-soft, rgba(59, 130, 246, 0.08)) !important;
-  color: var(--smax-primary, #1d4ed8);
+  background: var(--color-primary-subtle, rgba(59, 130, 246, 0.08)) !important;
+  color: var(--color-primary, #1d4ed8);
   font-weight: 600;
 }
 </style>

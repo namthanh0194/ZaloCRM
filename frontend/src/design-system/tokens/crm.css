@@ -1,0 +1,22 @@
+/* CRM domain tokens. Keep CRM-only visual meanings out of global semantics. */
+:root {
+  --crm-accent-purple: var(--z-purple-500);
+
+  /* Lead stage tokens */
+  --crm-lead-active-bg: var(--color-success-subtle, #e7f7ef);
+  --crm-lead-active-text: var(--color-success, #12b76a);
+  --crm-lead-stuck-bg: var(--color-danger-subtle, #fdeceb);
+  --crm-lead-stuck-text: var(--color-danger, #f04438);
+  --crm-lead-cold-bg: #dbeafe;
+  --crm-lead-cold-text: #1e40af;
+  --crm-lead-cooling-bg: #e0f2fe;
+  --crm-lead-cooling-text: #075985;
+  --crm-lead-frozen-bg: var(--color-surface-secondary, #f1f4f9);
+  --crm-lead-frozen-text: var(--color-text-muted, #6b7488);
+  --crm-lead-ready-bg: var(--color-warning-subtle, #fdf3e2);
+  --crm-lead-ready-text: #b45309;
+  --crm-lead-rewarmed-bg: #fce7f3;
+  --crm-lead-rewarmed-text: #be185d;
+  --crm-lead-atrisk-bg: #fed7aa;
+  --crm-lead-atrisk-text: #9a3412;
+}

@@ -617,7 +617,7 @@ async function seedDefaults() {
   display: flex;
   gap: 10px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: background 0.1s;
   align-items: stretch;
@@ -668,7 +668,7 @@ async function seedDefaults() {
   border: 1px dashed #9297a0;
   color: #41454d;
   padding: 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -784,7 +784,7 @@ async function seedDefaults() {
   letter-spacing: 0.3px;
   transition: all 0.1s;
 }
-.th-bulk-btn:hover { background: #181d26; color: white; border-color: #181d26; }
+.th-bulk-btn:hover { background: #181d26; color: var(--color-on-primary); border-color: #181d26; }
 .pg-matrix thead .th-row-bulk { min-width: 70px; }
 
 .pg-matrix tbody tr {
@@ -827,7 +827,7 @@ async function seedDefaults() {
   font-variant-numeric: tabular-nums;
   background: #f0f1f3;
   padding: 2px 8px;
-  border-radius: 9999px;
+  border-radius: var(--radius-pill);
   font-weight: 500;
 }
 .pg-matrix tbody tr.row-full .resource-count {
@@ -863,7 +863,7 @@ async function seedDefaults() {
 .at-checkbox.checked .at-checkbox-box {
   background: #0a2e0e;
   border-color: #0a2e0e;
-  color: white;
+  color: var(--color-on-primary);
 }
 .at-checkbox.checked:hover .at-checkbox-box { background: #07210a; }
 .at-checkbox input:disabled + .at-checkbox-box { opacity: 0.5; cursor: not-allowed; }
@@ -892,7 +892,7 @@ async function seedDefaults() {
   padding: 16px;
   background: #fbe6dc;
   border: 1px solid rgba(170,45,0,0.2);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -905,11 +905,11 @@ async function seedDefaults() {
   border: 1px solid #aa2d00;
   color: #aa2d00;
   padding: 8px 16px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
 }
-.btn-danger:hover { background: #aa2d00; color: white; }
+.btn-danger:hover { background: #aa2d00; color: var(--color-on-primary); }
 </style>

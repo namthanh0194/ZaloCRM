@@ -192,7 +192,7 @@ const platformBadgeStyle = computed(() => {
   /* Vòng viền xanh đậm — đặc trưng cho group */
   outline: 2px solid #0D47A1;
   outline-offset: -1px;
-  box-shadow: 0 0 0 1px var(--smax-bg, white);
+  box-shadow: 0 0 0 1px var(--color-surface, white);
 }
 
 /* Group sticker (góc phải trên) — Material group icon, nền xanh đậm.
@@ -201,7 +201,7 @@ const platformBadgeStyle = computed(() => {
   position: absolute;
   background: #0D47A1;
   border-radius: 50%;
-  border: 1.5px solid var(--smax-bg, white);
+  border: 1.5px solid var(--color-surface, white);
   box-sizing: border-box;
   z-index: 2;
   pointer-events: none;
@@ -218,12 +218,12 @@ const platformBadgeStyle = computed(() => {
 .av-members {
   position: absolute;
   bottom: -3px; right: -3px;
-  background: var(--smax-primary, #2962ff);
+  background: var(--color-primary, #2962ff);
   color: white;
   border-radius: 999px;
   font-weight: 700;
   text-align: center;
-  border: 2px solid var(--smax-bg, white);
+  border: 2px solid var(--color-surface, white);
   padding: 0 4px;
   box-sizing: content-box;
   z-index: 2;
@@ -235,13 +235,13 @@ const platformBadgeStyle = computed(() => {
   position: absolute;
   bottom: -2px; right: -3px;
   border-radius: 50%;
-  border: 2.5px solid var(--smax-bg, white);
+  border: 2.5px solid var(--color-surface, white);
   display: flex; align-items: center; justify-content: center;
   color: white; font-weight: 700;
   z-index: 2;
 }
-.gender-female { background: var(--smax-female, #e91e63); }
-.gender-male   { background: var(--smax-male, #1e88e5); }
+.gender-female { background: var(--chat-female, #e91e63); }
+.gender-male   { background: var(--chat-male, #1e88e5); }
 
 /* Platform mark Z (Zalo) — chỉ user thread khi không có gender */
 .av-platform {
@@ -250,7 +250,7 @@ const platformBadgeStyle = computed(() => {
   background: #0068ff;
   color: white;
   border-radius: 50%;
-  border: 2px solid var(--smax-bg, white);
+  border: 2px solid var(--color-surface, white);
   font-weight: 700;
   display: flex; align-items: center; justify-content: center;
   z-index: 1;

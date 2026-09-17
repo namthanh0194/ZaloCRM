@@ -290,7 +290,7 @@ function onSlotClick(date: Date, hour: number, minute: number) {
 .apt-week {
   display: grid; grid-template-rows: auto 1fr;
   height: 100%;
-  background: var(--at-canvas);
+  background: var(--color-surface);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
@@ -298,43 +298,43 @@ function onSlotClick(date: Date, hour: number, minute: number) {
 .cal-head {
   display: grid;
   grid-template-columns: 60px repeat(7, 1fr);
-  border-bottom: 1px solid var(--at-hairline);
+  border-bottom: 1px solid var(--color-border);
 }
-.cal-head .corner { border-right: 1px solid var(--at-hairline); }
+.cal-head .corner { border-right: 1px solid var(--color-border); }
 .cal-head .dcol {
-  padding: var(--at-s-sm) var(--at-s-xs);
-  border-right: 1px solid var(--at-hairline);
+  padding: var(--space-3) var(--space-2);
+  border-right: 1px solid var(--color-border);
   text-align: center;
-  background: var(--at-canvas);
+  background: var(--color-surface);
 }
 .cal-head .dcol .dow {
   font-size: 10.5px;
   text-transform: uppercase;
-  color: var(--at-muted);
+  color: var(--color-text-muted);
   font-weight: 500;
   letter-spacing: 0.08em;
 }
 .cal-head .dcol .date {
   font-size: 20px;
   font-weight: 400;
-  color: var(--at-ink);
+  color: var(--color-text);
   line-height: 1;
   margin-top: 2px;
 }
-.cal-head .dcol.today .dow { color: var(--at-coral); }
+.cal-head .dcol.today .dow { color: var(--color-danger); }
 .cal-head .dcol.today .date {
   display: inline-flex;
   align-items: center; justify-content: center;
   width: 32px; height: 32px;
-  background: var(--at-ink);
-  color: var(--at-on-primary);
-  border-radius: var(--at-r-pill);
+  background: var(--color-text);
+  color: var(--color-on-primary);
+  border-radius: var(--radius-pill);
   font-size: 16px;
   font-weight: 500;
 }
 .cal-head .dcol .count {
   font-size: 10px;
-  color: var(--at-muted);
+  color: var(--color-text-muted);
   margin-top: 2px;
   font-weight: 500;
 }
@@ -345,16 +345,16 @@ function onSlotClick(date: Date, hour: number, minute: number) {
   overflow-y: auto;
   display: grid;
   grid-template-columns: 60px repeat(7, 1fr);
-  background: var(--at-canvas);
+  background: var(--color-surface);
 }
 
 /* Time column */
-.timecol { border-right: 1px solid var(--at-hairline); }
+.timecol { border-right: 1px solid var(--color-border); }
 .timecol .slot {
   height: 48px;
-  border-bottom: 1px solid var(--at-hairline);
+  border-bottom: 1px solid var(--color-border);
   font-size: 10.5px;
-  color: var(--at-muted);
+  color: var(--color-text-muted);
   padding: 2px 6px;
   text-align: right;
   font-weight: 500;
@@ -364,21 +364,21 @@ function onSlotClick(date: Date, hour: number, minute: number) {
 
 /* Day columns */
 .daycol {
-  border-right: 1px solid var(--at-hairline);
+  border-right: 1px solid var(--color-border);
   position: relative;
 }
 .daycol .slot {
   height: 48px;
-  border-bottom: 1px solid var(--at-hairline);
+  border-bottom: 1px solid var(--color-border);
   cursor: pointer;
   position: relative;
 }
-.daycol .slot:active { background: var(--at-surface-soft); }
+.daycol .slot:active { background: var(--color-surface-secondary); }
 .daycol .slot .halfslot {
   position: absolute;
   left: 0; right: 0; bottom: 0;
   height: 50%;
-  border-top: 1px dashed var(--at-hairline);
+  border-top: 1px dashed var(--color-border);
 }
 .daycol .slot .halfslot:active { background: rgba(170,45,0,0.04); }
 .daycol.today { background: rgba(170,45,0,0.018); }
@@ -532,7 +532,7 @@ function onSlotClick(date: Date, hour: number, minute: number) {
 .nowline {
   position: absolute; left: 0; right: 0;
   height: 2px;
-  background: var(--at-coral);
+  background: var(--color-danger);
   z-index: 4;
   pointer-events: none;
 }
@@ -542,6 +542,6 @@ function onSlotClick(date: Date, hour: number, minute: number) {
   left: -5px; top: -5px;
   width: 12px; height: 12px;
   border-radius: 50%;
-  background: var(--at-coral);
+  background: var(--color-danger);
 }
 </style>

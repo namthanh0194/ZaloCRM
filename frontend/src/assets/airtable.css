@@ -18,73 +18,69 @@
  */
 
 .airtable-scope {
-  /* HS re-skin 2026-06-05 — map --at-* (Airtable palette cũ) sang token HS
-     Holding (--brand/--ink/--surface…). Giữ NGUYÊN tên biến → 12 view trong
-     cụm Marketing tự đổi giao diện, không phải sửa template. Spacing + radius
-     giữ nguyên (đã hợp HD-first). */
+  /* Compatibility aliases keep existing Airtable/Atlas consumers on the canonical token contract. */
   /* Colors */
-  --at-primary: var(--ink, #141a24);            /* CTA header near-black → navy HS */
-  --at-primary-active: #0b0f16;
-  --at-ink: var(--ink, #141a24);
-  --at-body: var(--ink-2, #475066);
-  --at-muted: var(--ink-3, #6b7488);
-  --at-hairline: var(--line, #e7eaf0);
-  --at-border-strong: #cdd4e0;
+  --at-primary: var(--color-primary, #1786be);
+  --at-primary-active: var(--color-primary-active, #0b5880);
+  --at-ink: var(--color-text, #141a24);
+  --at-body: var(--color-text-secondary, #475066);
+  --at-muted: var(--color-text-muted, #6b7488);
+  --at-hairline: var(--color-border, #e7eaf0);
+  --at-border-strong: var(--color-border-strong, #cdd4e0);
 
-  --at-canvas: var(--surface, #ffffff);
-  --at-surface-soft: var(--surface-3, #f1f4f9);
-  --at-surface-strong: #e0e3ea;
-  --at-surface-dark: var(--ink, #141a24);
+  --at-canvas: var(--color-surface, #ffffff);
+  --at-surface-soft: var(--color-surface-secondary, #f1f4f9);
+  --at-surface-strong: var(--color-border, #e7eaf0);
+  --at-surface-dark: var(--color-text, #141a24);
 
-  /* Accent palette cũ (coral/forest/cream…) → map sang ngữ nghĩa HS gần nhất.
-     Các view Marketing chỉ dùng coral (1-2 chỗ) + forest/cream lẻ tẻ. */
-  --at-coral: var(--error, #f04438);
-  --at-forest: var(--success, #12b76a);
-  --at-cream: var(--brand-softer, #f2f8fc);
+  /* Legacy accent names map to the semantic design-token contract. */
+  --at-coral: var(--color-danger, #f04438);
+  --at-forest: var(--color-success, #12b76a);
+  --at-cream: var(--color-primary-subtle, #f2f8fc);
   --at-peach: #fcab79;
-  --at-mint: var(--success-soft, #a8d8c4);
-  --at-yellow: var(--warning, #f4d35e);
-  --at-mustard: var(--warning, #d9a441);
+  --at-mint: var(--color-success-subtle, #e7f7ef);
+  --at-yellow: var(--color-warning, #f59e0b);
+  --at-mustard: var(--color-warning, #f59e0b);
 
-  --at-link: var(--brand, #1786be);
-  --at-link-active: var(--brand-700, #0b5880);
-  --at-info-border: var(--brand-bright, #5bb8e5);
-  --at-success: var(--success, #12b76a);
+  --at-link: var(--color-primary, #1786be);
+  --at-link-active: var(--color-primary-active, #0b5880);
+  --at-info-border: var(--color-border-focus, #5bb8e5);
+  --at-success: var(--color-success, #12b76a);
 
-  --at-on-primary: #ffffff;
-  --at-on-dark: #ffffff;
+  --at-on-primary: var(--color-on-primary, #ffffff);
+  --at-on-dark: var(--color-text-inverse, #ffffff);
 
   /* Radius */
-  --at-r-xs: 2px;
-  --at-r-sm: 6px;
-  --at-r-md: 10px;
-  --at-r-lg: 12px;
-  --at-r-pill: 9999px;
+  --at-r-xs: var(--radius-sm, 2px);
+  --at-r-sm: var(--radius-sm, 6px);
+  --at-r-md: var(--radius-md, 10px);
+  --at-r-lg: var(--radius-lg, 12px);
+  --at-r-pill: var(--radius-pill, 9999px);
 
   /* Spacing */
-  --at-s-xxs: 4px;
-  --at-s-xs: 8px;
-  --at-s-sm: 12px;
-  --at-s-md: 16px;
-  --at-s-lg: 24px;
-  --at-s-xl: 32px;
-  --at-s-xxl: 48px;
+  --at-s-xxs: var(--space-1, 4px);
+  --at-s-xs: var(--space-2, 8px);
+  --at-s-sm: var(--space-3, 12px);
+  --at-s-md: var(--space-4, 16px);
+  --at-s-lg: var(--space-6, 24px);
+  --at-s-xl: var(--space-8, 32px);
+  --at-s-xxl: calc(var(--space-8, 32px) + var(--space-4, 16px));
   --at-s-section: 96px;
 
   /* Default surface for the scope */
-  background: var(--at-canvas);
-  color: var(--at-body);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
 }
 
 /* ── Typography roles ─────────────────────────────────────────────────── */
-.at-display-lg { font-size: 40px; font-weight: 400; line-height: 1.2; letter-spacing: 0; color: var(--at-ink); }
-.at-display-md { font-size: 32px; font-weight: 400; line-height: 1.2; letter-spacing: 0; color: var(--at-ink); }
-.at-title-lg   { font-size: 24px; font-weight: 400; line-height: 1.35; letter-spacing: 0.12px; color: var(--at-ink); }
-.at-title-md   { font-size: 20px; font-weight: 400; line-height: 1.5;  letter-spacing: 0; color: var(--at-ink); }
-.at-title-sm   { font-size: 18px; font-weight: 500; line-height: 1.4;  letter-spacing: 0; color: var(--at-ink); }
-.at-label-md   { font-size: 16px; font-weight: 500; line-height: 1.4;  letter-spacing: 0; color: var(--at-ink); }
-.at-body-md    { font-size: 14px; font-weight: 400; line-height: 1.25; letter-spacing: 0; color: var(--at-body); }
-.at-caption    { font-size: 14px; font-weight: 500; line-height: 1.35; letter-spacing: 0.16px; color: var(--at-muted); }
+.at-display-lg { font-size: 40px; font-weight: 400; line-height: 1.2; letter-spacing: 0; color: var(--color-text); }
+.at-display-md { font-size: 32px; font-weight: 400; line-height: 1.2; letter-spacing: 0; color: var(--color-text); }
+.at-title-lg   { font-size: 24px; font-weight: 400; line-height: 1.35; letter-spacing: 0.12px; color: var(--color-text); }
+.at-title-md   { font-size: 20px; font-weight: 400; line-height: 1.5;  letter-spacing: 0; color: var(--color-text); }
+.at-title-sm   { font-size: 18px; font-weight: 500; line-height: 1.4;  letter-spacing: 0; color: var(--color-text); }
+.at-label-md   { font-size: 16px; font-weight: 500; line-height: 1.4;  letter-spacing: 0; color: var(--color-text); }
+.at-body-md    { font-size: 14px; font-weight: 400; line-height: 1.25; letter-spacing: 0; color: var(--color-text-secondary); }
+.at-caption    { font-size: 14px; font-weight: 500; line-height: 1.35; letter-spacing: 0.16px; color: var(--color-text-muted); }
 
 /* ── Buttons (signature pair) ─────────────────────────────────────────── */
 .at-btn {
@@ -95,7 +91,7 @@
   font-size: 16px;
   font-weight: 500;
   line-height: 1.4;
-  border-radius: var(--at-r-lg);
+  border-radius: var(--radius-lg);
   padding: 12px 20px;
   cursor: pointer;
   border: 0;
@@ -103,22 +99,22 @@
   font-family: inherit;
 }
 .at-btn--primary {
-  background: var(--at-primary);
-  color: var(--at-on-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
 }
-.at-btn--primary:active { background: var(--at-primary-active); }
+.at-btn--primary:active { background: var(--color-primary-active); }
 .at-btn--secondary {
-  background: var(--at-canvas);
-  color: var(--at-ink);
-  border: 1px solid var(--at-hairline);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
-.at-btn--secondary:active { background: var(--at-surface-soft); }
+.at-btn--secondary:active { background: var(--color-surface-secondary); }
 .at-btn--ghost {
   background: transparent;
-  color: var(--at-ink);
+  color: var(--color-text);
   padding: 8px 12px;
 }
-.at-btn--ghost:active { background: var(--at-surface-soft); }
+.at-btn--ghost:active { background: var(--color-surface-secondary); }
 .at-btn--sm { padding: 8px 14px; font-size: 14px; }
 .at-btn--xs { padding: 6px 10px; font-size: 13px; }
 .at-btn[disabled],
@@ -140,49 +136,49 @@
   font-weight: 400;
   line-height: 1.2;
   margin: 0 0 8px;
-  color: var(--at-ink);
+  color: var(--color-text);
 }
 .at-page-subtitle {
   font-size: 14px;
   font-weight: 400;
   line-height: 1.4;
-  color: var(--at-body);
+  color: var(--color-text-secondary);
   max-width: 640px;
   margin: 0;
 }
 
 /* ── Card primitives ──────────────────────────────────────────────────── */
 .at-card {
-  background: var(--at-canvas);
-  border: 1px solid var(--at-hairline);
-  border-radius: var(--at-r-md);
-  padding: var(--at-s-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
 }
 .at-card--lg {
-  border-radius: var(--at-r-lg);
-  padding: var(--at-s-xl);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8);
 }
 .at-card--cream {
-  background: var(--at-cream);
+  background: var(--color-primary-subtle);
   border-color: transparent;
 }
 .at-card--soft {
-  background: var(--at-surface-soft);
+  background: var(--color-surface-secondary);
   border-color: transparent;
 }
 .at-card--dark {
-  background: var(--at-surface-dark);
-  color: var(--at-on-dark);
+  background: var(--color-text);
+  color: var(--color-text-inverse);
   border-color: transparent;
 }
 .at-card--coral {
-  background: var(--at-coral);
-  color: var(--at-on-primary);
+  background: var(--color-danger);
+  color: var(--color-on-primary);
   border-color: transparent;
 }
 .at-card--forest {
-  background: var(--at-forest);
-  color: var(--at-on-dark);
+  background: var(--color-success);
+  color: var(--color-text-inverse);
   border-color: transparent;
 }
 
@@ -192,26 +188,26 @@
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  border-radius: var(--at-r-pill);
+  border-radius: var(--radius-pill);
   font-size: 12px;
   font-weight: 500;
   line-height: 1.4;
-  background: var(--at-surface-soft);
-  color: var(--at-body);
-  border: 1px solid var(--at-hairline);
+  background: var(--color-surface-secondary);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
 }
 .at-chip--solid {
-  background: var(--at-primary);
-  color: var(--at-on-primary);
-  border-color: var(--at-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border-color: var(--color-primary);
 }
 
 /* ── Input ────────────────────────────────────────────────────────────── */
 .at-input {
-  background: var(--at-canvas);
-  color: var(--at-ink);
-  border: 1px solid var(--at-hairline);
-  border-radius: var(--at-r-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   padding: 10px 14px;
   height: 44px;
   font-size: 14px;
@@ -220,13 +216,13 @@
 }
 .at-input:focus {
   outline: none;
-  border-color: var(--at-info-border);
+  border-color: var(--color-border-focus);
 }
 
 /* ── Hairline divider ─────────────────────────────────────────────────── */
 .at-hairline {
   border: 0;
-  border-top: 1px solid var(--at-hairline);
+  border-top: 1px solid var(--color-border);
   margin: 0;
 }
 
@@ -252,56 +248,53 @@
  * ══════════════════════════════════════════════════════════════════════ */
 
 .airtable-scope {
-  /* Atlas action color — phân biệt rõ với --at-primary #181d26 (CTA header).
-     Anh chốt 2026-06-04: action button trong page body dùng xanh sáng. */
-  /* HS re-skin — action button trong page body = brand HS metallic blue
-     (thay #0068ff Atlassian). active/soft theo brand-700/brand-soft. */
-  --at-action: var(--brand, #1786be);
-  --at-action-active: var(--brand-700, #0b5880);
-  --at-action-soft: var(--brand-soft, #e4f1f8);
+  /* Legacy action and Atlas semantic aliases retain their existing consumer names. */
+  --at-action: var(--color-primary, #1786be);
+  --at-action-active: var(--color-primary-active, #0b5880);
+  --at-action-soft: var(--color-primary-subtle, #e4f1f8);
 
-  /* Atlas semantic → HS semantic. prefix -atlas- vẫn giữ tên, chỉ đổi giá trị. */
-  --at-atlas-success: var(--success, #12b76a);
-  --at-atlas-success-soft: var(--success-soft, #e7f7ef);
-  --at-atlas-warning: var(--warning, #f5a524);
-  --at-atlas-warning-soft: var(--warning-soft, #fdf3e2);
-  --at-atlas-danger: var(--error, #f04438);
-  --at-atlas-danger-soft: #fdeceb;
+  /* Atlas semantic tokens map directly to Canonical Semantic tokens */
+  --at-atlas-success: var(--color-success, #12b76a);
+  --at-atlas-success-soft: var(--color-success-subtle, #e7f7ef);
+  --at-atlas-warning: var(--color-warning, #f5a524);
+  --at-atlas-warning-soft: var(--color-warning-subtle, #fdf3e2);
+  --at-atlas-danger: var(--color-danger, #f04438);
+  --at-atlas-danger-soft: var(--color-danger-subtle, #fdeceb);
   --at-atlas-purple: #6554c0;
   --at-atlas-purple-soft: #eae6ff;
 
   /* Atlas surfaces extension */
-  --at-hint: var(--ink-4, #97a0b3);
+  --at-hint: var(--color-text-disabled, #97a0b3);
   --at-shadow-card: 0 1px 2px rgba(20, 26, 36, 0.05);
   --at-shadow-card-hover: 0 4px 12px rgba(20, 26, 36, 0.10);
 }
 
 /* ─── Atlas action button (mới — coexist với .at-btn--primary đen cũ) ──── */
 .at-btn--action {
-  background: var(--at-action);
+  background: var(--color-primary);
   color: #fff;
 }
-.at-btn--action:active { background: var(--at-action-active); }
+.at-btn--action:active { background: var(--color-primary-active); }
 
 /* Atlas danger button — outline style, NOT solid (no hover, only active per spec) */
 .at-btn--danger {
-  background: var(--at-canvas);
-  color: var(--at-atlas-danger);
-  border: 1px solid var(--at-hairline);
+  background: var(--color-surface);
+  color: var(--color-danger);
+  border: 1px solid var(--color-border);
 }
 .at-btn--danger:active {
-  background: var(--at-atlas-danger-soft);
-  border-color: var(--at-atlas-danger);
+  background: var(--color-danger-subtle);
+  border-color: var(--color-danger);
 }
 
 /* Atlas icon button — kích thước 30px chuẩn cho row actions */
 .at-btn-icon {
   width: 30px; height: 30px;
   padding: 0;
-  border-radius: var(--at-r-sm);
+  border-radius: var(--radius-sm);
   background: transparent;
   border: 0;
-  color: var(--at-muted);
+  color: var(--color-text-muted);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -309,14 +302,14 @@
   font-size: 14px;
   font-family: inherit;
 }
-.at-btn-icon:active { background: var(--at-surface-soft); color: var(--at-ink); }
+.at-btn-icon:active { background: var(--color-surface-secondary); color: var(--color-text); }
 
 /* ─── Atlas card accent — EXTEND .at-card cũ với border-left modifier ──── */
-.at-card--accent-blue   { border-left: 4px solid var(--at-action); }
-.at-card--accent-green  { border-left: 4px solid var(--at-atlas-success); }
-.at-card--accent-purple { border-left: 4px solid var(--at-atlas-purple); }
-.at-card--accent-orange { border-left: 4px solid var(--at-atlas-warning); }
-.at-card--accent-danger { border-left: 4px solid var(--at-atlas-danger); }
+.at-card--accent-blue   { border-left: 4px solid var(--color-primary); }
+.at-card--accent-green  { border-left: 4px solid var(--color-success); }
+.at-card--accent-purple { border-left: 4px solid var(--crm-accent-purple); }
+.at-card--accent-orange { border-left: 4px solid var(--color-warning); }
+.at-card--accent-danger { border-left: 4px solid var(--color-danger); }
 .at-card--accent-teal   { border-left: 4px solid #0891b2; } /* MucTieuDetailView legacy color */
 
 /* Atlas card interactive — hover border + shadow (cards aren't solid CTAs, spec OK) */
@@ -325,69 +318,69 @@
   transition: border-color 0.14s, box-shadow 0.14s;
 }
 .at-card-interactive:hover {
-  border-color: var(--at-action);
-  box-shadow: var(--at-shadow-card-hover);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
 }
 
 /* ─── Atlas chip variants — KHÔNG dùng .at-chip--active (conflict scoped) */
 .at-chip--filter-active {
-  background: var(--at-action-soft);
-  color: var(--at-action);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
   border-color: #93c5fd;
   font-weight: 600;
 }
 .at-chip--success {
-  background: var(--at-atlas-success-soft);
+  background: var(--color-success-subtle);
   color: #1b6b46;
   border-color: #86efac;
 }
 .at-chip--warning {
-  background: var(--at-atlas-warning-soft);
+  background: var(--color-warning-subtle);
   color: #92400e;
   border-color: #fcd34d;
 }
 .at-chip--danger {
-  background: var(--at-atlas-danger-soft);
-  color: var(--at-atlas-danger);
+  background: var(--color-danger-subtle);
+  color: var(--color-danger);
   border-color: #fca5a5;
 }
 .at-chip--purple {
-  background: var(--at-atlas-purple-soft);
+  background: var(--crm-accent-purple-subtle);
   color: #6d28d9;
   border-color: #c4b5fd;
 }
 .at-chip--info {
-  background: var(--at-action-soft);
-  color: var(--at-action);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
   border-color: #93c5fd;
 }
 .at-chip--neutral {
-  background: var(--at-surface-soft);
-  color: var(--at-muted);
+  background: var(--color-surface-secondary);
+  color: var(--color-text-muted);
 }
 .at-chip--dark {
-  background: var(--at-ink);
+  background: var(--color-text);
   color: #fff;
 }
 
 /* ─── Atlas KPI tile — dùng cho dashboard list views ───────────────────── */
 .at-kpi-tile {
-  background: var(--at-canvas);
-  border: 1px solid var(--at-hairline);
-  border-radius: var(--at-r-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   padding: 14px 16px;
 }
 .at-kpi-label {
   font-size: 11px;
   font-weight: 500;
-  color: var(--at-muted);
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
 .at-kpi-value {
   font-size: 24px;
   font-weight: 500;
-  color: var(--at-ink);
+  color: var(--color-text);
   margin-top: 4px;
   line-height: 1;
   /* 2026-06-06 — số liệu KPI dùng mono (Roboto Mono) khớp HS Holding. */
@@ -397,52 +390,52 @@
 .at-kpi-delta {
   font-size: 12px;
   font-weight: 500;
-  color: var(--at-atlas-success);
+  color: var(--color-success);
   margin-top: 4px;
 }
-.at-kpi-delta--down { color: var(--at-atlas-danger); }
+.at-kpi-delta--down { color: var(--color-danger); }
 
 /* ─── Atlas data table — dùng cho list views ───────────────────────────── */
 .at-table {
   width: 100%;
-  background: var(--at-canvas);
-  border: 1px solid var(--at-hairline);
-  border-radius: var(--at-r-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   border-collapse: collapse;
   font-size: 13px;
 }
-.at-table thead { background: var(--at-surface-soft); }
+.at-table thead { background: var(--color-surface-secondary); }
 .at-table th {
   padding: 10px 14px;
   text-align: left;
   font-size: 11px;
   font-weight: 500;
-  color: var(--at-muted);
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  border-bottom: 1px solid var(--at-hairline);
+  border-bottom: 1px solid var(--color-border);
 }
 .at-table td {
   padding: 12px 14px;
-  border-bottom: 1px solid var(--at-hairline);
-  color: var(--at-body);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
 }
 .at-table tr:last-child td { border-bottom: 0; }
-.at-table tbody tr:hover { background: var(--at-surface-soft); }
+.at-table tbody tr:hover { background: var(--color-surface-secondary); }
 
 /* ─── Atlas wizard stepper ─────────────────────────────────────────────── */
 .at-wizard-stepper {
   display: flex;
-  background: var(--at-canvas);
-  border: 1px solid var(--at-hairline);
-  border-radius: var(--at-r-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 .at-wizard-step {
   flex: 1;
   padding: 14px 18px;
-  border-right: 1px solid var(--at-hairline);
+  border-right: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -451,8 +444,8 @@
 .at-wizard-step-num {
   width: 28px; height: 28px;
   border-radius: 50%;
-  background: var(--at-surface-soft);
-  color: var(--at-muted);
+  background: var(--color-surface-secondary);
+  color: var(--color-text-muted);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -460,21 +453,21 @@
   font-weight: 500;
   flex-shrink: 0;
 }
-.at-wizard-step.is-active .at-wizard-step-num { background: var(--at-action); color: #fff; }
-.at-wizard-step.is-done .at-wizard-step-num { background: var(--at-atlas-success); color: #fff; }
-.at-wizard-step.is-error .at-wizard-step-num { background: var(--at-atlas-danger); color: #fff; }
+.at-wizard-step.is-active .at-wizard-step-num { background: var(--color-primary); color: #fff; }
+.at-wizard-step.is-done .at-wizard-step-num { background: var(--color-success); color: #fff; }
+.at-wizard-step.is-error .at-wizard-step-num { background: var(--color-danger); color: #fff; }
 .at-wizard-step-label {
   font-size: 13px;
   font-weight: 500;
-  color: var(--at-muted);
+  color: var(--color-text-muted);
 }
-.at-wizard-step.is-active .at-wizard-step-label { color: var(--at-ink); }
+.at-wizard-step.is-active .at-wizard-step-label { color: var(--color-text); }
 
 /* ─── Atlas page topbar — dùng chung mọi marketing view ────────────────── */
 .at-page-topbar {
-  background: var(--at-canvas);
-  border-bottom: 1px solid var(--at-hairline);
-  padding: var(--at-s-md) var(--at-s-lg);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-4) var(--space-6);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -482,16 +475,16 @@
   position: sticky;
   top: 0;
   z-index: 5;
-  gap: var(--at-s-sm);
+  gap: var(--space-3);
 }
 .at-page-topbar__title {
   display: flex;
   align-items: center;
-  gap: var(--at-s-xs);
+  gap: var(--space-2);
 }
 .at-page-topbar__actions {
   display: flex;
-  gap: var(--at-s-xs);
+  gap: var(--space-2);
   align-items: center;
 }
 
@@ -501,17 +494,17 @@
 .at-empty {
   text-align: center;
   padding: 80px 24px;
-  color: var(--at-muted);
+  color: var(--color-text-muted);
 }
 .at-empty__title {
   font-size: 18px;
   font-weight: 500;
-  color: var(--at-ink);
+  color: var(--color-text);
   margin: 16px 0 4px;
 }
 .at-empty__desc {
   font-size: 14px;
-  color: var(--at-body);
+  color: var(--color-text-secondary);
   margin: 0 auto 24px;
   max-width: 360px;
   line-height: 1.5;
@@ -520,8 +513,8 @@
 /* ── Vuetify overrides scoped to airtable-scope ───────────────────────── */
 .airtable-scope .v-btn--variant-elevated,
 .airtable-scope .v-btn[color="primary"] {
-  background-color: var(--at-primary) !important;
-  color: var(--at-on-primary) !important;
+  background-color: var(--color-primary) !important;
+  color: var(--color-on-primary) !important;
   box-shadow: none !important;
 }
 .airtable-scope .v-snackbar__content {
@@ -550,7 +543,7 @@
   .airtable-scope .at-page-header {
     flex-direction: column;
     align-items: stretch;
-    gap: var(--at-s-md);
+    gap: var(--space-4);
   }
   .airtable-scope .at-page-title { font-size: 24px; }
 }

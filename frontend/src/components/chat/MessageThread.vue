@@ -2963,7 +2963,7 @@ watch(() => props.editingMessage?.id, async (id) => {
 .message-thread {
   display: flex; flex-direction: column;
   height: 100%;
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
   overflow: hidden;
   position: relative;
 }
@@ -2975,7 +2975,7 @@ watch(() => props.editingMessage?.id, async (id) => {
   align-items: center;
   justify-content: center;
   background: rgba(248, 250, 252, 0.72);
-  border: 2px dashed var(--smax-primary, #1786be);
+  border: 2px dashed var(--color-primary, #1786be);
   pointer-events: none;
 }
 .drop-card {
@@ -2990,13 +2990,13 @@ watch(() => props.editingMessage?.id, async (id) => {
   margin-top: 8px;
   font-size: 15px;
   font-weight: 700;
-  color: var(--smax-text, #111827);
+  color: var(--color-text, #111827);
 }
 .drop-subtitle {
   margin-top: 4px;
   font-size: 12px;
   line-height: 1.45;
-  color: var(--smax-grey-700, #6b7280);
+  color: var(--color-text-secondary, #6b7280);
 }
 
 /* Jump-to-quoted-message highlight — pulse border 2s khi user click reply card.
@@ -3129,7 +3129,7 @@ watch(() => props.editingMessage?.id, async (id) => {
   display: flex; flex: 1;
   align-items: center; justify-content: center;
   flex-direction: column;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
 }
 
 /* ════════ Chat header (3-row layout — Anh chốt 2026-06-03) ════════
@@ -3139,9 +3139,9 @@ watch(() => props.editingMessage?.id, async (id) => {
    Actions absolute top-right để row 3 không bị nén. */
 .chat-header {
   position: relative;
-  background: var(--smax-bg);
+  background: var(--color-surface);
   padding: 10px 17px;
-  border-bottom: 1px solid var(--smax-grey-200);
+  border-bottom: 1px solid var(--color-border);
   display: flex; align-items: flex-start; gap: 13px;
   flex-shrink: 0;
 }
@@ -3174,7 +3174,7 @@ watch(() => props.editingMessage?.id, async (id) => {
 .ch-avatar-wrap.clickable { cursor: pointer; }
 .ch-avatar-wrap.clickable:hover { transform: scale(1.05); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18); }
 .ch-name.clickable { cursor: pointer; transition: color 0.12s ease; }
-.ch-name.clickable:hover { color: var(--smax-primary, #1786be); }
+.ch-name.clickable:hover { color: var(--color-primary, #1786be); }
 
 .ch-info {
   flex: 1; min-width: 0;
@@ -3226,7 +3226,7 @@ watch(() => props.editingMessage?.id, async (id) => {
 .ch-row-1 .ch-gender-chip { flex-shrink: 0; }
 .ch-name {
   font-weight: 600; font-size: 16px;
-  color: var(--smax-text);
+  color: var(--color-text);
   /* min-width: 0 + flex-shrink để ellipsis hoạt động khi thread narrow.
      max-width: 100% theo flex parent, không cố định 320px (HD thread ~360px
      trừ avatar+actions, max-width 320 sẽ đè actions). */
@@ -3234,7 +3234,7 @@ watch(() => props.editingMessage?.id, async (id) => {
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .ch-sep {
-  color: var(--smax-grey-300);
+  color: var(--color-border-strong);
   font-weight: 300;
   user-select: none;
 }
@@ -3269,17 +3269,17 @@ watch(() => props.editingMessage?.id, async (id) => {
 }
 .gender-female {
   background: rgba(233, 30, 99, 0.10);
-  color: var(--smax-female, #e91e63);
+  color: var(--chat-female, #e91e63);
 }
 .gender-male {
   background: rgba(30, 136, 229, 0.10);
-  color: var(--smax-male, #1e88e5);
+  color: var(--chat-male, #1e88e5);
 }
 .gender-unknown {
-  background: var(--smax-grey-100);
-  color: var(--smax-grey-700);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
 }
-.gender-unknown .gender-q { background: var(--smax-grey-700); }
+.gender-unknown .gender-q { background: var(--color-text-secondary); }
 .gender-group {
   background: rgba(13, 71, 161, 0.10);
   color: #0D47A1;
@@ -3288,13 +3288,13 @@ watch(() => props.editingMessage?.id, async (id) => {
 /* Row 3 (giữ class .ch-row-2): nick + counts + online — KHÔNG wrap */
 .ch-row-2 {
   display: flex; align-items: center; gap: 6px;
-  font-size: 12px; color: var(--smax-grey-700);
+  font-size: 12px; color: var(--color-text-secondary);
   flex-wrap: nowrap;
   overflow: hidden;
   min-width: 0;
 }
 .nick-name {
-  font-weight: 500; color: var(--smax-text);
+  font-weight: 500; color: var(--color-text);
   max-width: 160px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
@@ -3307,8 +3307,8 @@ watch(() => props.editingMessage?.id, async (id) => {
   border-radius: 6px;
   transition: background 0.12s ease;
 }
-.nick-switcher:hover { background: var(--smax-grey-100, #f5f6fa); }
-.nick-caret { font-size: 9px; color: var(--smax-grey-500); opacity: 0.7; }
+.nick-switcher:hover { background: var(--color-bg, #f5f6fa); }
+.nick-caret { font-size: 9px; color: var(--color-text-muted); opacity: 0.7; }
 .nick-switcher:hover .nick-caret { opacity: 1; }
 
 .nick-dd-panel {
@@ -3323,14 +3323,14 @@ watch(() => props.editingMessage?.id, async (id) => {
 }
 .nick-dd-header {
   font-size: 11px; font-weight: 600;
-  color: var(--smax-grey-600);
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.4px;
   padding: 6px 10px 4px;
 }
 .nick-dd-loading, .nick-dd-empty {
   padding: 12px; text-align: center;
-  font-size: 12px; color: var(--smax-grey-500);
+  font-size: 12px; color: var(--color-text-muted);
   font-style: italic;
 }
 .nick-dd-item {
@@ -3344,14 +3344,14 @@ watch(() => props.editingMessage?.id, async (id) => {
   text-align: left;
   transition: background 0.1s ease;
 }
-.nick-dd-item:hover:not(:disabled) { background: var(--smax-grey-100, #f5f6fa); }
+.nick-dd-item:hover:not(:disabled) { background: var(--color-bg, #f5f6fa); }
 .nick-dd-item.active { background: rgba(59, 130, 246, 0.08); }
 .nick-dd-item.switching { opacity: 0.6; cursor: wait; }
 .nick-dd-item:disabled { cursor: not-allowed; }
 .nick-dd-info { flex: 1; min-width: 0; }
 .nick-dd-name {
   font-weight: 600; font-size: 13px;
-  color: var(--smax-text);
+  color: var(--color-text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .nick-dd-meta {
@@ -3362,7 +3362,7 @@ watch(() => props.editingMessage?.id, async (id) => {
 .nick-dd-status { font-weight: 500; }
 .status-accepted { color: #00897b; }
 .status-pending { color: #ef6c00; }
-.status-declined, .status-none { color: var(--smax-grey-500); }
+.status-declined, .status-none { color: var(--color-text-muted); }
 .nick-dd-current {
   background: rgba(59, 130, 246, 0.15);
   color: #1d4ed8;
@@ -3378,12 +3378,12 @@ watch(() => props.editingMessage?.id, async (id) => {
   color: #00897b; font-weight: 600;
 }
 .msg-counts .cnt-out {
-  color: var(--smax-primary); font-weight: 600;
+  color: var(--color-primary); font-weight: 600;
 }
 .msg-counts .cnt-scope {
   font-size: 9.5px;
-  color: var(--smax-grey-700);
-  background: var(--smax-grey-100);
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
   padding: 1px 5px;
   border-radius: 4px;
   margin-left: 4px;
@@ -3394,22 +3394,22 @@ watch(() => props.editingMessage?.id, async (id) => {
   display: inline-flex; align-items: center; gap: 4px;
   /* Giảm font 2026-06-06 (Anh chốt): chữ Online/last-seen nhỏ lại cho gọn header. */
   font-size: 11px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
 }
 .last-online .online-dot {
   width: 7px; height: 7px;
   border-radius: 50%;
   /* Offline = xám (Anh chốt 2026-06-06). */
-  background: var(--smax-grey-300);
+  background: var(--color-border-strong);
   flex-shrink: 0;
 }
 .last-online.is-online {
   /* Online = chữ + chấm xanh. */
-  color: var(--smax-success);
+  color: var(--color-success);
   font-weight: 600;
 }
 .last-online.is-online .online-dot {
-  background: var(--smax-success);
+  background: var(--color-success);
   box-shadow: 0 0 0 2px rgba(0, 200, 83, 0.15);
   animation: online-pulse 2s ease-in-out infinite;
 }
@@ -3533,7 +3533,7 @@ watch(() => props.editingMessage?.id, async (id) => {
   cursor: pointer;
   font-size: 12px; font-weight: 500;
   display: inline-flex; align-items: center; gap: 5px;
-  background: var(--smax-bg);
+  background: var(--color-surface);
   font-family: inherit;
   transition: background 0.12s, border-color 0.12s, box-shadow 0.12s, transform 0.08s;
 }
@@ -3574,14 +3574,14 @@ watch(() => props.editingMessage?.id, async (id) => {
   color: #92400E;
 }
 .btn-add-friend {
-  background: var(--smax-primary-soft);
-  color: var(--smax-primary);
-  border-color: var(--smax-primary);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 .btn-add-friend:hover {
-  background: var(--smax-primary);
+  background: var(--color-primary);
   color: white;
-  border-color: var(--smax-primary);
+  border-color: var(--color-primary);
 }
 /* Secondary "Thu hồi" — neutral grey, không cảnh báo (rút lại action của chính mình).
    2026-06-23: giờ là popup xổ xuống (.fr-hover-pop) → thêm shadow toả xuống cho ra dáng dropdown. */
@@ -3688,11 +3688,11 @@ watch(() => props.editingMessage?.id, async (id) => {
   margin-left: 2px;
 }
 .btn-webhook {
-  background: var(--smax-primary);
+  background: var(--color-primary);
   color: white;
-  border-color: var(--smax-primary);
+  border-color: var(--color-primary);
 }
-.btn-webhook:hover:not(:disabled) { background: var(--smax-primary-hover); }
+.btn-webhook:hover:not(:disabled) { background: var(--color-primary-hover); }
 .btn-webhook:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .icon-btn {
@@ -3701,13 +3701,13 @@ watch(() => props.editingMessage?.id, async (id) => {
   background: transparent; border: none;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   font-size: 15px;
 }
-.icon-btn:hover { background: var(--smax-grey-100); }
+.icon-btn:hover { background: var(--color-bg); }
 .icon-btn.on {
-  background: var(--smax-primary-soft);
-  color: var(--smax-primary);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
 }
 
 /* ════════ Messages ════════ */
@@ -3727,7 +3727,7 @@ watch(() => props.editingMessage?.id, async (id) => {
 }
 .msg-divider {
   text-align: center; margin: 13px 0 9px;
-  color: var(--smax-grey-700); font-size: 11px;
+  color: var(--color-text-secondary); font-size: 11px;
 }
 /* E07 Image lightbox — anh chốt 2026-05-21: nút ‹ › + arrow keys, KHÔNG loop. */
 .lightbox-wrap {
@@ -3772,7 +3772,7 @@ watch(() => props.editingMessage?.id, async (id) => {
 .msg-divider::after {
   content: ''; display: inline-block;
   width: 60px; height: 1px;
-  background: var(--smax-grey-300);
+  background: var(--color-border-strong);
   vertical-align: middle; margin: 0 9px;
 }
 
@@ -3793,7 +3793,7 @@ watch(() => props.editingMessage?.id, async (id) => {
   width: fit-content;
 }
 .msg-system-event.reminder-notice .reminder-notice-time {
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   font-weight: 500;
 }
 
@@ -3806,13 +3806,13 @@ watch(() => props.editingMessage?.id, async (id) => {
 .msg-album-wrap .msg-avatar { flex-shrink: 0; }
 .msg-album-body { max-width: 60%; }
 .bubble.album {
-  background: var(--smax-bg);
+  background: var(--color-surface);
   border-radius: 13px;
   overflow: hidden;
   box-shadow: 0 1px 1px rgba(0,0,0,0.06);
 }
 .album-sender {
-  font-size: 11.5px; color: var(--smax-primary);
+  font-size: 11.5px; color: var(--color-primary);
   font-weight: 600;
   padding: 6px 10px 0;
   line-height: 1.2;
@@ -3843,14 +3843,14 @@ watch(() => props.editingMessage?.id, async (id) => {
   display: flex; align-items: center; gap: 7px; padding: 7px 9px; flex-wrap: wrap;
   border-top: 1px solid rgba(0,0,0,.06);
 }
-.album-actionbar .ab-count { font-size: 11.5px; color: var(--smax-grey-700); margin-right: auto; }
+.album-actionbar .ab-count { font-size: 11.5px; color: var(--color-text-secondary); margin-right: auto; }
 .album-actionbar .ab-btn {
   border: 1px solid #dddddd; background: #fff; color: #333840; border-radius: 6px;
   padding: 4px 11px; font-size: 11.5px; cursor: pointer; font-weight: 500;
 }
 .album-actionbar .ab-btn.primary { background: #181d26; color: #fff; border-color: #181d26; }
 .album-actionbar .ab-btn.primary:disabled { opacity: .45; cursor: default; }
-.album-actionbar .ab-btn.ghost { border: none; color: var(--smax-grey-700); }
+.album-actionbar .ab-btn.ghost { border: none; color: var(--color-text-secondary); }
 .ctx-menu-overlay { position: fixed; inset: 0; z-index: 100; }
 .ctx-menu {
   position: fixed; z-index: 101; background: #fff; border-radius: 10px;
@@ -3868,7 +3868,7 @@ watch(() => props.editingMessage?.id, async (id) => {
 .album-ctx .ctx-ic { width: 18px; text-align: center; }
 .album-progress { font-size: 10px; padding: 5px 9px; opacity: 0.7; }
 .bubble-time {
-  font-size: 11px; color: var(--smax-grey-700);
+  font-size: 11px; color: var(--color-text-secondary);
   padding: 5px 9px;
   text-align: right;
 }
@@ -3879,8 +3879,8 @@ watch(() => props.editingMessage?.id, async (id) => {
  * còn tối thiểu 55%. Editor max-height computed: container 45% - chrome (~110px)
  * cho tag bar + outer toolbar + send row + padding. Đảm bảo không che message list. */
 .input-area {
-  background: var(--smax-bg);
-  border-top: 1px solid var(--smax-grey-200);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
   padding: 7px 13px 9px;
   flex-shrink: 0;
   flex-grow: 0;
@@ -3902,13 +3902,13 @@ watch(() => props.editingMessage?.id, async (id) => {
   gap: 2px;
   margin-bottom: 6px;
   padding: 2px 0 6px;
-  border-bottom: 1px solid var(--smax-grey-100);
+  border-bottom: 1px solid var(--color-bg);
   flex-wrap: wrap;
 }
 .toolbar-divider {
   width: 1px;
   height: 18px;
-  background: var(--smax-grey-200, #ebedf0);
+  background: var(--color-border, #ebedf0);
   margin: 0 4px;
   flex-shrink: 0;
 }
@@ -3918,25 +3918,25 @@ watch(() => props.editingMessage?.id, async (id) => {
   border-radius: 6px;
   cursor: pointer;
   font-size: 16px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   background: transparent; border: none;
   font-family: inherit;
   outline: none;
   /* Reset focus visual để sticker không bị "lệch" outline */
   -webkit-tap-highlight-color: transparent;
 }
-.icon-tool:hover { background: var(--smax-grey-100); color: var(--smax-primary); }
+.icon-tool:hover { background: var(--color-bg); color: var(--color-primary); }
 .icon-tool:focus { outline: none; }
 .icon-tool:focus-visible {
-  outline: 2px solid var(--smax-primary-soft, #bbdefb);
+  outline: 2px solid var(--color-primary-subtle, #bbdefb);
   outline-offset: -1px;
 }
 .icon-tool.active {
-  background: var(--smax-primary-soft, #e3f2fd);
-  color: var(--smax-primary, #1786be);
+  background: var(--color-primary-subtle, #e3f2fd);
+  color: var(--color-primary, #1786be);
 }
 .icon-tool.spacer-after {
-  border-right: 1px solid var(--smax-grey-200);
+  border-right: 1px solid var(--color-border);
   margin-right: 4px; padding-right: 4px;
 }
 .icon-tool.ai-btn { color: #9c27b0; }
@@ -3982,7 +3982,7 @@ watch(() => props.editingMessage?.id, async (id) => {
 }
 .nick-avatar-halo .sender-nick-avatar {
   display: block;
-  border: 2px solid var(--smax-bg, #fff);
+  border: 2px solid var(--color-surface, #fff);
   border-radius: 50%;
 }
 @property --halo-angle {
@@ -4004,7 +4004,7 @@ watch(() => props.editingMessage?.id, async (id) => {
 }
 
 .send-btn {
-  background: var(--smax-primary);
+  background: var(--color-primary);
   color: white;
   width: 40px; height: 40px;
   border-radius: 50%;
@@ -4014,8 +4014,8 @@ watch(() => props.editingMessage?.id, async (id) => {
   flex-shrink: 0;
   margin-bottom: 1px;
 }
-.send-btn:hover:not(:disabled) { background: var(--smax-primary-hover); }
-.send-btn:disabled { opacity: 0.4; cursor: not-allowed; background: var(--smax-grey-300); }
+.send-btn:hover:not(:disabled) { background: var(--color-primary-hover); }
+.send-btn:disabled { opacity: 0.4; cursor: not-allowed; background: var(--color-border-strong); }
 
 /* EmojiPicker trigger — emoji icon next to send button */
 .input-row :deep(.emoji-trigger) {
@@ -4029,7 +4029,7 @@ watch(() => props.editingMessage?.id, async (id) => {
   flex-shrink: 0;
 }
 .input-row :deep(.emoji-trigger:hover) {
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
 }
 
 /* ── Zalo Real labels dropdown — Zalo-native style ────────────────────── */
@@ -4037,22 +4037,22 @@ watch(() => props.editingMessage?.id, async (id) => {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: var(--smax-grey-100, #f5f6fa);
-  border: 1px solid var(--smax-grey-200, #ebedf0);
+  background: var(--color-bg, #f5f6fa);
+  border: 1px solid var(--color-border, #ebedf0);
   border-radius: 11px;
   font-size: 12px;
   font-weight: 500;
   padding: 2px 8px;
   cursor: pointer;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
   max-width: 180px;
   white-space: nowrap; /* 2026-06-03: chống "Phân loại" wrap khi row 1 chật */
   flex-shrink: 0;
 }
 .zlbl-trigger:hover {
-  background: var(--smax-primary-soft, #e3f2fd);
-  border-color: var(--smax-primary, #1786be);
+  background: var(--color-primary-subtle, #e3f2fd);
+  border-color: var(--color-primary, #1786be);
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 .zlbl-icon { flex-shrink: 0; display: block; }
@@ -4062,7 +4062,7 @@ watch(() => props.editingMessage?.id, async (id) => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.zlbl-empty { font-style: italic; color: var(--smax-grey-500); }
+.zlbl-empty { font-style: italic; color: var(--color-text-muted); }
 .zlbl-caret { font-size: 9px; opacity: 0.6; flex-shrink: 0; }
 
 /* Dropdown chính — match Zalo native: rộng, padding 0, list items full-width */
@@ -4081,13 +4081,13 @@ watch(() => props.editingMessage?.id, async (id) => {
   padding: 16px;
   text-align: center;
   font-size: 13px;
-  color: var(--smax-grey-500);
+  color: var(--color-text-muted);
 }
 .zlbl-empty-state { font-style: italic; }
 .zlbl-inline-sync {
   margin-top: 8px;
-  background: var(--smax-primary-soft, #e3f2fd);
-  color: var(--smax-primary, #1786be);
+  background: var(--color-primary-subtle, #e3f2fd);
+  color: var(--color-primary, #1786be);
   border: none;
   font-size: 12px;
   font-weight: 600;
@@ -4115,7 +4115,7 @@ watch(() => props.editingMessage?.id, async (id) => {
   text-align: left;
   transition: background 0.1s;
 }
-.zlbl-option:hover { background: var(--smax-grey-50, #f5f6fa); }
+.zlbl-option:hover { background: var(--color-surface-secondary, #f5f6fa); }
 .zlbl-option.active { background: rgba(33, 150, 243, 0.06); }
 .zlbl-option.busy { opacity: 0.5; cursor: progress; }
 .zlbl-option:disabled { cursor: not-allowed; }
@@ -4127,14 +4127,14 @@ watch(() => props.editingMessage?.id, async (id) => {
 }
 .zlbl-name {
   flex: 1;
-  color: var(--smax-text);
+  color: var(--color-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .zlbl-option.active .zlbl-name { font-weight: 600; }
 .zlbl-check {
-  color: var(--smax-primary, #1786be);
+  color: var(--color-primary, #1786be);
   font-size: 14px;
   font-weight: 700;
   flex-shrink: 0;
@@ -4142,7 +4142,7 @@ watch(() => props.editingMessage?.id, async (id) => {
 
 .zlbl-divider {
   height: 1px;
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
   margin: 4px 0;
 }
 .zlbl-manage {
@@ -4155,11 +4155,11 @@ watch(() => props.editingMessage?.id, async (id) => {
   align-items: center;
   gap: 10px;
   font-size: 13px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   font-family: inherit;
   text-align: left;
   transition: background 0.1s;
 }
-.zlbl-manage:hover { background: var(--smax-grey-50); color: var(--smax-primary); }
+.zlbl-manage:hover { background: var(--color-surface-secondary); color: var(--color-primary); }
 .manage-icon { font-size: 14px; }
 </style>

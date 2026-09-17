@@ -1,29 +1,32 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
-  <v-card class="pa-6" elevation="8">
-    <div class="text-center mb-6">
-      <v-icon icon="mdi-cog" size="64" color="primary" />
-      <h1 class="text-h5 mt-2">Thiết lập ban đầu</h1>
-      <p class="text-body-2 text-grey mt-1">Tạo tổ chức và tài khoản quản trị viên</p>
-    </div>
-    <v-form @submit.prevent="handleSetup" ref="form">
-      <v-text-field v-model="orgName" label="Tên tổ chức / phòng khám" prepend-inner-icon="mdi-domain" :rules="[v => !!v || 'Bắt buộc']" class="mb-2" />
-      <v-text-field v-model="fullName" label="Họ tên quản trị viên" prepend-inner-icon="mdi-account" :rules="[v => !!v || 'Bắt buộc']" class="mb-2" />
-      <v-text-field v-model="email" label="Email đăng nhập" type="email" prepend-inner-icon="mdi-email" :rules="[v => !!v || 'Bắt buộc']" class="mb-2" />
-      <v-text-field v-model="phone" label="Số điện thoại chủ tổ chức" type="tel" inputmode="tel" prepend-inner-icon="mdi-phone" :rules="phoneRules" class="mb-2" />
-      <v-text-field v-model="password" label="Mật khẩu" :type="showPassword ? 'text' : 'password'" prepend-inner-icon="mdi-lock" :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'" @click:append-inner="showPassword = !showPassword" :rules="[v => v.length >= 6 || 'Tối thiểu 6 ký tự']" class="mb-4" />
-      <v-btn type="submit" color="primary" block size="large" :loading="loading">Tạo tài khoản</v-btn>
-    </v-form>
-    <v-alert v-if="error" type="error" class="mt-4" density="compact" closable>{{ error }}</v-alert>
-    <v-alert v-if="success" type="success" class="mt-4" density="compact">Tạo thành công! Đang chuyển hướng...</v-alert>
-  </v-card>
+  <PageShell width="narrow">
+    <v-card class="pa-6" elevation="8">
+      <div class="text-center mb-6">
+        <v-icon icon="mdi-cog" size="64" color="primary" />
+        <h1 class="text-h5 mt-2">Thiết lập ban đầu</h1>
+        <p class="text-body-2 text-medium-emphasis mt-1">Tạo tổ chức và tài khoản quản trị viên</p>
+      </div>
+      <v-form @submit.prevent="handleSetup" ref="form">
+        <v-text-field v-model="orgName" label="Tên tổ chức / phòng khám" prepend-inner-icon="mdi-domain" :rules="[v => !!v || 'Bắt buộc']" class="mb-2" />
+        <v-text-field v-model="fullName" label="Họ tên quản trị viên" prepend-inner-icon="mdi-account" :rules="[v => !!v || 'Bắt buộc']" class="mb-2" />
+        <v-text-field v-model="email" label="Email đăng nhập" type="email" prepend-inner-icon="mdi-email" :rules="[v => !!v || 'Bắt buộc']" class="mb-2" />
+        <v-text-field v-model="phone" label="Số điện thoại chủ tổ chức" type="tel" inputmode="tel" prepend-inner-icon="mdi-phone" :rules="phoneRules" class="mb-2" />
+        <v-text-field v-model="password" label="Mật khẩu" :type="showPassword ? 'text' : 'password'" prepend-inner-icon="mdi-lock" :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'" @click:append-inner="showPassword = !showPassword" :rules="[v => v.length >= 6 || 'Tối thiểu 6 ký tự']" class="mb-4" />
+        <v-btn type="submit" color="primary" block size="large" :loading="loading">Tạo tài khoản</v-btn>
+      </v-form>
+      <v-alert v-if="error" type="error" class="mt-4" density="compact" closable>{{ error }}</v-alert>
+      <v-alert v-if="success" type="success" class="mt-4" density="compact">Tạo thành công! Đang chuyển hướng...</v-alert>
+    </v-card>
+  </PageShell>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { PageShell } from '@/design-system';
 
 const orgName = ref('');
 const fullName = ref('');

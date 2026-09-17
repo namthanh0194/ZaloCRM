@@ -521,8 +521,8 @@ onMounted(async () => {
 
 <style scoped>
 .friends-page {
-  height: calc(100vh - var(--smax-topnav-h, 52px));
-  background: var(--surface-2);
+  height: calc(100vh - var(--layout-topnav-height, 52px));
+  background: var(--color-bg);
   display: flex; flex-direction: column;
   overflow: hidden;
 }
@@ -550,17 +550,17 @@ onMounted(async () => {
 
 .page-head {
   padding: 12px 22px 8px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
   display: flex; align-items: center; gap: 12px;
   flex-wrap: wrap;
 }
-.page-head h1 { margin: 0; font-size: 18px; font-weight: 800; color: var(--ink); }
+.page-head h1 { margin: 0; font-size: 18px; font-weight: 800; color: var(--color-text); }
 
 .active-nick {
   display: inline-flex; align-items: center; gap: 6px;
-  background: var(--brand-soft); color: var(--brand-700);
-  padding: 3px 10px; border-radius: var(--r-pill);
+  background: var(--color-primary-subtle); color: var(--color-primary-active);
+  padding: 3px 10px; border-radius: var(--radius-pill);
   font-weight: 600; font-size: 12px;
 }
 .active-nick .av {
@@ -577,81 +577,81 @@ onMounted(async () => {
 
 .head-search {
   padding: 8px 12px;
-  border: 1px solid var(--line); border-radius: var(--r-sm);
+  border: 1px solid var(--color-border); border-radius: var(--radius-md);
   width: 280px; font-size: 13px;
-  color: var(--ink);
+  color: var(--color-text);
   font-family: inherit;
   transition: border-color .12s, box-shadow .12s;
 }
-.head-search:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.head-search:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-subtle); }
 
 .btn {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 7px 13px; border-radius: var(--r-sm); border: 1px solid var(--line);
-  background: var(--surface); color: var(--ink-2);
+  padding: 7px 13px; border-radius: var(--radius-md); border: 1px solid var(--color-border);
+  background: var(--color-surface); color: var(--color-text-secondary);
   font-weight: 600; font-size: 12.5px;
   cursor: pointer; font-family: inherit;
   transition: all .12s;
 }
-.btn:hover { background: var(--surface-3); color: var(--ink); }
-.btn.primary { background: var(--brand); color: #fff; border-color: var(--brand); box-shadow: var(--sh-xs); }
-.btn.primary:hover:not(:disabled) { background: var(--brand-600); }
+.btn:hover { background: var(--color-surface-secondary); color: var(--color-text); }
+.btn.primary { background: var(--color-primary); color: #fff; border-color: var(--color-primary); box-shadow: var(--shadow-sm); }
+.btn.primary:hover:not(:disabled) { background: var(--color-primary-hover); }
 .btn:disabled { opacity: .6; cursor: not-allowed; }
 
 .stats {
   padding: 9px 22px;
-  background: var(--surface-2);
-  border-bottom: 1px solid var(--line);
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
   display: flex; gap: 16px; align-items: center;
-  font-size: 12.5px; color: var(--ink-2);
+  font-size: 12.5px; color: var(--color-text-secondary);
 }
 .stats .stat { display: inline-flex; align-items: center; gap: 6px; }
-.stats .stat strong { color: var(--ink); font-weight: 700; }
-.stats .stat.good strong { color: var(--success); }
-.stats .stat.warn strong { color: var(--warning); }
-.stats .stat.bad strong { color: var(--error); }
+.stats .stat strong { color: var(--color-text); font-weight: 700; }
+.stats .stat.good strong { color: var(--color-success); }
+.stats .stat.warn strong { color: var(--color-warning); }
+.stats .stat.bad strong { color: var(--color-danger); }
 .sdot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
-.sdot.ok { background: var(--success); }
-.sdot.warn { background: var(--warning); }
-.sdot.info { background: var(--info); }
-.sdot.mut { background: var(--ink-4); }
-.sdot.err { background: var(--error); }
+.sdot.ok { background: var(--color-success); }
+.sdot.warn { background: var(--color-warning); }
+.sdot.info { background: var(--color-info); }
+.sdot.mut { background: var(--color-text-disabled); }
+.sdot.err { background: var(--color-danger); }
 .spacer-flex { flex: 1; }
 
-.density-label { font-size: 11px; color: var(--ink-3); }
+.density-label { font-size: 11px; color: var(--color-text-muted); }
 .density-toggle {
   display: inline-flex;
-  background: var(--surface-3); border: 1px solid var(--line);
-  border-radius: var(--r-sm); padding: 2px;
+  background: var(--color-surface-secondary); border: 1px solid var(--color-border);
+  border-radius: var(--radius-md); padding: 2px;
 }
 .density-toggle button {
   padding: 4px 9px;
   background: transparent; border: none;
   border-radius: 6px;
-  font-size: 11.5px; font-weight: 600; color: var(--ink-3);
+  font-size: 11.5px; font-weight: 600; color: var(--color-text-muted);
   cursor: pointer; font-family: inherit;
 }
 .density-toggle button.active {
-  background: var(--surface); color: var(--brand-700); box-shadow: var(--sh-xs);
+  background: var(--color-surface); color: var(--color-primary-active); box-shadow: var(--shadow-sm);
 }
 
 .pag {
   padding: 9px 22px;
-  background: var(--surface);
-  border-top: 1px solid var(--line);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
   display: flex; align-items: center; gap: 8px;
-  font-size: 12.5px; color: var(--ink-2);
+  font-size: 12.5px; color: var(--color-text-secondary);
 }
 .pag button {
   padding: 5px 11px;
-  border: 1px solid var(--line); background: var(--surface);
-  border-radius: var(--r-sm); cursor: pointer; font-size: 12.5px; font-weight: 600;
-  color: var(--ink-2);
+  border: 1px solid var(--color-border); background: var(--color-surface);
+  border-radius: var(--radius-md); cursor: pointer; font-size: 12.5px; font-weight: 600;
+  color: var(--color-text-secondary);
   font-family: inherit;
   transition: all .12s;
 }
-.pag button:hover:not(:disabled) { background: var(--surface-3); }
-.pag button.primary { background: var(--brand); color: #fff; border-color: var(--brand); }
+.pag button:hover:not(:disabled) { background: var(--color-surface-secondary); }
+.pag button.primary { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
 .pag button:disabled { opacity: .4; cursor: not-allowed; }
 
 .toast {

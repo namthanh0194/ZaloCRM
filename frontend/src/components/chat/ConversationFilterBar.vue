@@ -2,7 +2,25 @@
 <!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <div class="cfb">
-    <!-- ① Quick pills row — soft button, no icon, count fixed-slot tránh nhảy UI -->
+    <!-- ① 4 tabs row — Main Tab style, chia 4 equal, KHÔNG icon KHÔNG count.
+         User spec: "Đây dạng Main Tab — fix size không cần đếm số hội thoại". -->
+    <div class="cfb-tabs main-tab-style">
+      <button
+        v-for="tab in TABS"
+        :key="tab.key"
+        class="cfb-tab"
+        :class="{
+          active: filters.state.activeTab === tab.key,
+          'has-unread': tab.key === 'other' && priorityHasUnread,
+        }"
+        @click="setActiveTab(tab.key)"
+        :title="tab.tooltip"
+      >
+        <span class="tab-label">{{ tab.label }}</span>
+      </button>
+    </div>
+
+    <!-- ② Quick pills row — soft button, no icon, count fixed-slot tránh nhảy UI -->
     <div class="cfb-pills-wrap">
       <div class="cfb-pills">
         <button
@@ -38,24 +56,6 @@
           <span class="count">{{ counts.ready ?? 0 }}</span>
         </button>
       </div>
-    </div>
-
-    <!-- ② 4 tabs row — Main Tab style, chia 4 equal, KHÔNG icon KHÔNG count.
-         User spec: "Đây dạng Main Tab — fix size không cần đếm số hội thoại". -->
-    <div class="cfb-tabs main-tab-style">
-      <button
-        v-for="tab in TABS"
-        :key="tab.key"
-        class="cfb-tab"
-        :class="{
-          active: filters.state.activeTab === tab.key,
-          'has-unread': tab.key === 'other' && priorityHasUnread,
-        }"
-        @click="setActiveTab(tab.key)"
-        :title="tab.tooltip"
-      >
-        <span class="tab-label">{{ tab.label }}</span>
-      </button>
     </div>
 
     <!-- ③ Mini counter + sort row — half height, muted -->
@@ -97,20 +97,21 @@ const props = defineProps<{
 // 2026-06-20: phát khi click LẠI tab đang active → ChatView clear ô tìm kiếm.
 const emit = defineEmits<{ 'reselect-tab': [] }>();
 
-type TabKey = 'personal' | 'group' | 'main' | 'other';
+type TabKey = 'personal' | 'group' | 'main' | 'other' | 'deleted';
 
 const TABS: Array<{
   key: TabKey;
   label: string;
   tooltip: string;
 }> = [
+  { key: 'main',     label: 'Chính',   tooltip: 'Hộp thư chính (cả user lẫn nhóm)' },
   { key: 'personal', label: 'Cá nhân', tooltip: 'Chỉ hội thoại 1-1 (user với user)' },
   { key: 'group',    label: 'Nhóm',    tooltip: 'Chỉ hội thoại nhóm' },
-  { key: 'main',     label: 'Chính',   tooltip: 'Hộp thư chính (cả user lẫn nhóm)' },
   // 2026-06-11 — đổi "Khác" → "Ưu tiên" (key 'other' giữ nguyên, load-bearing
   // ở use-inbox-filters + PATCH /:id/tab). Hội thoại chuyển vào đây sẽ KHÔNG còn
   // ở tab Cá nhân nữa (loại trừ lẫn nhau, xử lý ở backend).
   { key: 'other',    label: 'Ưu tiên', tooltip: 'Hội thoại ưu tiên (đã ghim từ menu chuột phải)' },
+  { key: 'deleted',  label: 'Đã xóa',  tooltip: 'Hội thoại đã xóa/ẩn (có thể khôi phục)' },
 ];
 
 function setActiveTab(key: TabKey) {
@@ -136,7 +137,7 @@ function toggleSort() {
   flex-shrink: 0;
 }
 
-/* ① Quick pills — 4 pills chia ĐỀU, vừa khít khung cột 2, KHÔNG scroll ngang */
+/* ② Quick pills — 4 pills chia ĐỀU, vừa khít khung cột 2, KHÔNG scroll ngang */
 .cfb-pills-wrap {
   border-bottom: 1px solid #F3F4F6;
 }
@@ -210,24 +211,28 @@ function toggleSort() {
 /* Count: fixed slot, monospace tiny, always visible */
 /* Count dưới label (2-line layout) — compact, đậm */
 .pill .count {
-  color: #6B7280;
   font-size: 11px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
   transition: color 0.18s ease;
 }
-/* Active state: count inherit accent color (không cần background — 2-line clean) */
+.pill.alert .count { color: #DC2626; }
+.pill.warning .count { color: #D97706; }
+.pill.danger .count { color: #991B1B; }
+.pill.success .count { color: #16A34A; }
+
+/* Active state: count accent đậm hơn khi pill được chọn */
 .pill.alert.active .count { color: #B91C1C; }
 .pill.warning.active .count { color: #B45309; }
-.pill.danger.active .count { color: #B91C1C; }
+.pill.danger.active .count { color: #7F1D1D; }
 .pill.success.active .count { color: #047857; }
 
-/* ② Main Tab style — 4 tabs prominent, fix size, KHÔNG count */
+/* ① Main Tab style — 4 tabs prominent, fix size, KHÔNG count */
 .cfb-tabs.main-tab-style {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  padding: 6px;
+  grid-template-columns: repeat(5, 1fr);
+  padding: 5px 4px;
   margin: 8px 10px 0;
   background: #F3F4F6;
   border-radius: 10px;
@@ -235,13 +240,11 @@ function toggleSort() {
   border-bottom: none;
 }
 .cfb-tabs.main-tab-style .cfb-tab {
-  padding: 7px 1px;
+  padding: 6px 1px;
   text-align: center;
-  /* 2026-06-11 — "Ưu tiên" (7 ký tự) dài hơn "Khác"; giảm font + padding để 4 tab
-     đều không bị cắt chữ ở 1366px. */
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
-  letter-spacing: -0.2px;
+  letter-spacing: -0.3px;
   color: #6B7280;
   cursor: pointer;
   border: none;
@@ -290,11 +293,11 @@ function toggleSort() {
   text-overflow: clip;
 }
 /* Bottom border thay cho tabs section sau khi đổi sang main-tab pill style */
-.cfb-tabs.main-tab-style + .cfb-mini {
+.cfb-pills-wrap + .cfb-mini {
   margin-top: 8px;
 }
 
-/* ④ Mini row — half height, muted */
+/* ③ Mini row — half height, muted */
 .cfb-mini {
   display: flex;
   justify-content: space-between;

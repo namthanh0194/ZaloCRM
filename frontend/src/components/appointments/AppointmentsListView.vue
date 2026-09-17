@@ -219,67 +219,67 @@ const grouped = computed(() => {
 @import '@/assets/airtable.css';
 
 .apt-list {
-  padding: var(--at-s-md) var(--at-s-xl) var(--at-s-lg);
+  padding: var(--space-4) var(--space-8) var(--space-6);
   overflow-y: auto;
   height: 100%;
-  background: var(--at-canvas);
+  background: var(--color-surface);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  color: var(--at-body);
+  color: var(--color-text-secondary);
 }
 
 /* Empty state — cream callout */
 .empty {
-  background: var(--at-cream);
-  border-radius: var(--at-r-lg);
-  padding: var(--at-s-xxl) var(--at-s-lg);
+  background: var(--color-primary-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8) var(--space-6);
   text-align: center;
-  color: var(--at-ink);
+  color: var(--color-text);
 }
-.empty-icon { font-size: 36px; margin-bottom: var(--at-s-xs); }
+.empty-icon { font-size: 36px; margin-bottom: var(--space-2); }
 .empty h3 {
-  margin: var(--at-s-xs) 0 var(--at-s-xxs);
-  color: var(--at-ink);
+  margin: var(--space-2) 0 var(--space-1);
+  color: var(--color-text);
   font-size: 18px;
   font-weight: 500;
 }
-.empty p { color: var(--at-body); font-size: 13.5px; margin: 0; }
+.empty p { color: var(--color-text-secondary); font-size: 13.5px; margin: 0; }
 .empty-btn {
-  margin-top: var(--at-s-md);
+  margin-top: var(--space-4);
   padding: 10px 18px;
   border: none;
-  border-radius: var(--at-r-lg);
+  border-radius: var(--radius-lg);
   cursor: pointer;
   font-weight: 500;
   font-size: 13px;
-  background: var(--at-ink);
-  color: var(--at-on-primary);
+  background: var(--color-text);
+  color: var(--color-on-primary);
   font-family: inherit;
 }
-.empty-btn:active { background: var(--at-primary-active); }
+.empty-btn:active { background: var(--color-primary-active); }
 
 /* Day group */
-.group { margin-bottom: var(--at-s-lg); }
+.group { margin-bottom: var(--space-6); }
 .group h3 {
   font-size: 11.5px;
-  color: var(--at-muted);
-  margin: 0 0 var(--at-s-xs);
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-2);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   display: flex;
   align-items: center;
-  gap: var(--at-s-xs);
+  gap: var(--space-2);
 }
 .group h3 .badge {
-  background: var(--at-canvas);
-  border: 1px solid var(--at-hairline);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   padding: 1px 8px;
-  border-radius: var(--at-r-pill);
+  border-radius: var(--radius-pill);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0;
   text-transform: none;
-  color: var(--at-ink);
+  color: var(--color-text);
 }
 
 /* List header — 7 columns: Time | Customer | Title+Note | Type | Status | Sale | Actions */
@@ -287,15 +287,15 @@ const grouped = computed(() => {
   display: grid;
   grid-template-columns: 90px 220px 1fr 130px 130px 130px 96px;
   align-items: center;
-  gap: var(--at-s-sm);
-  padding: 10px var(--at-s-sm);
-  background: var(--at-surface-soft);
-  border: 1px solid var(--at-hairline);
-  border-radius: var(--at-r-md);
+  gap: var(--space-3);
+  padding: 10px var(--space-3);
+  background: var(--color-surface-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   margin-bottom: 8px;
   font-size: 11px;
   font-weight: 500;
-  color: var(--at-muted);
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -306,17 +306,17 @@ const grouped = computed(() => {
   display: grid;
   grid-template-columns: 90px 220px 1fr 130px 130px 130px 96px;
   align-items: center;
-  gap: var(--at-s-sm);
-  background: var(--at-canvas);
-  border: 1px solid var(--at-hairline);
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-left: 4px solid transparent;
-  border-radius: var(--at-r-md);
-  padding: 10px var(--at-s-sm);
+  border-radius: var(--radius-md);
+  padding: 10px var(--space-3);
   margin-bottom: 6px;
   cursor: pointer;
   transition: background 0.1s, box-shadow 0.1s;
 }
-.row:active { background: var(--at-surface-soft); }
+.row:active { background: var(--color-surface-secondary); }
 
 /* Urgency tier tint — overdue (đỏ nhạt) / upcoming (neutral) / done (mờ).
    Border-left vẫn giữ saleColor (do inline style override), trừ overdue được override
@@ -331,32 +331,32 @@ const grouped = computed(() => {
   background: #f8fafc;
 }
 .row.done .col-time { text-decoration: line-through; color: #64748b; }
-.row.done .col-title .title-text { color: var(--at-muted); }
+.row.done .col-title .title-text { color: var(--color-text-muted); }
 .row .col { padding: 0 4px; min-width: 0; }
 .col-time { display: flex; flex-direction: column; gap: 2px; }
 .col-customer { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .col-title { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .col-title .title-text {
-  font-size: 13px; font-weight: 500; color: var(--at-ink);
+  font-size: 13px; font-weight: 500; color: var(--color-text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .col-title .note-text {
-  font-size: 11.5px; color: var(--at-body);
+  font-size: 11.5px; color: var(--color-text-secondary);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.col-title .note-text.muted { color: var(--at-muted); font-style: italic; }
+.col-title .note-text.muted { color: var(--color-text-muted); font-style: italic; }
 .col-owner { display: flex; align-items: center; gap: 6px; }
 .col-actions { display: flex; gap: 4px; justify-content: flex-end; }
 
 .col-time {
   font-weight: 500;
   font-size: 14px;
-  color: var(--at-ink);
+  color: var(--color-text);
   font-family: ui-monospace, 'SF Mono', Consolas, monospace;
 }
 .col-time .dur {
   font-size: 10px;
-  color: var(--at-muted);
+  color: var(--color-text-muted);
   font-weight: 500;
   font-family: 'Inter', sans-serif;
   margin-top: 1px;
@@ -364,8 +364,8 @@ const grouped = computed(() => {
 
 .col-customer .av {
   width: 36px; height: 36px;
-  border-radius: var(--at-r-pill);
-  color: var(--at-on-primary);
+  border-radius: var(--radius-pill);
+  color: var(--color-on-primary);
   display: grid; place-items: center;
   font-weight: 500;
   font-size: 12px;
@@ -374,13 +374,13 @@ const grouped = computed(() => {
 }
 .col-customer .av img {
   width: 100%; height: 100%; object-fit: cover;
-  border-radius: var(--at-r-pill);
+  border-radius: var(--radius-pill);
   display: block;
 }
 .col-customer .info { min-width: 0; flex: 1; }
 .col-customer .info .name {
   font-weight: 500;
-  color: var(--at-ink);
+  color: var(--color-text);
   font-size: 13.5px;
   white-space: nowrap;
   overflow: hidden;
@@ -388,12 +388,12 @@ const grouped = computed(() => {
 }
 .col-customer .info .zalo-tag {
   font-size: 10px;
-  color: var(--at-muted);
+  color: var(--color-text-muted);
   letter-spacing: 0.06em;
 }
 .col-customer .info .sub {
   font-size: 11.5px;
-  color: var(--at-muted);
+  color: var(--color-text-muted);
   margin-top: 1px;
   white-space: nowrap;
   overflow: hidden;
@@ -403,22 +403,22 @@ const grouped = computed(() => {
 /* Source col (legacy, not used in 7-col layout but still styled if appears) */
 .source {
   font-size: 12px;
-  color: var(--at-body);
+  color: var(--color-text-secondary);
   display: flex;
   align-items: center;
   gap: 6px;
 }
 .src-icon {
   width: 22px; height: 22px;
-  border-radius: var(--at-r-sm);
+  border-radius: var(--radius-sm);
   display: grid; place-items: center;
   font-size: 11px;
   font-weight: 500;
-  color: var(--at-on-primary);
+  color: var(--color-on-primary);
   flex-shrink: 0;
 }
-.src-icon.zalo   { background: var(--at-link); }
-.src-icon.manual { background: var(--at-muted); }
+.src-icon.zalo   { background: var(--color-primary); }
+.src-icon.manual { background: var(--color-text-muted); }
 
 /* Pills — Airtable signature tints */
 .pill {
@@ -426,25 +426,25 @@ const grouped = computed(() => {
   align-items: center;
   gap: 4px;
   padding: 2px 9px;
-  border-radius: var(--at-r-pill);
+  border-radius: var(--radius-pill);
   font-size: 11.5px;
   font-weight: 500;
   letter-spacing: 0.16px;
   white-space: nowrap;
 }
-.pill.type { background: var(--at-surface-soft); color: var(--at-body); border: 1px solid var(--at-hairline); }
+.pill.type { background: var(--color-surface-secondary); color: var(--color-text-secondary); border: 1px solid var(--color-border); }
 .pill.status-scheduled { background: #fdf0e3; color: #7a4115; }    /* peach tint */
 .pill.status-overdue   { background: #fdf3df; color: #7a5818; }    /* mustard tint */
 .pill.status-completed { background: #e3ede4; color: #0a2e0e; }    /* forest tint */
-.pill.status-cancelled { background: var(--at-surface-strong); color: var(--at-muted); text-decoration: line-through; }
+.pill.status-cancelled { background: var(--color-border); color: var(--color-text-muted); text-decoration: line-through; }
 .pill.status-no_show   { background: #fbe6dc; color: #7a2000; }    /* coral tint */
 
 /* Owner col */
-.owner { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--at-body); }
+.owner { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--color-text-secondary); }
 .av-mini {
   width: 22px; height: 22px;
-  border-radius: var(--at-r-pill);
-  color: var(--at-on-primary);
+  border-radius: var(--radius-pill);
+  color: var(--color-on-primary);
   display: grid; place-items: center;
   font-size: 10px;
   font-weight: 500;
@@ -455,15 +455,15 @@ const grouped = computed(() => {
 .actions { display: flex; gap: 4px; justify-content: flex-end; }
 .actions button {
   width: 28px; height: 28px;
-  border-radius: var(--at-r-sm);
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   background: transparent;
-  color: var(--at-body);
+  color: var(--color-text-secondary);
   cursor: pointer;
   font-family: inherit;
   font-size: 14px;
 }
-.actions button:active { background: var(--at-surface-soft); border-color: var(--at-hairline); }
+.actions button:active { background: var(--color-surface-secondary); border-color: var(--color-border); }
 
 @media (max-width: 1280px) {
   .list-header, .row { grid-template-columns: 80px 200px 1fr 120px 120px 110px 90px; gap: 8px; }

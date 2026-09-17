@@ -13,6 +13,6 @@
 <style scoped>
 /* Nền tổng teal-navy nhạt — đồng bộ thương hiệu HS Holding */
 .auth-shell {
-  background: linear-gradient(135deg, #e8eef1 0%, #d3dde2 100%);
+  background: linear-gradient(135deg, var(--auth-shell-bg-start) 0%, var(--auth-shell-bg-end) 100%);
 }
 </style>

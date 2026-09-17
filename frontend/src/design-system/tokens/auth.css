@@ -1,0 +1,11 @@
+/* Authentication domain tokens for the pre-login brand shell. */
+:root {
+  --auth-shell-bg-start: #e8eef1;
+  --auth-shell-bg-end: #d3dde2;
+  --auth-brand-start: #0e445a;
+  --auth-brand-end: #06222f;
+  --auth-accent: #6fc5ea;
+  --auth-text-muted: #6b7884;
+  --auth-placeholder: #94a3b0;
+  --auth-card-shadow: 0 24px 60px -12px rgb(6 34 47 / 28%), 0 8px 24px -8px rgb(6 34 47 / 18%);
+}

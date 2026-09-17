@@ -1,0 +1,189 @@
+/**
+ * Phase 2 - Legacy Compatibility Layer
+ *
+ * Rules:
+ * - Legacy stylesheets remain loaded today so existing pages render identically.
+ * - Every alias carries a target migration wave and @deprecated directive.
+ * - Do not author new consumers for these namespaces.
+ */
+:root {
+  /* @deprecated: migrate consumers to --color-primary. Target: Wave 2 (Settings/Admin) */
+  --brand: var(--color-primary);
+  /* @deprecated: migrate consumers to --color-primary-hover. Target: Wave 2 */
+  --brand-600: var(--color-primary-hover);
+  /* @deprecated: migrate consumers to --color-primary-active. Target: Wave 2 */
+  --brand-700: var(--color-primary-active);
+  /* @deprecated: migrate consumers to --color-primary-subtle. Target: Wave 2 */
+  --brand-soft: var(--color-primary-subtle);
+  /* @deprecated: migrate consumers to --color-primary-subtle. Target: Wave 2 */
+  --brand-softer: var(--color-primary-subtle);
+  /* @deprecated: migrate consumers to --color-text. Target: Wave 2 */
+  --ink: var(--color-text);
+  /* @deprecated: migrate consumers to --color-text-secondary. Target: Wave 2 */
+  --ink-2: var(--color-text-secondary);
+  /* @deprecated: migrate consumers to --color-text-muted. Target: Wave 2 */
+  --ink-3: var(--color-text-muted);
+  /* @deprecated: migrate consumers to --color-text-disabled. Target: Wave 2 */
+  --ink-4: var(--color-text-disabled);
+  /* @deprecated: migrate consumers to --color-border. Target: Wave 2 */
+  --line: var(--color-border);
+  /* @deprecated: migrate consumers to --color-border-strong. Target: Wave 2 */
+  --line-2: var(--color-border-strong);
+  /* @deprecated: migrate consumers to --color-surface. Target: Wave 2 */
+  --surface: var(--color-surface);
+  /* @deprecated: migrate consumers to --color-bg. Target: Wave 2 */
+  --surface-2: var(--color-bg);
+  /* @deprecated: migrate consumers to --color-surface-secondary. Target: Wave 2 */
+  --surface-3: var(--color-surface-secondary);
+  /* @deprecated: migrate consumers to --color-success. Target: Wave 2 */
+  --success: var(--color-success);
+  /* @deprecated: migrate consumers to --color-success-subtle. Target: Wave 2 */
+  --success-soft: var(--color-success-subtle);
+  /* @deprecated: migrate consumers to --color-warning. Target: Wave 2 */
+  --warning: var(--color-warning);
+  /* @deprecated: migrate consumers to --color-warning-subtle. Target: Wave 2 */
+  --warning-soft: var(--color-warning-subtle);
+  /* @deprecated: migrate consumers to --color-danger. Target: Wave 2 */
+  --error: var(--color-danger);
+  /* @deprecated: migrate consumers to --color-danger-subtle. Target: Wave 2 */
+  --error-soft: var(--color-danger-subtle);
+  /* @deprecated: migrate consumers to --color-info. Target: Wave 2 */
+  --info: var(--color-info);
+  /* @deprecated: migrate consumers to --color-info-subtle. Target: Wave 2 */
+  --info-soft: var(--color-info-subtle);
+  /* @deprecated: migrate consumers to --radius-sm. Target: Wave 2 */
+  --r-xs: var(--radius-sm);
+  /* @deprecated: migrate consumers to --radius-md. Target: Wave 2 */
+  --r-sm: var(--radius-md);
+  /* @deprecated: migrate consumers to --radius-lg. Target: Wave 2 */
+  --r-md: var(--radius-lg);
+  /* @deprecated: migrate consumers to --radius-xl. Target: Wave 2 */
+  --r-lg: var(--radius-xl);
+  /* @deprecated: migrate consumers to --radius-pill. Target: Wave 2 */
+  --r-pill: var(--radius-pill);
+  /* @deprecated: migrate consumers to --shadow-sm. Target: Wave 2 */
+  --sh-xs: var(--shadow-sm);
+  /* @deprecated: migrate consumers to --shadow-sm. Target: Wave 2 */
+  --sh-sm: var(--shadow-sm);
+  /* @deprecated: migrate consumers to --shadow-lg. Target: Wave 2 */
+  --sh-lg: var(--shadow-lg);
+
+  /* @deprecated: migrate consumers to --color-primary. Target: Wave 4 (Chat) */
+  --smax-primary: var(--color-primary);
+  /* @deprecated: migrate consumers to --color-primary-hover. Target: Wave 4 */
+  --smax-primary-hover: var(--color-primary-hover);
+  /* @deprecated: migrate consumers to --color-primary-subtle. Target: Wave 4 */
+  --smax-primary-soft: var(--color-primary-subtle);
+  /* @deprecated: migrate consumers to --color-surface. Target: Wave 4 */
+  --smax-bg: var(--color-surface);
+  /* @deprecated: migrate consumers to --color-text. Target: Wave 4 */
+  --smax-text: var(--color-text);
+  /* @deprecated: migrate consumers to --color-success. Target: Wave 4 */
+  --smax-success: var(--color-success);
+  /* @deprecated: migrate consumers to --color-warning. Target: Wave 4 */
+  --smax-warning: var(--color-warning);
+  /* @deprecated: migrate consumers to --color-info. Target: Wave 4 */
+  --smax-info: var(--color-info);
+  /* @deprecated: migrate consumers to --color-danger. Target: Wave 4 */
+  --smax-error: var(--color-danger);
+
+  /* @deprecated: migrate consumers to --color-primary. Target: Wave 1 (Dashboard) / Wave 3 (CRM) */
+  --at-primary: var(--color-primary);
+  /* @deprecated: migrate consumers to --color-primary-active. Target: Wave 1 / Wave 3 */
+  --at-primary-active: var(--color-primary-active);
+  /* @deprecated: migrate consumers to --color-primary-subtle. Target: Wave 1 / Wave 3 */
+  --at-primary-soft: var(--color-primary-subtle);
+  /* @deprecated: migrate consumers to --color-primary. Target: Wave 1 / Wave 3 */
+  --at-action: var(--color-primary);
+  /* @deprecated: migrate consumers to --color-primary-subtle. Target: Wave 1 / Wave 3 */
+  --at-action-soft: var(--color-primary-subtle);
+  /* @deprecated: migrate consumers to --color-border. Target: Wave 1 / Wave 3 */
+  --at-hairline: var(--color-border);
+  /* @deprecated: migrate consumers to --color-border-strong. Target: Wave 1 / Wave 3 */
+  --at-border-strong: var(--color-border-strong);
+  /* @deprecated: migrate consumers to --color-surface. Target: Wave 1 / Wave 3 */
+  --at-canvas: var(--color-surface);
+  /* @deprecated: migrate consumers to --color-bg. Target: Wave 1 / Wave 3 */
+  --at-surface-soft: var(--color-surface-secondary);
+  /* @deprecated: migrate consumers to --color-text. Target: Wave 1 / Wave 3 */
+  --at-ink: var(--color-text);
+  /* @deprecated: migrate consumers to --color-text-secondary. Target: Wave 1 / Wave 3 */
+  --at-body: var(--color-text-secondary);
+  /* @deprecated: migrate consumers to --color-text-muted. Target: Wave 1 / Wave 3 */
+  --at-muted: var(--color-text-muted);
+  /* @deprecated: migrate consumers to --color-text-disabled. Target: Wave 1 / Wave 3 */
+  --at-hint: var(--color-text-disabled);
+  /* @deprecated: migrate consumers to --color-danger. Target: Wave 1 / Wave 3 */
+  --at-danger: var(--color-danger);
+  /* @deprecated: migrate consumers to --color-danger. Target: Wave 1 / Wave 3 */
+  --at-atlas-danger: var(--color-danger);
+  /* @deprecated: migrate consumers to --color-danger-subtle. Target: Wave 1 / Wave 3 */
+  --at-atlas-danger-soft: var(--color-danger-subtle);
+  /* @deprecated: migrate consumers to --color-success. Target: Wave 1 / Wave 3 */
+  --at-success: var(--color-success);
+  /* @deprecated: migrate consumers to --color-success. Target: Wave 1 / Wave 3 */
+  --at-atlas-success: var(--color-success);
+  /* @deprecated: migrate consumers to --color-success-subtle. Target: Wave 1 / Wave 3 */
+  --at-atlas-success-soft: var(--color-success-subtle);
+  /* @deprecated: migrate consumers to --color-warning. Target: Wave 1 / Wave 3 */
+  --at-warning: var(--color-warning);
+  /* @deprecated: migrate consumers to --color-warning. Target: Wave 1 / Wave 3 */
+  --at-atlas-warning: var(--color-warning);
+  /* @deprecated: migrate consumers to --color-warning-subtle. Target: Wave 1 / Wave 3 */
+  --at-atlas-warning-soft: var(--color-warning-subtle);
+  /* @deprecated: migrate consumers to --radius-sm. Target: Wave 1 / Wave 3 */
+  --at-r-xs: var(--radius-sm);
+  /* @deprecated: migrate consumers to --radius-sm. Target: Wave 1 / Wave 3 */
+  --at-r-sm: var(--radius-sm);
+  /* @deprecated: migrate consumers to --radius-md. Target: Wave 1 / Wave 3 */
+  --at-r-md: var(--radius-md);
+  /* @deprecated: migrate consumers to --radius-lg. Target: Wave 1 / Wave 3 */
+  --at-r-lg: var(--radius-lg);
+  /* @deprecated: migrate consumers to --radius-pill. Target: Wave 1 / Wave 3 */
+  --at-r-pill: var(--radius-pill);
+  /* @deprecated: migrate consumers to --space-1. Target: Wave 1 / Wave 3 */
+  --at-s-xs: var(--space-1);
+  /* @deprecated: migrate consumers to --space-2. Target: Wave 1 / Wave 3 */
+  --at-s-sm: var(--space-2);
+  /* @deprecated: migrate consumers to --space-3. Target: Wave 1 / Wave 3 */
+  --at-s-md: var(--space-3);
+  /* @deprecated: migrate consumers to --space-4. Target: Wave 1 / Wave 3 */
+  --at-s-lg: var(--space-4);
+  /* @deprecated: migrate consumers to --space-6. Target: Wave 1 / Wave 3 */
+  --at-s-xl: var(--space-6);
+
+  /* @deprecated: migrate consumers to --color-primary. Target: Wave 1 (Reports) */
+  --rk-brand: var(--color-primary);
+  /* @deprecated: migrate consumers to --color-primary-active. Target: Wave 1 */
+  --rk-brand-700: var(--color-primary-active);
+  /* @deprecated: migrate consumers to --color-primary-subtle. Target: Wave 1 */
+  --rk-brand-soft: var(--color-primary-subtle);
+  /* @deprecated: migrate consumers to --color-primary-subtle. Target: Wave 1 */
+  --rk-brand-softer: var(--color-primary-subtle);
+  /* @deprecated: migrate consumers to --color-text. Target: Wave 1 */
+  --rk-ink: var(--color-text);
+  /* @deprecated: migrate consumers to --color-text-secondary. Target: Wave 1 */
+  --rk-body: var(--color-text-secondary);
+  /* @deprecated: migrate consumers to --color-text-muted. Target: Wave 1 */
+  --rk-muted: var(--color-text-muted);
+  /* @deprecated: migrate consumers to --color-text-disabled. Target: Wave 1 */
+  --rk-faint: var(--color-text-disabled);
+  /* @deprecated: migrate consumers to --color-border. Target: Wave 1 */
+  --rk-hairline: var(--color-border);
+  /* @deprecated: migrate consumers to --color-surface. Target: Wave 1 */
+  --rk-surface: var(--color-surface);
+  /* @deprecated: migrate consumers to --color-bg. Target: Wave 1 */
+  --rk-surface-2: var(--color-bg);
+  /* @deprecated: migrate consumers to --color-success. Target: Wave 1 */
+  --rk-ok: var(--color-success);
+  /* @deprecated: migrate consumers to --color-success-subtle. Target: Wave 1 */
+  --rk-ok-soft: var(--color-success-subtle);
+  /* @deprecated: migrate consumers to --color-warning. Target: Wave 1 */
+  --rk-warn: var(--color-warning);
+  /* @deprecated: migrate consumers to --color-warning-subtle. Target: Wave 1 */
+  --rk-warn-soft: var(--color-warning-subtle);
+  /* @deprecated: migrate consumers to --color-danger. Target: Wave 1 */
+  --rk-danger: var(--color-danger);
+  /* @deprecated: migrate consumers to --color-danger-subtle. Target: Wave 1 */
+  --rk-danger-soft: var(--color-danger-subtle);
+}

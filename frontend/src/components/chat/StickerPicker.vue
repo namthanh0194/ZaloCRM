@@ -145,7 +145,7 @@ watch(open, watchOpen);
   display: inline-flex; align-items: center; justify-content: center;
   border-radius: 6px;
   cursor: pointer;
-  color: var(--smax-grey-700, #4b5563);
+  color: var(--color-text-secondary, #4b5563);
   background: transparent;
   border: none;
   outline: none;
@@ -154,10 +154,10 @@ watch(open, watchOpen);
   -webkit-tap-highlight-color: transparent;
   transition: background 0.12s, color 0.12s;
 }
-.icon-tool:hover { background: var(--smax-grey-100, #f5f6fa); color: var(--smax-primary, #2962ff); }
+.icon-tool:hover { background: var(--color-bg, #f5f6fa); color: var(--color-primary, #2962ff); }
 .icon-tool:focus { outline: none; }
 .icon-tool:focus-visible {
-  outline: 2px solid var(--smax-primary-soft, #bbdefb);
+  outline: 2px solid var(--color-primary-subtle, #bbdefb);
   outline-offset: -1px;
 }
 
@@ -209,9 +209,9 @@ watch(open, watchOpen);
 }
 .sp-chip:hover { background: #e3f2fd; }
 .sp-chip.active {
-  background: var(--smax-primary, #2962ff);
+  background: var(--color-primary, #2962ff);
   color: white;
-  border-color: var(--smax-primary, #2962ff);
+  border-color: var(--color-primary, #2962ff);
 }
 .sp-grid {
   display: grid;
@@ -234,7 +234,7 @@ watch(open, watchOpen);
 }
 .sp-item:hover {
   background: #e3f2fd;
-  border-color: var(--smax-primary, #2962ff);
+  border-color: var(--color-primary, #2962ff);
   transform: scale(1.05);
 }
 .sp-item img {

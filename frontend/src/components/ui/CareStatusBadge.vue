@@ -64,7 +64,7 @@ function select(value: CareStatusValue) {
 .care-pill:hover { filter: brightness(0.97); }
 
 /* Chip color variants — mirror cross-page palette */
-.chip-grey    { background: rgba(90,100,120,0.12); color: var(--smax-grey-700); }
+.chip-grey    { background: rgba(90,100,120,0.12); color: var(--color-text-secondary); }
 .chip-cyan    { background: rgba(0,188,212,0.13);  color: #00838f; }
 .chip-info    { background: rgba(33,150,243,0.13); color: #1565c0; }
 .chip-purple  { background: rgba(156,39,176,0.13); color: #6a1b9a; }
@@ -72,5 +72,5 @@ function select(value: CareStatusValue) {
 .chip-error   { background: rgba(255,82,82,0.13);  color: #c62828; }
 .chip-success { background: rgba(0,200,83,0.13);   color: #00897b; }
 
-.is-selected { background: var(--smax-primary-soft) !important; color: var(--smax-primary); }
+.is-selected { background: var(--color-primary-subtle) !important; color: var(--color-primary); }
 </style>

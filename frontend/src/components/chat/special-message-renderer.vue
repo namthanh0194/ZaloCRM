@@ -742,8 +742,8 @@ const linkDescription = computed<string>(() => {
 }
 
 .rich-card {
-  background: var(--smax-grey-50, #fafbfc);
-  border: 1px solid var(--smax-grey-200, #ebedf0);
+  background: var(--color-surface-secondary, #fafbfc);
+  border: 1px solid var(--color-border, #ebedf0);
   border-radius: 9px;
   padding: 9px 11px;
   font-size: 13.5px;
@@ -752,27 +752,27 @@ const linkDescription = computed<string>(() => {
 .rich-title {
   font-weight: 600;
   margin-bottom: 4px;
-  color: var(--smax-text, #212121);
+  color: var(--color-text, #212121);
   white-space: pre-wrap;
   word-break: break-word;
 }
 .rich-body {
-  color: var(--smax-text, #212121);
+  color: var(--color-text, #212121);
   white-space: pre-wrap;
   word-break: break-word;
 }
 .rich-link {
   display: inline-flex; align-items: center;
-  color: var(--smax-primary, #2962ff);
+  color: var(--color-primary, #2962ff);
   text-decoration: none;
   margin-top: 4px;
   font-size: 12.5px;
 }
 .rich-link:hover { text-decoration: underline; }
 /* Auto-link URL + SĐT trong tin rich (2026-06-22) — v-html nên dùng :deep. */
-.special-message :deep(.link) { color: var(--brand, #1786be); word-break: break-all; }
+.special-message :deep(.link) { color: var(--color-primary, #1786be); word-break: break-all; }
 .special-message :deep(.phone-link) {
-  color: var(--brand, #1786be);
+  color: var(--color-primary, #1786be);
   cursor: pointer;
   border-bottom: 1px dashed currentColor;
 }
@@ -788,7 +788,7 @@ const linkDescription = computed<string>(() => {
 .rich-fallback {
   display: inline-flex; align-items: center;
   font-size: 12px;
-  color: var(--smax-grey-700, #5a6478);
+  color: var(--color-text-secondary, #5a6478);
   font-style: italic;
 }
 
@@ -806,14 +806,14 @@ const linkDescription = computed<string>(() => {
   margin-bottom: 4px;
 }
 .forwarded-body {
-  color: var(--smax-text, #212121);
+  color: var(--color-text, #212121);
   word-break: break-word;
   white-space: pre-wrap;
 }
 
 .note-body {
   font-size: 13px;
-  color: var(--smax-text, #212121);
+  color: var(--color-text, #212121);
   word-break: break-word;
   white-space: pre-wrap;
 }
@@ -831,8 +831,8 @@ const linkDescription = computed<string>(() => {
   display: block;
   padding: 12px;
   border-radius: 10px;
-  background: var(--smax-grey-50, #fafbfc);
-  border: 1px solid var(--smax-grey-200, #e5e7eb);
+  background: var(--color-surface-secondary, #fafbfc);
+  border: 1px solid var(--color-border, #e5e7eb);
   max-width: 320px;
   position: relative;
 }
@@ -847,18 +847,18 @@ const linkDescription = computed<string>(() => {
 .profile-body { display: flex; align-items: center; gap: 12px; }
 .profile-avatar {
   width: 48px; height: 48px; border-radius: 50%;
-  background: var(--smax-grey-100, #f1f3f5);
+  background: var(--color-bg, #f1f3f5);
   display: flex; align-items: center; justify-content: center;
   overflow: hidden; flex-shrink: 0;
 }
 .profile-avatar-img { width: 100%; height: 100%; object-fit: cover; }
 .profile-info { flex: 1; min-width: 0; }
 .profile-name {
-  font-weight: 600; font-size: 14px; color: var(--smax-text);
+  font-weight: 600; font-size: 14px; color: var(--color-text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .profile-phone {
-  font-size: 12px; color: var(--smax-grey-700);
+  font-size: 12px; color: var(--color-text-secondary);
   display: flex; align-items: center; gap: 3px;
   margin-top: 2px;
 }
@@ -868,15 +868,15 @@ const linkDescription = computed<string>(() => {
 .profile-btn {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 5px 10px; border-radius: 6px;
-  border: 1px solid var(--smax-grey-300, #d1d5db);
-  background: white; color: var(--smax-text);
+  border: 1px solid var(--color-border-strong, #d1d5db);
+  background: white; color: var(--color-text);
   font-size: 12px; font-weight: 500; cursor: pointer;
   transition: background 0.15s ease;
 }
-.profile-btn:hover { background: var(--smax-grey-100, #f3f4f6); }
+.profile-btn:hover { background: var(--color-bg, #f3f4f6); }
 .profile-btn.primary {
-  border-color: var(--smax-primary, #2962ff);
-  background: var(--smax-primary, #2962ff);
+  border-color: var(--color-primary, #2962ff);
+  background: var(--color-primary, #2962ff);
   color: white;
 }
 .profile-btn.primary:hover { filter: brightness(0.95); }
@@ -887,12 +887,12 @@ const linkDescription = computed<string>(() => {
   padding: 10px;
   border-radius: 10px;
   background: white;
-  border: 1px solid var(--smax-grey-200, #e5e7eb);
+  border: 1px solid var(--color-border, #e5e7eb);
   max-width: 220px;
 }
 .qr-card-header {
   display: flex; align-items: center; gap: 4px;
-  font-size: 12px; font-weight: 600; color: var(--smax-grey-700);
+  font-size: 12px; font-weight: 600; color: var(--color-text-secondary);
   margin-bottom: 8px;
 }
 .qr-image-wrap { display: block; }
@@ -902,13 +902,13 @@ const linkDescription = computed<string>(() => {
 .qr-btn {
   display: inline-flex; align-items: center; gap: 3px;
   padding: 4px 8px; border-radius: 5px;
-  border: 1px solid var(--smax-grey-300);
-  background: var(--smax-grey-50);
-  font-size: 11px; color: var(--smax-text);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-secondary);
+  font-size: 11px; color: var(--color-text);
   cursor: pointer; text-decoration: none;
   transition: background 0.15s ease;
 }
-.qr-btn:hover { background: var(--smax-grey-100); }
+.qr-btn:hover { background: var(--color-bg); }
 
 /* ════════ E28 Reminder v2 ════════ */
 .reminder-card-v2 {
@@ -925,12 +925,12 @@ const linkDescription = computed<string>(() => {
   margin-bottom: 6px;
 }
 .reminder-title {
-  font-weight: 600; font-size: 13.5px; color: var(--smax-text);
+  font-weight: 600; font-size: 13.5px; color: var(--color-text);
   margin-bottom: 4px;
   word-break: break-word;
 }
 .reminder-body {
-  font-size: 12.5px; color: var(--smax-grey-700);
+  font-size: 12.5px; color: var(--color-text-secondary);
   line-height: 1.4; word-break: break-word; white-space: pre-wrap;
 }
 
@@ -944,10 +944,10 @@ const linkDescription = computed<string>(() => {
 }
 .poll-header {
   display: flex; align-items: center; gap: 4px;
-  font-size: 12px; color: var(--smax-grey-700);
+  font-size: 12px; color: var(--color-text-secondary);
   margin-bottom: 6px;
 }
-.poll-header strong { font-weight: 600; color: var(--smax-text); flex: 1; }
+.poll-header strong { font-weight: 600; color: var(--color-text); flex: 1; }
 .poll-status-badge {
   font-size: 9px; font-weight: 700; text-transform: uppercase;
   padding: 2px 6px; border-radius: 4px;
@@ -955,7 +955,7 @@ const linkDescription = computed<string>(() => {
 .poll-status-badge.closed { color: #6b7280; background: rgba(107, 114, 128, 0.15); }
 .poll-status-badge.updated { color: #1976d2; background: rgba(33, 150, 243, 0.15); }
 .poll-title {
-  font-size: 13px; font-weight: 500; color: var(--smax-text);
+  font-size: 13px; font-weight: 500; color: var(--color-text);
   margin-bottom: 8px; font-style: italic;
 }
 .poll-options-v2 {
@@ -964,14 +964,14 @@ const linkDescription = computed<string>(() => {
 .poll-option {
   display: flex; align-items: center; gap: 6px;
   padding: 4px 0; font-size: 12.5px;
-  color: var(--smax-text);
+  color: var(--color-text);
 }
 .poll-option.is-selected {
-  color: var(--smax-primary, #2962ff); font-weight: 600;
+  color: var(--color-primary, #2962ff); font-weight: 600;
 }
 .poll-option-text { flex: 1; }
 .poll-footer {
-  font-size: 11px; color: var(--smax-grey-500);
+  font-size: 11px; color: var(--color-text-muted);
   margin-top: 4px;
 }
 
@@ -990,12 +990,12 @@ const linkDescription = computed<string>(() => {
   margin-bottom: 6px;
 }
 .note-title {
-  font-weight: 700; font-size: 13.5px; color: var(--smax-text);
+  font-weight: 700; font-size: 13.5px; color: var(--color-text);
   margin-bottom: 4px;
   word-break: break-word;
 }
 .note-body-v2 {
-  font-size: 13px; color: var(--smax-text);
+  font-size: 13px; color: var(--color-text);
   line-height: 1.45; word-break: break-word; white-space: pre-wrap;
 }
 
@@ -1038,7 +1038,7 @@ const linkDescription = computed<string>(() => {
   width: 36px; height: 36px;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  background: var(--smax-primary, #2962ff);
+  background: var(--color-primary, #2962ff);
   color: white;
   flex-shrink: 0;
 }
@@ -1048,15 +1048,15 @@ const linkDescription = computed<string>(() => {
 .call-title {
   font-size: 13.5px;
   font-weight: 500;
-  color: var(--smax-text);
+  color: var(--color-text);
 }
 .call-duration {
   font-size: 12px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
 }
 .call-subtitle {
   font-size: 11.5px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   font-style: italic;
 }
 
@@ -1065,16 +1065,16 @@ const linkDescription = computed<string>(() => {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 5px 10px;
   border-radius: 6px;
-  border: 1px solid var(--smax-primary, #2962ff);
+  border: 1px solid var(--color-primary, #2962ff);
   background: white;
-  color: var(--smax-primary, #2962ff);
+  color: var(--color-primary, #2962ff);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.15s ease, transform 0.15s ease;
 }
-.call-action:hover { background: var(--smax-primary-soft, #e3f2fd); }
+.call-action:hover { background: var(--color-primary-subtle, #e3f2fd); }
 .call-action:active { transform: scale(0.97); }
 .call-action-danger {
   border-color: #dc2626;
@@ -1096,9 +1096,9 @@ const linkDescription = computed<string>(() => {
 
 /* Mention highlight - styled across all rich/note/forwarded contents */
 :deep(.mention) {
-  color: var(--smax-primary, #2962ff);
+  color: var(--color-primary, #2962ff);
   font-weight: 500;
-  background: var(--smax-primary-soft, #e3f2fd);
+  background: var(--color-primary-subtle, #e3f2fd);
   padding: 0 4px;
   border-radius: 3px;
 }
@@ -1106,10 +1106,10 @@ const linkDescription = computed<string>(() => {
 /* Location / Map share card */
 .location-card {
   display: block;
-  border: 1px solid var(--smax-grey-200, #e0e0e0);
+  border: 1px solid var(--color-border, #e0e0e0);
   border-radius: 12px;
   overflow: hidden;
-  background: var(--smax-bg, #fff);
+  background: var(--color-surface, #fff);
   max-width: 300px;
   transition: box-shadow 0.15s ease, transform 0.15s ease;
 }
@@ -1156,12 +1156,12 @@ const linkDescription = computed<string>(() => {
 }
 .location-address {
   font-size: 12px;
-  color: var(--smax-grey-700, #5a6478);
+  color: var(--color-text-secondary, #5a6478);
   line-height: 1.4;
 }
 .location-coords {
   font-size: 10px;
-  color: var(--smax-grey-500, #9e9e9e);
+  color: var(--color-text-muted, #9e9e9e);
   font-family: monospace;
   margin-top: 4px;
 }
@@ -1245,7 +1245,7 @@ const linkDescription = computed<string>(() => {
   background: #f5f5f5;
   border-radius: 10px;
   font-size: 12px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
 }
 .bank-card-fallback {
   display: inline-flex;
@@ -1266,7 +1266,7 @@ const linkDescription = computed<string>(() => {
   display: block;
   text-decoration: none;
   color: inherit;
-  border: 1px solid var(--smax-grey-200, #e0e0e0);
+  border: 1px solid var(--color-border, #e0e0e0);
   border-radius: 12px;
   overflow: hidden;
   background: white;
@@ -1288,10 +1288,10 @@ const linkDescription = computed<string>(() => {
 .qr-label {
   padding: 8px 10px;
   font-size: 12px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   display: flex; align-items: center;
   background: rgba(0,0,0,0.02);
-  border-top: 1px solid var(--smax-grey-200);
+  border-top: 1px solid var(--color-border);
 }
 
 /* Link preview card */
@@ -1299,7 +1299,7 @@ const linkDescription = computed<string>(() => {
   display: flex;
   text-decoration: none;
   color: inherit;
-  border: 1px solid var(--smax-grey-200, #e0e0e0);
+  border: 1px solid var(--color-border, #e0e0e0);
   border-radius: 12px;
   overflow: hidden;
   background: white;
@@ -1333,7 +1333,7 @@ const linkDescription = computed<string>(() => {
 }
 .link-desc {
   font-size: 11px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   line-height: 1.3;
   margin-top: 2px;
   overflow: hidden;
@@ -1343,7 +1343,7 @@ const linkDescription = computed<string>(() => {
 }
 .link-domain {
   font-size: 10px;
-  color: var(--smax-primary, #2962ff);
+  color: var(--color-primary, #2962ff);
   margin-top: 4px;
   display: flex; align-items: center; gap: 2px;
 }

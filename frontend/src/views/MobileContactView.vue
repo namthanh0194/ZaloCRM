@@ -1,7 +1,8 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
-  <div class="mobile-contacts pa-3">
+  <PageShell :padded="false">
+    <div class="mobile-contacts pa-3">
     <!-- Search bar -->
     <v-text-field
       v-model="filters.search"
@@ -83,7 +84,8 @@
       @saved="onSaved"
       @deleted="onDeleted"
     />
-  </div>
+    </div>
+  </PageShell>
 </template>
 
 <script setup lang="ts">
@@ -91,6 +93,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import ContactDetailDialog from '@/components/contacts/ContactDetailDialog.vue';
 import { useContacts, STATUS_OPTIONS } from '@/composables/use-contacts';
 import type { Contact } from '@/composables/use-contacts';
+import { PageShell } from '@/design-system';
 
 const { contacts, loading, filters, fetchContacts } = useContacts();
 

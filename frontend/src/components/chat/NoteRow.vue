@@ -175,7 +175,7 @@ function commitEdit() {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--smax-primary, #2962ff), #5e92ff);
+  background: linear-gradient(135deg, var(--color-primary, #2962ff), #5e92ff);
   color: #fff;
   display: flex;
   align-items: center;
@@ -196,13 +196,13 @@ function commitEdit() {
 }
 
 .note-bubble {
-  background: var(--smax-grey-100, #f5f6fa);
+  background: var(--color-bg, #f5f6fa);
   border-radius: 12px;
   padding: 6px 10px;
 }
 .note-row.is-reply .note-bubble {
-  background: var(--smax-grey-50, #f9fafb);
-  border: 1px solid var(--smax-grey-100);
+  background: var(--color-surface-secondary, #f9fafb);
+  border: 1px solid var(--color-bg);
 }
 
 .note-meta {
@@ -215,12 +215,12 @@ function commitEdit() {
 }
 .author-name {
   font-weight: 600;
-  color: var(--smax-grey-800, #2c2f33);
+  color: var(--color-text, #2c2f33);
   font-size: 12px;
 }
-.meta-dot { color: var(--smax-grey-400); }
+.meta-dot { color: var(--color-text-disabled); }
 .meta-time {
-  color: var(--smax-grey-500);
+  color: var(--color-text-muted);
   cursor: help;
 }
 .apt-badge {
@@ -237,14 +237,14 @@ function commitEdit() {
   margin: 0;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--smax-text, #212121);
+  color: var(--color-text, #212121);
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .edit-input {
   width: 100%;
-  border: 1px solid var(--smax-primary);
+  border: 1px solid var(--color-primary);
   border-radius: 5px;
   padding: 5px 7px;
   font-family: inherit;
@@ -268,7 +268,7 @@ function commitEdit() {
 }
 .reaction-chip {
   background: #fff;
-  border: 1px solid var(--smax-grey-200);
+  border: 1px solid var(--color-border);
   border-radius: 11px;
   padding: 1px 7px;
   font-size: 11px;
@@ -280,11 +280,11 @@ function commitEdit() {
 }
 .reaction-chip:hover { transform: scale(1.06); }
 .reaction-chip.mine {
-  background: var(--smax-primary-soft, #e3f2fd);
-  border-color: var(--smax-primary, #2962ff);
+  background: var(--color-primary-subtle, #e3f2fd);
+  border-color: var(--color-primary, #2962ff);
 }
 .reaction-count {
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   font-weight: 600;
 }
 
@@ -328,10 +328,10 @@ function commitEdit() {
   padding: 3px 6px;
   border-radius: 5px;
   font-size: 12px;
-  color: var(--smax-grey-600);
+  color: var(--color-text-secondary);
   transition: background 0.12s;
 }
-.action-btn:hover { background: var(--smax-grey-100); }
+.action-btn:hover { background: var(--color-bg); }
 .action-btn.text { font-size: 11px; font-weight: 500; }
 .action-btn.small { font-size: 10px; }
 .action-btn.danger:hover { color: #c62828; background: rgba(255,82,82,0.08); }
@@ -347,7 +347,7 @@ function commitEdit() {
   top: -28px;
   left: 0;
   background: #fff;
-  border: 1px solid var(--smax-grey-200);
+  border: 1px solid var(--color-border);
   border-radius: 18px;
   padding: 2px 4px;
   display: flex;
@@ -366,19 +366,19 @@ function commitEdit() {
 }
 .emoji-pick:hover {
   transform: scale(1.25);
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
 }
 
 .btn-link {
   background: none;
   border: none;
-  color: var(--smax-grey-600);
+  color: var(--color-text-secondary);
   font-size: 12px;
   cursor: pointer;
   padding: 3px 6px;
 }
 .btn-primary {
-  background: var(--smax-primary);
+  background: var(--color-primary);
   color: #fff;
   border: none;
   border-radius: 5px;

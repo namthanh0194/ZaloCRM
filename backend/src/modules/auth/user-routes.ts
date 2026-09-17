@@ -12,6 +12,7 @@ import { requireGrant } from '../rbac/rbac-middleware.js';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'node:crypto';
 import { logger } from '../../shared/utils/logger.js';
+import { revokeAllZaloAccessForUser } from '../zalo/zalo-access-revocation.js';
 import { normalizePhone } from '../../shared/utils/phone.js';
 import { sendSystemNotificationToUser } from '../system-notifications/system-notify-service.js';
 
@@ -320,7 +321,7 @@ export async function userRoutes(app: FastifyInstance) {
     if (!toU.isActive) return reply.status(400).send({ error: 'Người nhận đang bị vô hiệu, chọn người khác' });
 
     const result = await prisma.$transaction(async (tx) => {
-      let contacts = 0, nicks = 0, appointments = 0, accesses = 0;
+      let contacts = 0, nicks = 0, appointments = 0, accesses = 0, zaloAccesses = 0;
       if (t.contacts) {
         contacts = (await tx.contact.updateMany({
           where: { orgId: currentUser.orgId, assignedUserId: fromUserId },
@@ -349,6 +350,7 @@ export async function userRoutes(app: FastifyInstance) {
           where: { orgId: currentUser.orgId, ownerUserId: fromUserId },
           data: { ownerUserId: toUserId },
         })).count;
+        zaloAccesses = await revokeAllZaloAccessForUser(tx, fromUserId, currentUser.orgId);
       }
       if (t.appointments) {
         appointments = (await tx.appointment.updateMany({
@@ -356,7 +358,7 @@ export async function userRoutes(app: FastifyInstance) {
           data: { assignedUserId: toUserId },
         })).count;
       }
-      return { contacts, nicks, appointments, accesses };
+      return { contacts, nicks, appointments, accesses, zaloAccesses };
     });
 
     logger.info(

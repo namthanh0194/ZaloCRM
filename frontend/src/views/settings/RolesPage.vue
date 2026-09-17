@@ -269,12 +269,12 @@ onMounted(fetchUsers);
 .page-title {
   font-size: 20px;
   font-weight: 700;
-  color: #1F2D3D;
+  color: var(--color-text, #1F2D3D);
   margin: 0 0 4px;
 }
 .page-desc {
   font-size: 13px;
-  color: #6B7785;
+  color: var(--color-text-secondary, #6B7785);
   margin: 0;
 }
 
@@ -291,12 +291,12 @@ onMounted(fetchUsers);
 .section-head h3 {
   font-size: 14px;
   font-weight: 700;
-  color: #1F2D3D;
+  color: var(--color-text, #1F2D3D);
   margin: 0;
 }
 .hint {
   font-size: 11.5px;
-  color: #97A0AC;
+  color: var(--color-text-muted, #97A0AC);
   font-style: italic;
 }
 
@@ -308,7 +308,7 @@ onMounted(fetchUsers);
 }
 .role-card {
   background: white;
-  border: 1px solid #E4E5E9;
+  border: 1px solid var(--color-border, #E4E5E9);
   border-radius: 12px;
   padding: 18px 18px 14px;
   display: flex;
@@ -316,7 +316,7 @@ onMounted(fetchUsers);
   gap: 10px;
 }
 .role-card.role-owner { border-left: 3px solid #F59E0B; }
-.role-card.role-admin { border-left: 3px solid #5E6AD2; }
+.role-card.role-admin { border-left: 3px solid var(--color-primary, #1786be); }
 .role-card.role-member { border-left: 3px solid #10B981; }
 .rc-head {
   display: flex;
@@ -334,26 +334,26 @@ onMounted(fetchUsers);
 .rc-count {
   font-size: 11px;
   font-weight: 600;
-  color: #6B7785;
+  color: var(--color-text-secondary, #6B7785);
   background: #F4F4F7;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 .rc-desc {
   font-size: 12.5px;
-  color: #6B7785;
+  color: var(--color-text-secondary, #6B7785);
   margin: 0;
   line-height: 1.5;
 }
 .rc-perms {
-  background: #FAFAFC;
-  border-radius: 8px;
+  background: var(--color-bg, #FAFAFC);
+  border-radius: var(--radius-md);
   padding: 10px 12px;
 }
 .rc-perm-label {
   font-size: 10.5px;
   font-weight: 600;
-  color: #97A0AC;
+  color: var(--color-text-muted, #97A0AC);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 6px;
@@ -365,7 +365,7 @@ onMounted(fetchUsers);
 }
 .rc-perms li {
   font-size: 12px;
-  color: #1F2D3D;
+  color: var(--color-text, #1F2D3D);
   padding: 2px 0 2px 18px;
   position: relative;
   line-height: 1.5;
@@ -382,21 +382,21 @@ onMounted(fetchUsers);
   margin-top: auto;
   padding: 7px 12px;
   background: transparent;
-  border: 1px solid #E4E5E9;
-  border-radius: 6px;
+  border: 1px solid var(--color-border, #E4E5E9);
+  border-radius: var(--radius-sm);
   font-size: 12px;
   font-weight: 600;
-  color: #5E6AD2;
+  color: var(--color-primary, #1786be);
   cursor: pointer;
   font-family: inherit;
   text-align: left;
 }
-.rc-detail-btn:hover { background: #EEF0FF; border-color: #5E6AD2; }
+.rc-detail-btn:hover { background: var(--color-primary-subtle, #EEF0FF); border-color: var(--color-primary, #1786be); }
 
 /* Permission matrix */
 .perm-table-wrap {
   background: white;
-  border: 1px solid #E4E5E9;
+  border: 1px solid var(--color-border, #E4E5E9);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -406,15 +406,15 @@ onMounted(fetchUsers);
   font-size: 12.5px;
 }
 .perm-table th {
-  background: #FAFAFC;
+  background: var(--color-bg, #FAFAFC);
   text-align: left;
   padding: 12px 14px;
   font-weight: 700;
-  color: #6B7785;
+  color: var(--color-text-secondary, #6B7785);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   font-size: 11px;
-  border-bottom: 1px solid #E4E5E9;
+  border-bottom: 1px solid var(--color-border, #E4E5E9);
 }
 .th-module { width: 30%; }
 .th-role {
@@ -434,7 +434,7 @@ onMounted(fetchUsers);
   border-bottom: none;
 }
 .perm-table tbody tr:hover {
-  background: #FAFAFC;
+  background: var(--color-bg, #FAFAFC);
 }
 .td-module {
   padding: 12px 14px;
@@ -449,11 +449,11 @@ onMounted(fetchUsers);
 .td-module-label {
   font-size: 13px;
   font-weight: 600;
-  color: #1F2D3D;
+  color: var(--color-text, #1F2D3D);
 }
 .td-module-desc {
   font-size: 11.5px;
-  color: #97A0AC;
+  color: var(--color-text-muted, #97A0AC);
   margin-top: 1px;
 }
 .td-perm {
@@ -474,11 +474,11 @@ onMounted(fetchUsers);
 .perm-icon.full { background: #DCFCE7; color: #166534; }
 .perm-icon.read { background: #DBEAFE; color: #1E40AF; }
 .perm-icon.own { background: #FEF3C7; color: #92400E; }
-.perm-icon.none { background: #F4F4F7; color: #97A0AC; }
+.perm-icon.none { background: #F4F4F7; color: var(--color-text-muted, #97A0AC); }
 .perm-label {
   font-size: 11.5px;
   font-weight: 500;
-  color: #6B7785;
+  color: var(--color-text-secondary, #6B7785);
 }
 
 .perm-legend {
@@ -487,7 +487,7 @@ onMounted(fetchUsers);
   padding: 12px 16px;
   margin-top: 8px;
   font-size: 11.5px;
-  color: #6B7785;
+  color: var(--color-text-secondary, #6B7785);
 }
 .legend-item {
   display: flex;
@@ -504,7 +504,7 @@ onMounted(fetchUsers);
   align-items: flex-start;
   gap: 16px;
   padding: 18px 20px;
-  background: linear-gradient(135deg, #FAFAFC 0%, #EEF0FF 100%);
+  background: linear-gradient(135deg, var(--color-bg, #FAFAFC) 0%, var(--color-primary-subtle, #EEF0FF) 100%);
   border: 1px dashed rgba(94, 106, 210, 0.4);
   border-radius: 12px;
 }
@@ -515,20 +515,20 @@ onMounted(fetchUsers);
 .cs-title {
   font-size: 14px;
   font-weight: 700;
-  color: #1F2D3D;
+  color: var(--color-text, #1F2D3D);
   margin-bottom: 8px;
 }
 .cs-list {
   margin: 0;
   padding-left: 20px;
   font-size: 12.5px;
-  color: #1F2D3D;
+  color: var(--color-text, #1F2D3D);
   line-height: 1.7;
 }
 .cs-foot {
   margin-top: 10px;
   font-size: 11.5px;
-  color: #6B7785;
+  color: var(--color-text-secondary, #6B7785);
   font-style: italic;
 }
 </style>

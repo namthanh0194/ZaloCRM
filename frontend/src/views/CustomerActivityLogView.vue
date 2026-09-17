@@ -390,30 +390,30 @@ watch(() => route.params.id, () => {
   flex-wrap: wrap;
 }
 .back-btn {
-  background: var(--smax-grey-100);
-  border: 1px solid var(--smax-grey-200);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
   border-radius: 7px;
   padding: 7px 14px;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
 }
-.back-btn:hover { background: var(--smax-primary-soft); color: var(--smax-primary); }
+.back-btn:hover { background: var(--color-primary-subtle); color: var(--color-primary); }
 .al-header h1 {
   font-size: 20px;
   margin: 0;
-  color: var(--smax-text);
+  color: var(--color-text);
   flex: 1;
 }
 .al-contact-name {
   font-size: 16px;
   font-weight: 500;
-  color: var(--smax-grey-600);
+  color: var(--color-text-secondary);
 }
 .al-actions { display: flex; gap: 8px; }
 .export-btn {
-  background: var(--smax-primary);
+  background: var(--color-primary);
   color: #fff;
   border: none;
   border-radius: 7px;
@@ -438,7 +438,7 @@ watch(() => route.params.id, () => {
 /* Filter sidebar */
 .al-filters {
   background: #fff;
-  border: 1px solid var(--smax-grey-200);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   padding: 14px;
   height: fit-content;
@@ -463,7 +463,7 @@ watch(() => route.params.id, () => {
   position: absolute;
   top: 12px;
   right: 12px;
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
   border: none;
   width: 32px;
   height: 32px;
@@ -476,7 +476,7 @@ watch(() => route.params.id, () => {
 }
 
 .filter-block {
-  border-bottom: 1px solid var(--smax-grey-100);
+  border-bottom: 1px solid var(--color-bg);
   padding-bottom: 12px;
   margin-bottom: 12px;
 }
@@ -484,7 +484,7 @@ watch(() => route.params.id, () => {
 .filter-block h3 {
   font-size: 12px;
   font-weight: 700;
-  color: var(--smax-grey-600);
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.4px;
   margin: 0 0 8px;
@@ -493,10 +493,10 @@ watch(() => route.params.id, () => {
 .quick-dates, .date-inputs { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
 .date-inputs { flex-direction: column; gap: 6px; }
 .date-inputs label { display: flex; align-items: center; gap: 6px; font-size: 12px; }
-.date-inputs label span { width: 30px; color: var(--smax-grey-600); }
+.date-inputs label span { width: 30px; color: var(--color-text-secondary); }
 .date-inputs input[type="date"] {
   flex: 1;
-  border: 1px solid var(--smax-grey-200);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 4px 8px;
   font-size: 12px;
@@ -504,20 +504,20 @@ watch(() => route.params.id, () => {
 }
 
 .chip {
-  background: var(--smax-grey-100);
-  border: 1px solid var(--smax-grey-200);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   font-size: 11px;
   font-weight: 500;
   padding: 4px 10px;
   cursor: pointer;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
 }
-.chip:hover { background: var(--smax-primary-soft); color: var(--smax-primary); border-color: var(--smax-primary); }
+.chip:hover { background: var(--color-primary-subtle); color: var(--color-primary); border-color: var(--color-primary); }
 .chip.active {
-  background: var(--smax-primary);
+  background: var(--color-primary);
   color: #fff;
-  border-color: var(--smax-primary);
+  border-color: var(--color-primary);
   font-weight: 600;
 }
 
@@ -535,12 +535,12 @@ watch(() => route.params.id, () => {
   cursor: pointer;
 }
 .cat-icon { width: 18px; text-align: center; }
-.cat-label { color: var(--smax-text); }
+.cat-label { color: var(--color-text); }
 
 .text-link {
   background: none;
   border: none;
-  color: var(--smax-primary);
+  color: var(--color-primary);
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
@@ -550,35 +550,35 @@ watch(() => route.params.id, () => {
 
 .search-input {
   width: 100%;
-  border: 1px solid var(--smax-grey-200);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 6px 9px;
   font-size: 12.5px;
   outline: none;
   font-family: inherit;
 }
-.search-input:focus { border-color: var(--smax-primary); }
+.search-input:focus { border-color: var(--color-primary); }
 
 .reset-btn {
   width: 100%;
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
   border: none;
   border-radius: 7px;
   padding: 8px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   margin-top: 8px;
 }
-.reset-btn:hover { background: var(--smax-grey-200); }
+.reset-btn:hover { background: var(--color-border); }
 
 /* Main list */
 .al-main { min-width: 0; }
 
 .filter-toggle-mobile {
   display: none;
-  background: var(--smax-primary);
+  background: var(--color-primary);
   color: #fff;
   border: none;
   border-radius: 7px;
@@ -594,7 +594,7 @@ watch(() => route.params.id, () => {
 }
 .filter-count-badge {
   background: #fff;
-  color: var(--smax-primary);
+  color: var(--color-primary);
   border-radius: 9px;
   padding: 1px 7px;
   font-size: 11px;
@@ -607,15 +607,15 @@ watch(() => route.params.id, () => {
   align-items: center;
   padding: 8px 4px;
   font-size: 12px;
-  color: var(--smax-grey-600);
-  border-bottom: 1px solid var(--smax-grey-100);
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-bg);
   margin-bottom: 8px;
 }
-.muted { color: var(--smax-grey-500); font-style: italic; }
+.muted { color: var(--color-text-muted); font-style: italic; }
 
 .items-list {
   background: #fff;
-  border: 1px solid var(--smax-grey-200);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   padding: 8px 4px;
 }
@@ -623,7 +623,7 @@ watch(() => route.params.id, () => {
 .state {
   padding: 40px;
   text-align: center;
-  color: var(--smax-grey-500);
+  color: var(--color-text-muted);
 }
 .state.empty .empty-icon { font-size: 32px; display: block; margin-bottom: 8px; }
 
@@ -632,20 +632,20 @@ watch(() => route.params.id, () => {
   padding: 12px;
 }
 .load-more button {
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
   border: none;
   padding: 7px 18px;
   border-radius: 7px;
   cursor: pointer;
   font-size: 12.5px;
   font-weight: 600;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
 }
-.load-more button:hover:not(:disabled) { background: var(--smax-primary-soft); color: var(--smax-primary); }
+.load-more button:hover:not(:disabled) { background: var(--color-primary-subtle); color: var(--color-primary); }
 .end-marker {
   text-align: center;
   padding: 12px;
   font-size: 11px;
-  color: var(--smax-grey-400);
+  color: var(--color-text-muted);
 }
 </style>

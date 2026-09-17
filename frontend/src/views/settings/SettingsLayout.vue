@@ -163,10 +163,10 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 260px 1fr;
   height: calc(100vh - 56px);
-  background: #FAFAFC;
+  background: var(--color-bg, #FAFAFC);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 13.5px;
-  color: #1F2D3D;
+  color: var(--color-text, #1F2D3D);
   -webkit-font-smoothing: antialiased;
   letter-spacing: -0.005em;
 }
@@ -182,7 +182,7 @@ onMounted(() => {
 
 .sl-header {
   padding: 16px 18px 12px;
-  border-bottom: 1px solid #E4E5E9;
+  border-bottom: 1px solid var(--color-border, #E4E5E9);
   flex-shrink: 0;
 }
 .sl-title {
@@ -191,7 +191,7 @@ onMounted(() => {
   gap: 8px;
   font-size: 15px;
   font-weight: 700;
-  color: #1F2D3D;
+  color: var(--color-text, #1F2D3D);
   margin: 0;
 }
 .sl-icon {
@@ -203,7 +203,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  border-bottom: 1px solid #E4E5E9;
+  border-bottom: 1px solid var(--color-border, #E4E5E9);
   background: white;
   flex-shrink: 0;
 }
@@ -211,28 +211,28 @@ onMounted(() => {
   flex: 1;
   border: none;
   outline: none;
-  background: #F4F4F7;
-  border-radius: 6px;
+  background: var(--color-surface-hover, #F4F4F7);
+  border-radius: var(--radius-sm);
   padding: 6px 10px;
   font-size: 12.5px;
   font-family: inherit;
-  color: #1F2D3D;
+  color: var(--color-text, #1F2D3D);
   min-width: 0;
   border: 1px solid transparent;
 }
 .sl-search input:focus {
   background: white;
-  border-color: #5E6AD2;
-  box-shadow: 0 0 0 2px rgba(94, 106, 210, 0.12);
+  border-color: var(--color-primary, #1786be);
+  box-shadow: 0 0 0 2px var(--color-primary-subtle, rgba(23, 134, 190, 0.12));
 }
 .sl-search .ic {
-  color: #97A0AC;
+  color: var(--color-text-muted, #97A0AC);
   font-size: 13px;
 }
 .sl-search-clear {
   background: transparent;
   border: none;
-  color: #97A0AC;
+  color: var(--color-text-muted, #97A0AC);
   cursor: pointer;
   padding: 4px 6px;
   border-radius: 4px;
@@ -260,13 +260,13 @@ onMounted(() => {
   padding: 8px 10px;
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   font-family: inherit;
   text-align: left;
   user-select: none;
 }
-.sl-group-header:hover { background: #F4F4F7; }
+.sl-group-header:hover { background: var(--color-surface-hover, #F4F4F7); }
 .sl-group-icon {
   font-size: 13px;
   flex-shrink: 0;
@@ -275,12 +275,12 @@ onMounted(() => {
   flex: 1;
   font-size: 11px;
   font-weight: 700;
-  color: #6B7785;
+  color: var(--color-text-secondary, #6B7785);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 .sl-chevron {
-  color: #97A0AC;
+  color: var(--color-text-muted, #97A0AC);
   font-size: 10px;
   transition: transform 0.15s;
 }
@@ -305,22 +305,22 @@ onMounted(() => {
   align-items: center;
   gap: 9px;
   padding: 7px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   text-decoration: none;
-  color: #1F2D3D;
+  color: var(--color-text, #1F2D3D);
   font-size: 12.5px;
   font-weight: 500;
   transition: all 0.12s;
 }
 .sl-item:hover {
-  background: #F4F4F7;
+  background: var(--color-surface-hover, #F4F4F7);
 }
 .sl-item.active,
 .sl-item.router-link-exact-active {
-  background: #EEF0FF;
-  color: #5E6AD2;
+  background: var(--color-primary-subtle, #EEF0FF);
+  color: var(--color-primary, #1786be);
   font-weight: 600;
-  box-shadow: inset 3px 0 0 #5E6AD2;
+  box-shadow: inset 3px 0 0 var(--color-primary, #1786be);
 }
 .sl-item-icon {
   font-size: 14px;
@@ -340,7 +340,7 @@ onMounted(() => {
 .sl-empty {
   padding: 20px 14px;
   font-size: 12px;
-  color: #97A0AC;
+  color: var(--color-text-muted, #97A0AC);
   text-align: center;
   font-style: italic;
 }
@@ -350,7 +350,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #FAFAFC;
+  background: var(--color-bg, #FAFAFC);
 }
 .sl-breadcrumb {
   display: flex;
@@ -358,13 +358,13 @@ onMounted(() => {
   gap: 8px;
   padding: 12px 24px;
   font-size: 12px;
-  color: #6B7785;
+  color: var(--color-text-secondary, #6B7785);
   background: white;
-  border-bottom: 1px solid #E4E5E9;
+  border-bottom: 1px solid var(--color-border, #E4E5E9);
   flex-shrink: 0;
 }
 .bc-root {
-  color: #5E6AD2;
+  color: var(--color-primary, #1786be);
   text-decoration: none;
   font-weight: 500;
 }
@@ -373,10 +373,10 @@ onMounted(() => {
   color: #D4D6DB;
 }
 .bc-group {
-  color: #6B7785;
+  color: var(--color-text-secondary, #6B7785);
 }
 .bc-current {
-  color: #1F2D3D;
+  color: var(--color-text, #1F2D3D);
   font-weight: 600;
 }
 .sl-content-body {

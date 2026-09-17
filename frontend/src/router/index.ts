@@ -169,6 +169,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'dev/public-token',  name: 'Settings.PublicToken',  component: () => import('@/views/settings/SettingsComingSoon.vue'), props: { feature: 'public-token' }, meta: { resource: 'settings' } },
       { path: 'dev/feature-flags', name: 'Settings.FeatureFlags', component: () => import('@/views/settings/SettingsComingSoon.vue'), props: { feature: 'feature-flags' }, meta: { resource: 'settings' } },
       { path: 'dev/backup',        name: 'Settings.Backup',       component: () => import('@/views/settings/SettingsComingSoon.vue'), props: { feature: 'backup' }, meta: { resource: 'settings' } },
+      { path: 'system-upgrade', name: 'Settings.SystemUpgrade', component: () => import('@/views/settings/SystemUpgradeView.vue'), meta: { requiresAuth: true, ownerOnly: true } },
       ...eeSettingsChildren,
     ],
   },
@@ -274,16 +275,20 @@ router.beforeEach(async (to, _from, next) => {
   }
 
   // Check auth for protected routes
-  if (to.meta.requiresAuth) {
-    if (!authStore.token) {
-      return next('/login');
-    }
-    // Fetch profile if not loaded yet
-    if (!authStore.user) {
-      await authStore.init();
-      if (!authStore.isAuthenticated) {
-        return next('/login');
-      }
+    if (to.meta.requiresAuth) {
+   if (!authStore.token) {
+     return next('/login');
+   }
+
+   // Fetch profile if not loaded yet
+   if (!authStore.user) {
+     await authStore.init();
+     if (!authStore.isAuthenticated) {
+       return next('/login');
+     }
+   }
+    if (to.meta.ownerOnly && authStore.user?.role !== 'owner') {
+      return next('/settings');
     }
     // Phase Onboarding v1 2026-05-24 — force change password lần đầu.
     // passwordChangedAt = null → block tất cả route khác, ép sale qua /setup-password.

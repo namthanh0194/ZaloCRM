@@ -58,7 +58,7 @@ export type QuickPillKey = 'unread' | 'unanswered' | 'stuck' | 'ready';
  *   main     = Hộp thư chính (cả user lẫn nhóm)
  *   other    = Move qua Khác
  */
-export type ActiveTab = 'personal' | 'group' | 'main' | 'other';
+export type ActiveTab = 'personal' | 'group' | 'main' | 'other' | 'deleted';
 export type SortMode = 'recent' | 'unread-first';
 export type TimeAxis =
   | 'last-interaction'
@@ -123,7 +123,7 @@ export function defaultFilterState(): FilterState {
   return {
     folderId: null,
     saleAssigneeId: null,
-    activeTab: 'personal', // Default: Cá nhân (user-user 1-1)
+    activeTab: 'main', // Default: Chính (mọi hội thoại trong hộp thư chính)
     quickPills: new Set(),
     tagsZalo: [],
     tagsCrm: [],
@@ -304,6 +304,9 @@ export function useInboxFilters() {
         break;
       case 'other':
         params.tab = 'other';
+        break;
+      case 'deleted':
+        params.tab = 'deleted';
         break;
     }
     if (state.sortMode === 'unread-first') params.sortMode = 'unread-first';

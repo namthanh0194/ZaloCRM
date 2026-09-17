@@ -93,7 +93,7 @@
         class="conv-item"
         :class="{
           active: conv.id === selectedId,
-          unread: conv.unreadCount > 0 && conv.id !== selectedId,
+          unread: conv.unreadCount > 0,
           'is-group': conv.threadType === 'group',
           'is-virtual': conv.isVirtual,
         }"
@@ -152,10 +152,21 @@
             </div>
             <div class="ci-meta-right">
               <div class="ci-time"><ConvTime :at="conv.lastMessageAt" /></div>
+              <button
+                v-if="activeTabKey === 'deleted'"
+                class="ci-restore-btn"
+                title="Khôi phục hội thoại"
+                @click.stop="restoreConversation(conv.id)"
+              >
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                </svg>
+                <span>Khôi phục</span>
+              </button>
               <div
-                v-if="conv.unreadCount > 0 && conv.id !== selectedId"
-                class="ci-unread-count"
-              >{{ conv.unreadCount > 5 ? '5+' : conv.unreadCount }}</div>
+                v-else-if="conv.unreadCount > 0"
+                class="ci-unread-count right-count"
+              >{{ conv.unreadCount > 99 ? '99+' : conv.unreadCount }}</div>
               <!-- Phase 8 — Engagement pattern badge (tooltip teleport to body) -->
               <span
                 v-if="(conv as any).contact?.engagementPattern && (conv as any).contact?.engagementPattern !== 'noise'"
@@ -173,7 +184,10 @@
             <!-- Privacy: click blur preview KHÔNG redirect (tránh nhầm khi click chuyển hội thoại).
                  Blur thuần visual, không bắt event riêng. -->
             <PrivateBlur v-if="privacyVisibility.shouldBlurConv(conv)" :redacted="true" mode="inline" />
-            <template v-else>{{ lastMessagePreview(conv) }}</template>
+            <template v-else>
+              <span v-if="lastMessagePreviewResult(conv).prefix" class="ci-preview-sender">{{ lastMessagePreviewResult(conv).prefix }}</span>
+              <span>{{ lastMessagePreviewResult(conv).text }}</span>
+            </template>
           </div>
 
           <!-- Tag row luôn render (kể cả rỗng) để giữ layout cố định.
@@ -228,7 +242,7 @@
       </TransitionGroup>
 
       <div v-if="!loading && conversations.length === 0" class="empty-state">
-        Chưa có hội thoại nào
+        {{ activeTabKey === 'deleted' ? 'Không có hội thoại nào đã xóa' : 'Chưa có hội thoại nào' }}
       </div>
     </div>
 
@@ -241,9 +255,12 @@
       :follow-busy="contextMenu.followBusy"
       :can-follow="!!(contextMenu.contactId && contextMenu.nickId)"
       @move-other="moveConversation(contextMenu.convId, 'other')"
+      :can-manage-access="canManageConversationAccess"
+      @manage-access="openAccessModal(contextMenu.convId)"
       @move-main="moveConversation(contextMenu.convId, 'main')"
       @toggle-follow="toggleFollowFromMenu"
       @delete="askDeleteConversation"
+      @restore="restoreConversation(contextMenu.convId)"
     />
 
     <!-- Hộp xác nhận Xóa đoạn hội thoại (UI đẹp, Enter = Xóa) -->
@@ -297,6 +314,11 @@
         </span>
       </div>
     </Teleport>
+    <ConversationAccessModal
+      v-model="showAccessModal"
+      :conversation-id="accessModalConvId"
+      @saved="showAccessModal = false"
+    />
   </div>
 </template>
 
@@ -310,6 +332,8 @@ import AiSentimentBadge from '@/components/ai/ai-sentiment-badge.vue';
 import Avatar from '@/components/ui/Avatar.vue';
 import NewMessageDialog from '@/components/chat/NewMessageDialog.vue';
 import ConversationContextMenu from '@/components/chat/conversation-context-menu.vue';
+import ConversationAccessModal from '@/components/chat/ConversationAccessModal.vue';
+import { useAuthStore } from '@/stores/auth';
 import ConvTime from '@/components/chat/ConvTime.vue';
 import NickPickerPopup from '@/components/zalo-accounts/NickPickerPopup.vue';
 import ZaloBrandIcon from '@/components/icons/ZaloBrandIcon.vue';
@@ -350,6 +374,20 @@ const props = defineProps<{
   followingPairs?: Set<string>;
 }>();
 
+const authStore = useAuthStore();
+const canManageConversationAccess = computed(() => {
+  const u = authStore.user;
+  if (!u) return false;
+  return u.role === 'owner' || u.role === 'admin' || u.permissionGroupName === 'Sale Senior' || u.permissionGroupName === 'Admin';
+});
+const showAccessModal = ref(false);
+const accessModalConvId = ref<string | null>(null);
+
+function openAccessModal(conversationId: string) {
+  accessModalConvId.value = conversationId;
+  showAccessModal.value = true;
+}
+
 const emit = defineEmits<{
   select: [id: string];
   'update:search': [value: string];
@@ -358,6 +396,7 @@ const emit = defineEmits<{
   'tab-changed': [tab: string];
   'conversation-moved': [id: string, tab: string];
   'conversation-deleted': [id: string];
+  'conversation-restored': [id: string];
   'compose-opened': [conversationId: string];
   /** Theo dõi (anh chốt 2026-06-15) — toggle follow từ menu → cập nhật chuông cột 2 ngay. */
   'follow-changed': [contactId: string, nickId: string, following: boolean];
@@ -784,6 +823,18 @@ async function confirmDeleteConversation() {
   }
 }
 
+async function restoreConversation(convId: string) {
+  if (!convId) return;
+  try {
+    await api.post(`/conversations/${convId}/restore`);
+    emit('conversation-restored', convId);
+    window.dispatchEvent(new CustomEvent('chat:counts-changed'));
+  } catch (err) {
+    console.error('Failed to restore conversation:', err);
+    window.alert('Lỗi khôi phục hội thoại — thử lại sau');
+  }
+}
+
 // ── Counts fetch ────────────────────────────────────────────────────────────
 async function fetchCounts() {
   try {
@@ -879,7 +930,7 @@ watch(() => props.selectedId, async () => {
 //   danger = đỏ  (E17 KH gọi đến nhỡ — sale CHƯA bắt, cần alert)
 //   muted  = xám (E18 sale gọi không trả lời / E04 recall — không cấp bách)
 //   undefined = normal (text đen mặc định)
-interface PreviewResult { text: string; tone?: 'danger' | 'muted' }
+interface PreviewResult { prefix?: string; text: string; tone?: 'danger' | 'muted' }
 
 function fmtDuration(sec: number): string {
   if (!sec || sec < 0) return '';
@@ -897,7 +948,9 @@ function lastMessagePreviewResult(conv: Conversation): PreviewResult {
   // 2026-06-12 — chữ ký dùng CHÍNH content + editedAt (không phải content.length): tin
   // SỬA cùng độ dài (vd "ok" → "oke" thì khác, nhưng "abc" → "xyz" cùng 3 ký tự) trước
   // đây không invalidate. Fix object-mới ở socket đã che, đây là lớp 2 cho memoize tự đúng.
-  const sig = msg ? `${msg.id}|${msg.isDeleted ? 1 : 0}|${msg.content ?? ''}|${msg.editedAt ?? ''}` : 'none';
+  const crmName = (msg as any)?.repliedBy?.fullName || (msg as any)?.metadata?.sender?.name || '';
+  const senderName = (msg as any)?.senderName ?? '';
+  const sig = msg ? `${msg.id}|${msg.isDeleted ? 1 : 0}|${msg.content ?? ''}|${msg.editedAt ?? ''}|${crmName}|${senderName}` : 'none';
   const hit = _previewCache.get(conv);
   if (hit && hit.sig === sig) return hit.result;
   const result = computeLastMessagePreview(conv);
@@ -911,7 +964,22 @@ function computeLastMessagePreview(conv: Conversation): PreviewResult {
   // E04 Tin thu hồi — anh chốt icon 🔂 (proposal 2026-05-21), tone muted
   if (msg.isDeleted) return { text: '🔂 Tin nhắn đã thu hồi', tone: 'muted' };
 
-  const prefix = msg.senderType === 'self' ? 'Bạn: ' : '';
+  const currentUserId = authStore.user?.id;
+  const isGroup = conv.threadType === 'group';
+  let prefix = '';
+
+  if (msg.senderType === 'self') {
+    const isSentByCurrentUser = !msg.repliedByUserId || !currentUserId || msg.repliedByUserId === currentUserId;
+    if (isSentByCurrentUser) {
+      prefix = 'Bạn: ';
+    } else {
+      const crmSenderName = (msg as any).repliedBy?.fullName || ((msg as any).metadata as any)?.sender?.name;
+      prefix = crmSenderName ? `${crmSenderName}: ` : 'Bạn: ';
+    }
+  } else if (isGroup) {
+    const groupSender = (msg as any).senderName?.trim();
+    prefix = groupSender ? `${groupSender}: ` : '';
+  }
   const isInbound = msg.senderType !== 'self';
 
   // Parse JSON content (nếu có) để extract title / action
@@ -950,22 +1018,22 @@ function computeLastMessagePreview(conv: Conversation): PreviewResult {
 
   // E28 Reminder
   if (action === 'msginfo.actionlist' && titleText) {
-    return { text: prefix + '⏰ ' + truncate(titleText, 50) };
+    return { prefix, text: '⏰ ' + truncate(titleText, 50) };
   }
 
   // E20 Link share có preview (sau khi P1 reclassify thì content_type='link' rồi)
   // Vẫn để fallback nếu rows mới chưa reclassify.
   if (action === 'recommened.link' || action === 'recommended.link') {
-    return { text: prefix + '🔗 ' + truncate(titleText || 'Liên kết', 40) };
+    return { prefix, text: '🔗 ' + truncate(titleText || 'Liên kết', 40) };
   }
 
   // E22 Gợi ý bạn bè (action recommened.user) — khác E21 show.profile (danh thiếp)
   if (action === 'recommened.user' || action === 'recommended.user') {
-    return { text: prefix + '👥 Gợi ý bạn bè' + (titleText ? `: ${truncate(titleText, 30)}` : '') };
+    return { prefix, text: '👥 Gợi ý bạn bè' + (titleText ? `: ${truncate(titleText, 30)}` : '') };
   }
   // E21 Danh thiếp profile thực
   if (action === 'show.profile') {
-    return { text: prefix + '👤 Danh thiếp' + (titleText ? `: ${truncate(titleText, 30)}` : '') };
+    return { prefix, text: '👤 Danh thiếp' + (titleText ? `: ${truncate(titleText, 30)}` : '') };
   }
 
   // E25 Bank transfer — extract tên bank từ title hoặc description
@@ -979,37 +1047,37 @@ function computeLastMessagePreview(conv: Conversation): PreviewResult {
 
   // Rich content có title → preview bằng title thật, không phải "rich" raw
   if (msg.contentType === 'rich' && titleText) {
-    return { text: prefix + (action === 'rtf' ? '✨ ' : '') + truncate(titleText.replace(/\n/g, ' · '), 60) };
+    return { prefix, text: (action === 'rtf' ? '✨ ' : '') + truncate(titleText.replace(/\n/g, ' · '), 60) };
   }
 
   // Per content-type chuẩn
   switch (msg.contentType) {
     case 'image': {
       // E06: nếu có caption (title) → hiện caption, không có → "Hình ảnh"
-      if (titleText) return { text: prefix + '📷 ' + truncate(titleText, 40) };
+      if (titleText) return { prefix, text: '📷 ' + truncate(titleText, 40) };
       // E07 Album — sẽ override ở MessageThread khi group; preview vẫn theo msg cuối
       const albumTotal = (msg as { albumTotal?: number | null }).albumTotal;
-      if (albumTotal && albumTotal > 1) return { text: prefix + `🖼️ Bộ ảnh (${albumTotal})` };
-      return { text: prefix + '📷 Hình ảnh' };
+      if (albumTotal && albumTotal > 1) return { prefix, text: `🖼️ Bộ ảnh (${albumTotal})` };
+      return { prefix, text: '📷 Hình ảnh' };
     }
-    case 'sticker': return { text: prefix + '🎴 Sticker' };
+    case 'sticker': return { prefix, text: '🎴 Sticker' };
     case 'video': {
       // E08: kèm duration nếu lấy được từ params
       const vdur = Number(params?.duration ?? 0);
-      return { text: prefix + '🎥 Video' + (vdur > 0 ? ` (${fmtDuration(vdur)})` : '') };
+      return { prefix, text: '🎥 Video' + (vdur > 0 ? ` (${fmtDuration(vdur)})` : '') };
     }
     case 'voice':
     case 'audio': {
       // E10/E11: tin thoại có duration
       const adur = Number(params?.duration ?? 0);
-      return { text: prefix + '🎤 Tin thoại' + (adur > 0 ? ` (${fmtDuration(adur)})` : '') };
+      return { prefix, text: '🎤 Tin thoại' + (adur > 0 ? ` (${fmtDuration(adur)})` : '') };
     }
-    case 'gif': return { text: prefix + '🎞 GIF' };
-    case 'file': return { text: prefix + '📎 ' + (titleText ? truncate(titleText, 40) : 'Tệp đính kèm') };
-    case 'link': return { text: prefix + '🔗 ' + (titleText ? truncate(titleText, 40) : 'Liên kết') };
-    case 'call': return { text: prefix + '📞 Cuộc gọi' };
-    case 'qr_code': return { text: prefix + '🔲 Mã QR' };
-    case 'reminder': return { text: prefix + '⏰ ' + (titleText ? truncate(titleText, 40) : 'Nhắc hẹn') };
+    case 'gif': return { prefix, text: '🎞 GIF' };
+    case 'file': return { prefix, text: '📎 ' + (titleText ? truncate(titleText, 40) : 'Tệp đính kèm') };
+    case 'link': return { prefix, text: '🔗 ' + (titleText ? truncate(titleText, 40) : 'Liên kết') };
+    case 'call': return { prefix, text: '📞 Cuộc gọi' };
+    case 'qr_code': return { prefix, text: '🔲 Mã QR' };
+    case 'reminder': return { prefix, text: '⏰ ' + (titleText ? truncate(titleText, 40) : 'Nhắc hẹn') };
     case 'poll': {
       // E29-E32 phân biệt 4 action
       const label =
@@ -1018,28 +1086,25 @@ function computeLastMessagePreview(conv: Conversation): PreviewResult {
         : action === 'update' ? 'Cập nhật bình chọn'
         : action === 'close' ? 'Đã đóng bình chọn'
         : 'Bình chọn';
-      return { text: prefix + '📊 ' + label + (titleText ? `: ${truncate(titleText, 25)}` : '') };
+      return { prefix, text: '📊 ' + label + (titleText ? `: ${truncate(titleText, 25)}` : '') };
     }
-    case 'note': return { text: prefix + '📝 Ghi chú' + (titleText ? `: ${truncate(titleText, 30)}` : '') };
-    case 'forwarded': return { text: prefix + '↪️ Chuyển tiếp' + (titleText ? `: ${truncate(titleText, 30)}` : '') };
+    case 'note': return { prefix, text: '📝 Ghi chú' + (titleText ? `: ${truncate(titleText, 30)}` : '') };
+    case 'forwarded': return { prefix, text: '↪️ Chuyển tiếp' + (titleText ? `: ${truncate(titleText, 30)}` : '') };
     case 'location': {
       const desc = typeof parsed?.description === 'string' ? parsed.description.trim() : '';
       const label = titleText || desc || 'Vị trí';
-      return { text: prefix + '📍 ' + truncate(label, 50) };
+      return { prefix, text: '📍 ' + truncate(label, 50) };
     }
-    case 'contact_card': return { text: prefix + (titleText ? truncate(titleText, 40) : '👤 Danh thiếp') };
-    case 'rich': return { text: prefix + '✨ Tin có định dạng' };
+    case 'contact_card': return { prefix, text: (titleText ? truncate(titleText, 40) : '👤 Danh thiếp') };
+    case 'rich': return { prefix, text: '✨ Tin có định dạng' };
   }
 
   // Plain text — E01
   const text = msg.content || '';
-  return { text: prefix + truncate(text, 50) };
+  return { prefix, text: truncate(text, 50) };
 }
 
-// Wrapper giữ chữ ký cũ cho template (chỉ trả text)
-function lastMessagePreview(conv: Conversation): string {
-  return lastMessagePreviewResult(conv).text;
-}
+
 
 function lastMessagePreviewTone(conv: Conversation): 'danger' | 'muted' | undefined {
   return lastMessagePreviewResult(conv).tone;
@@ -1162,15 +1227,15 @@ function onPatternLeave() {
 
 <style scoped>
 .conv-list {
-  background: var(--smax-bg);
+  background: var(--color-surface);
   display: flex; flex-direction: column;
   height: 100%; overflow: hidden;
 }
 
 .cl-header {
   padding: 11px 13px;
-  border-bottom: 1px solid var(--smax-grey-200);
-  background: var(--smax-grey-50);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-secondary);
 }
 .cl-search-row {
   display: flex; gap: 6px; align-items: center;
@@ -1194,29 +1259,29 @@ function onPatternLeave() {
   border: none;
   border-radius: 50%;
   background: transparent;
-  color: var(--smax-grey-400, #9CA3AF);
+  color: var(--color-text-disabled, #9CA3AF);
   cursor: pointer;
   opacity: 0.55;
   transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
 .cl-search-clear:hover {
   opacity: 1;
-  background: var(--smax-grey-200, #E5E7EB);
-  color: var(--smax-grey-700, #374151);
+  background: var(--color-border, #E5E7EB);
+  color: var(--color-text-secondary, #374151);
 }
 /* Khi có text, chừa chỗ bên phải cho nút X (đỡ đè chữ) */
 .cl-search.has-text { padding-right: 32px; }
 .cl-search {
   flex: 1; min-width: 0;
   padding: 9px 11px 9px 36px;
-  border: 1.5px solid var(--smax-grey-200);
+  border: 1.5px solid var(--color-border);
   border-radius: 9px;
   font-size: 13px;
-  background: var(--smax-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='17' height='17' viewBox='0 0 24 24' fill='none' stroke='%235a6478' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E") no-repeat 11px center;
+  background: var(--color-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='17' height='17' viewBox='0 0 24 24' fill='none' stroke='%235a6478' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E") no-repeat 11px center;
   outline: none;
   font-family: inherit;
 }
-.cl-search:focus { border-color: var(--smax-primary); }
+.cl-search:focus { border-color: var(--color-primary); }
 
 /* Wedge A 2026-05-28: flash đỏ cam khi sale click "Tin nhắn mới" mà search trống */
 .cl-search--flash {
@@ -1226,7 +1291,7 @@ function onPatternLeave() {
   0%   { border-color: #d97706; box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.55); background-color: #fffaf0; }
   35%  { border-color: #ea580c; box-shadow: 0 0 0 6px rgba(217, 119, 6, 0.18); background-color: #fff5e6; }
   70%  { border-color: #d97706; box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.0); background-color: #fffaf0; }
-  100% { border-color: var(--smax-grey-200); box-shadow: none; background-color: var(--smax-bg); }
+  100% { border-color: var(--color-border); box-shadow: none; background-color: var(--color-surface); }
 }
 
 .cl-new-msg-caret {
@@ -1240,9 +1305,9 @@ function onPatternLeave() {
 .cl-new-msg {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 8px 10px;
-  border: 1.5px solid var(--smax-primary);
-  background: var(--smax-primary-soft);
-  color: var(--smax-primary);
+  border: 1.5px solid var(--color-primary);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
   border-radius: 9px;
   font-size: 12px; font-weight: 600;
   cursor: pointer;
@@ -1251,7 +1316,7 @@ function onPatternLeave() {
   flex-shrink: 0;
 }
 .cl-new-msg:hover {
-  background: var(--smax-primary);
+  background: var(--color-primary);
   color: white;
 }
 
@@ -1275,7 +1340,7 @@ function onPatternLeave() {
   white-space: nowrap;
   flex-shrink: 0;
   user-select: none;
-  background: var(--smax-bg);
+  background: var(--color-surface);
   transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 .cl-label-chip:hover {
@@ -1319,7 +1384,7 @@ function onPatternLeave() {
 .cl-tabs {
   display: flex; gap: 3px;
   margin-top: 7px;
-  border-bottom: 1px solid var(--smax-grey-200);
+  border-bottom: 1px solid var(--color-border);
   margin-left: -13px; margin-right: -13px;
   padding: 0 13px;
 }
@@ -1328,25 +1393,25 @@ function onPatternLeave() {
   padding: 7px 11px;
   cursor: pointer;
   font-size: 12px; font-weight: 500;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
   display: inline-flex; align-items: center; gap: 5px;
   font-family: inherit;
 }
 .cl-tab.active {
-  color: var(--smax-primary);
-  border-bottom-color: var(--smax-primary);
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
 }
 .cl-tab-count {
-  background: var(--smax-grey-100);
-  color: var(--smax-grey-700);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
   padding: 1px 6px; border-radius: 9px;
   font-size: 10px;
 }
 .cl-tab.active .cl-tab-count {
-  background: var(--smax-primary-soft);
-  color: var(--smax-primary);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
 }
 
 .conv-scroll { flex: 1; overflow-y: auto; }
@@ -1358,7 +1423,7 @@ function onPatternLeave() {
 .conv-list-enter-active { transition: none; }
 .loading {
   padding: 20px; text-align: center;
-  color: var(--smax-grey-700); font-size: 12px; font-style: italic;
+  color: var(--color-text-secondary); font-size: 12px; font-style: italic;
 }
 
 .conv-item {
@@ -1366,7 +1431,7 @@ function onPatternLeave() {
   display: flex; gap: 11px;
   align-items: flex-start;
   cursor: pointer;
-  border-bottom: 1px solid var(--smax-grey-100);
+  border-bottom: 1px solid var(--color-bg);
   position: relative;
   user-select: none;
   /* Cố định chiều cao mỗi item — name + preview + tag row reserved */
@@ -1409,7 +1474,7 @@ function onPatternLeave() {
   height: 18px;
   border-radius: 50%;
   border: 2px solid #fff;
-  background: var(--smax-grey-100, #f3f4f6);
+  background: var(--color-bg, #f3f4f6);
   object-fit: cover;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
   z-index: 1;
@@ -1423,13 +1488,13 @@ function onPatternLeave() {
   color: #fff;
   background: linear-gradient(135deg, #2962ff, #6366f1);
 }
-.conv-item.active .ci-nick-mini { border-color: var(--smax-primary-soft, #e3f2fd); }
-.conv-item:hover { background: var(--smax-grey-50); }
+.conv-item.active .ci-nick-mini { border-color: var(--color-primary-subtle, #e3f2fd); }
+.conv-item:hover { background: var(--color-surface-secondary); }
 .conv-item.unread .ci-name { font-weight: 700; }
 /* Active: nền xanh nhạt đồng nhất + bo góc + viền xanh nhẹ */
 .conv-item.active,
 .conv-item.is-group.active {
-  background: var(--smax-primary-soft) !important;
+  background: var(--color-primary-subtle) !important;
   border-radius: 12px;
   margin: 2px 6px;
   border-bottom-color: transparent !important;
@@ -1437,7 +1502,7 @@ function onPatternLeave() {
 }
 .conv-item.active:hover,
 .conv-item.is-group.active:hover {
-  background: var(--smax-primary-soft) !important;
+  background: var(--color-primary-subtle) !important;
 }
 
 /* M53 2026-05-30: Virtual conversation — nền cam nhạt + chip 🔒 */
@@ -1472,15 +1537,42 @@ function onPatternLeave() {
   align-items: flex-end; gap: 4px;
   flex-shrink: 0;
 }
-.ci-unread-count {
-  min-width: 20px; height: 18px;
-  padding: 0 6px;
-  background: #b8bfc9;
+.ci-unread-count,
+.right-count {
+  font-size: 11px;
+  font-weight: 700;
   color: white;
-  font-size: 10px; font-weight: 700;
-  border-radius: 9px;
-  display: inline-flex; align-items: center; justify-content: center;
+  background: #EF4444;
+  padding: 1px 6px;
+  border-radius: 999px;
+  min-width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
+}
+
+.ci-restore-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid #D1D5DB;
+  background: #F9FAFB;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  pointer-events: auto;
+  line-height: 1.2;
+}
+.ci-restore-btn:hover {
+  background: #EEF2FF;
+  border-color: #6366F1;
+  color: #4F46E5;
 }
 
 /* Phase 8 — Engagement pattern badge */
@@ -1519,7 +1611,7 @@ function onPatternLeave() {
   position: absolute; bottom: -2px; right: -2px;
   width: 15px; height: 15px;
   background: #0068ff; border-radius: 50%;
-  border: 2px solid var(--smax-bg);
+  border: 2px solid var(--color-surface);
   color: white; font-size: 9px; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
 }
@@ -1538,6 +1630,7 @@ function onPatternLeave() {
 }
 .ci-name {
   font-size: 14px;
+  font-weight: 600;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   display: inline-flex; align-items: center; gap: 4px;
   min-width: 0; flex: 1;
@@ -1559,11 +1652,15 @@ function onPatternLeave() {
   pointer-events: none;
 }
 .ci-time {
-  font-size: 11px; color: var(--smax-grey-700);
+  font-size: 11px; color: var(--color-text-secondary);
   line-height: 1;
 }
+.ci-preview-sender {
+  font-weight: 400;
+  color: inherit;
+}
 .ci-preview {
-  font-size: 12px; color: var(--smax-grey-700);
+  font-size: 12px; color: var(--color-text-secondary);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   margin-top: 2px;
   height: 16px; line-height: 16px;
@@ -1575,7 +1672,7 @@ function onPatternLeave() {
   font-weight: 600;
 }
 .ci-preview.tone-muted {
-  color: var(--smax-grey-500); /* xám — sale gọi ko trả lời / tin recall */
+  color: var(--color-text-muted); /* xám — sale gọi ko trả lời / tin recall */
   font-style: italic;
 }
 /* Tag row luôn reserve khoảng nhỏ — kể cả khi không có tag */
@@ -1630,8 +1727,8 @@ function onPatternLeave() {
   height: 16px;
   padding: 0 6px;
   border-radius: 4px;
-  background: var(--smax-grey-200, #ebedf0);
-  color: var(--smax-grey-700, #4a5468);
+  background: var(--color-border, #ebedf0);
+  color: var(--color-text-secondary, #4a5468);
   font-size: 10px;
   font-weight: 700;
   cursor: pointer;
@@ -1639,7 +1736,7 @@ function onPatternLeave() {
   transition: background 0.12s;
 }
 .tag-overflow:hover {
-  background: var(--smax-primary, #2962ff);
+  background: var(--color-primary, #2962ff);
   color: #fff;
 }
 .tag-overflow-popup {
@@ -1708,7 +1805,7 @@ function onPatternLeave() {
 
 .empty-state {
   text-align: center; padding: 40px 13px;
-  color: var(--smax-grey-700); font-size: 12px;
+  color: var(--color-text-secondary); font-size: 12px;
 }
 </style>
 

@@ -491,67 +491,67 @@ const ContactCard = defineComponent({
 .dup-dialog {
   display: flex; flex-direction: column;
   max-height: 90vh;
-  background: var(--smax-bg);
+  background: var(--color-surface);
 }
 
 /* Header */
 .dup-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 18px;
-  border-bottom: 1px solid var(--smax-grey-200);
+  border-bottom: 1px solid var(--color-border);
   background: linear-gradient(135deg, rgba(255,193,7,0.06), rgba(255,87,34,0.04));
   flex-shrink: 0;
 }
 .dup-title { display: flex; align-items: center; gap: 12px; }
-.dup-h1 { font-size: 17px; font-weight: 600; color: var(--smax-text); }
-.dup-sub { font-size: 12.5px; color: var(--smax-grey-700); margin-top: 2px; }
+.dup-h1 { font-size: 17px; font-weight: 600; color: var(--color-text); }
+.dup-sub { font-size: 12.5px; color: var(--color-text-secondary); margin-top: 2px; }
 .dup-close {
   width: 32px; height: 32px;
   border: none; background: transparent;
   font-size: 24px; line-height: 1;
-  color: var(--smax-grey-700); cursor: pointer;
+  color: var(--color-text-secondary); cursor: pointer;
   border-radius: 50%;
 }
-.dup-close:hover { background: var(--smax-grey-100); color: var(--smax-text); }
+.dup-close:hover { background: var(--color-bg); color: var(--color-text); }
 
 /* Filter chips */
 .dup-filters {
   display: flex; gap: 6px; flex-wrap: wrap;
   padding: 10px 18px;
-  border-bottom: 1px solid var(--smax-grey-200);
-  background: var(--smax-grey-50);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-secondary);
   flex-shrink: 0;
 }
 .filter-chip {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 5px 11px;
-  background: var(--smax-bg);
-  border: 1px solid var(--smax-grey-300);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
   border-radius: 14px;
   font-size: 12px; font-weight: 500;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   cursor: pointer; font-family: inherit;
 }
-.filter-chip:hover { border-color: var(--smax-primary); color: var(--smax-primary); }
+.filter-chip:hover { border-color: var(--color-primary); color: var(--color-primary); }
 .filter-chip.active {
-  background: var(--smax-primary-soft);
-  border-color: var(--smax-primary);
-  color: var(--smax-primary); font-weight: 600;
+  background: var(--color-primary-subtle);
+  border-color: var(--color-primary);
+  color: var(--color-primary); font-weight: 600;
 }
 .chip-icon { font-size: 14px; }
 .chip-count {
-  background: var(--smax-grey-200);
+  background: var(--color-border);
   padding: 1px 6px; border-radius: 8px;
   font-size: 10.5px; font-weight: 700;
   margin-left: 2px;
 }
-.filter-chip.active .chip-count { background: white; color: var(--smax-primary); }
+.filter-chip.active .chip-count { background: white; color: var(--color-primary); }
 
 /* Body */
 .dup-body {
   flex: 1; min-height: 0;
   padding: 16px 18px !important;
-  background: var(--smax-grey-50);
+  background: var(--color-surface-secondary);
 }
 
 /* Empty state */
@@ -559,32 +559,32 @@ const ContactCard = defineComponent({
   display: flex; flex-direction: column; align-items: center;
   padding: 48px 18px; text-align: center;
 }
-.empty-title { font-size: 15px; font-weight: 600; color: var(--smax-text); margin-top: 12px; }
-.empty-sub { font-size: 13px; color: var(--smax-grey-700); margin-top: 4px; }
+.empty-title { font-size: 15px; font-weight: 600; color: var(--color-text); margin-top: 12px; }
+.empty-sub { font-size: 13px; color: var(--color-text-secondary); margin-top: 4px; }
 .link-btn {
   background: none; border: none; padding: 0;
-  color: var(--smax-primary); cursor: pointer;
+  color: var(--color-primary); cursor: pointer;
   font-family: inherit; font-size: 13px; text-decoration: underline;
 }
 
 /* Group card */
 .dup-groups { display: flex; flex-direction: column; gap: 14px; }
 .dup-group {
-  background: var(--smax-bg);
-  border: 1px solid var(--smax-grey-200);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 .dup-group.is-conflict {
-  border-color: var(--smax-warning, #ff9800);
+  border-color: var(--color-warning, #ff9800);
   box-shadow: 0 1px 6px rgba(255,152,0,0.15);
 }
 .group-head {
   display: flex; align-items: center; gap: 9px;
   padding: 10px 14px;
-  border-bottom: 1px solid var(--smax-grey-100);
-  background: var(--smax-grey-50);
+  border-bottom: 1px solid var(--color-bg);
+  background: var(--color-surface-secondary);
   font-size: 12.5px;
 }
 .match-badge {
@@ -596,13 +596,13 @@ const ContactCard = defineComponent({
 .badge-strong { background: rgba(76,175,80,0.15); color: #2e7d32; }
 .badge-warn   { background: rgba(255,152,0,0.18); color: #ef6c00; }
 .badge-info   { background: rgba(33,150,243,0.15); color: #1565c0; }
-.badge-soft   { background: var(--smax-grey-100); color: var(--smax-grey-700); }
-.group-count { font-weight: 600; color: var(--smax-grey-700); }
+.badge-soft   { background: var(--color-bg); color: var(--color-text-secondary); }
+.group-count { font-weight: 600; color: var(--color-text-secondary); }
 .conflict-warn { color: #ef6c00; font-weight: 600; font-size: 11.5px; cursor: help; }
 .group-spacer { flex: 1; }
 .group-similarity {
-  font-size: 11px; color: var(--smax-grey-700);
-  background: var(--smax-grey-100);
+  font-size: 11px; color: var(--color-text-secondary);
+  background: var(--color-bg);
   padding: 1px 7px; border-radius: 9px;
 }
 
@@ -614,8 +614,8 @@ const ContactCard = defineComponent({
 }
 .contact-col {
   padding: 13px;
-  background: var(--smax-bg);
-  border-right: 1px solid var(--smax-grey-100);
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-bg);
 }
 .contact-col.role-primary {
   background: linear-gradient(135deg, rgba(76,175,80,0.04), rgba(76,175,80,0.01));
@@ -624,7 +624,7 @@ const ContactCard = defineComponent({
 .contact-col.role-duplicate {
   background: linear-gradient(135deg, rgba(255,152,0,0.04), rgba(255,152,0,0.01));
   border-right: none;
-  border-left: 1px solid var(--smax-grey-100);
+  border-left: 1px solid var(--color-bg);
 }
 .col-role-badge {
   display: inline-block;
@@ -646,9 +646,9 @@ const ContactCard = defineComponent({
   display: flex; flex-direction: column;
   align-items: stretch; justify-content: center;
   padding: 14px 11px;
-  background: var(--smax-grey-50);
-  border-left: 1px solid var(--smax-grey-200);
-  border-right: 1px solid var(--smax-grey-200);
+  background: var(--color-surface-secondary);
+  border-left: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
   gap: 10px;
 }
 .merge-arrow {
@@ -663,15 +663,15 @@ const ContactCard = defineComponent({
 .action-summary {
   text-align: center;
   padding: 9px;
-  background: var(--smax-bg);
-  border: 1px solid var(--smax-grey-200);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 7px;
   font-size: 11.5px;
 }
-.summary-title { color: var(--smax-grey-700); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.3px; }
-.summary-type { font-weight: 600; color: var(--smax-text); margin-top: 2px; }
-.summary-diff { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--smax-grey-200); }
-.diff-label { font-size: 10px; color: var(--smax-grey-700); margin-bottom: 3px; }
+.summary-title { color: var(--color-text-secondary); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.3px; }
+.summary-type { font-weight: 600; color: var(--color-text); margin-top: 2px; }
+.summary-diff { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--color-border); }
+.diff-label { font-size: 10px; color: var(--color-text-secondary); margin-bottom: 3px; }
 .diff-chip {
   display: inline-block;
   background: rgba(255,193,7,0.15);
@@ -694,31 +694,31 @@ const ContactCard = defineComponent({
   border: 1px solid;
 }
 .btn-merge {
-  background: var(--smax-primary);
-  border-color: var(--smax-primary);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
   color: white;
   font-weight: 600;
 }
-.btn-merge:hover:not(:disabled) { background: var(--smax-primary-hover, #1976d2); }
+.btn-merge:hover:not(:disabled) { background: var(--color-primary-hover, #1976d2); }
 .btn-merge:disabled {
-  background: var(--smax-grey-200);
-  border-color: var(--smax-grey-200);
-  color: var(--smax-grey-700);
+  background: var(--color-border);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
   cursor: not-allowed;
 }
 .btn-dismiss {
-  background: var(--smax-bg);
-  border-color: var(--smax-grey-300);
-  color: var(--smax-grey-700);
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+  color: var(--color-text-secondary);
 }
-.btn-dismiss:hover:not(:disabled) { border-color: var(--smax-grey-700); color: var(--smax-text); }
+.btn-dismiss:hover:not(:disabled) { border-color: var(--color-text-secondary); color: var(--color-text); }
 .btn-swap {
   background: transparent;
   border-color: transparent;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   font-size: 11.5px;
 }
-.btn-swap:hover { color: var(--smax-primary); text-decoration: underline; }
+.btn-swap:hover { color: var(--color-primary); text-decoration: underline; }
 
 /* Card inner content */
 .card-inner { display: flex; flex-direction: column; gap: 9px; }
@@ -728,11 +728,11 @@ const ContactCard = defineComponent({
 .card-name-block { flex: 1; min-width: 0; }
 .card-name {
   font-weight: 700; font-size: 14.5px;
-  color: var(--smax-text);
+  color: var(--color-text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .card-zalo-name {
-  font-size: 11px; color: var(--smax-grey-700);
+  font-size: 11px; color: var(--color-text-secondary);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   margin-top: 2px;
 }
@@ -743,11 +743,11 @@ const ContactCard = defineComponent({
   font-size: 10.5px;
   padding: 2px 7px;
   border-radius: 9px;
-  background: var(--smax-grey-100);
-  color: var(--smax-grey-700);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
 }
 .richness-pill.has { background: rgba(33,150,243,0.10); color: #1565c0; font-weight: 500; }
-.richness-pill.has b { color: var(--smax-primary); margin-right: 2px; }
+.richness-pill.has b { color: var(--color-primary); margin-right: 2px; }
 .card-fields {
   display: flex; flex-direction: column; gap: 3px;
 }
@@ -757,16 +757,16 @@ const ContactCard = defineComponent({
   padding: 2px 0;
 }
 .field-icon { width: 16px; flex-shrink: 0; opacity: 0.7; }
-.field-label { color: var(--smax-grey-700); flex-shrink: 0; }
+.field-label { color: var(--color-text-secondary); flex-shrink: 0; }
 .field-value {
-  color: var(--smax-text);
+  color: var(--color-text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   flex: 1; min-width: 0;
 }
 .field.mono .field-value {
   font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
   font-size: 10.5px;
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
   padding: 1px 5px; border-radius: 3px;
 }
 .field.highlight {
@@ -777,10 +777,10 @@ const ContactCard = defineComponent({
 .field.highlight .field-value { font-weight: 600; color: #ef6c00; }
 .card-tags { display: flex; flex-wrap: wrap; gap: 3px; }
 .tag-chip {
-  background: var(--smax-grey-100);
+  background: var(--color-bg);
   padding: 1px 7px; border-radius: 9px;
   font-size: 10.5px;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
 }
 
 /* Grid layout (3+ KH) */
@@ -792,24 +792,24 @@ const ContactCard = defineComponent({
 }
 .compare-card.compact {
   position: relative;
-  background: var(--smax-bg);
-  border: 2px solid var(--smax-grey-200);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
   border-radius: 9px;
   padding: 11px;
   cursor: pointer;
 }
-.compare-card.compact:hover { border-color: var(--smax-primary); }
+.compare-card.compact:hover { border-color: var(--color-primary); }
 .compare-card.compact.selected {
-  border-color: var(--smax-primary);
-  background: var(--smax-primary-soft);
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
 }
 .compare-card.compact.is-primary-suggestion {
   border-color: #4caf50;
   background: rgba(76,175,80,0.03);
 }
 .compare-card.compact.is-primary-suggestion.selected {
-  border-color: var(--smax-primary);
-  background: var(--smax-primary-soft);
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
 }
 .compare-card .card-radio { position: absolute; opacity: 0; pointer-events: none; }
 .role-badge {
@@ -827,14 +827,14 @@ const ContactCard = defineComponent({
   grid-column: 1 / -1;
   display: flex; align-items: center; gap: 9px;
   padding: 10px 14px;
-  border-top: 1px solid var(--smax-grey-200);
-  background: var(--smax-grey-50);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-secondary);
   flex-wrap: wrap;
 }
 .multi-actions .action-hint {
   flex: 1;
   display: flex; align-items: center; gap: 6px;
-  font-size: 12.5px; color: var(--smax-grey-700);
+  font-size: 12.5px; color: var(--color-text-secondary);
 }
 .multi-actions button {
   display: inline-flex; align-items: center; gap: 5px;
@@ -849,34 +849,34 @@ const ContactCard = defineComponent({
 .dup-pagination {
   display: flex; align-items: center; justify-content: center; gap: 12px;
   padding: 11px 18px;
-  border-top: 1px solid var(--smax-grey-200);
-  background: var(--smax-grey-50);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-secondary);
   font-size: 12.5px;
   flex-shrink: 0;
 }
 .page-btn {
   padding: 5px 11px;
-  background: var(--smax-bg);
-  border: 1px solid var(--smax-grey-300);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
   border-radius: 6px;
   cursor: pointer; font-family: inherit; font-size: 12.5px;
-  color: var(--smax-text);
+  color: var(--color-text);
 }
-.page-btn:hover:not(:disabled) { border-color: var(--smax-primary); color: var(--smax-primary); }
+.page-btn:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
 .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.page-info { color: var(--smax-grey-700); }
+.page-info { color: var(--color-text-secondary); }
 
 /* Responsive */
 @media (max-width: 900px) {
   .three-col { grid-template-columns: 1fr; }
   .contact-col {
     border-right: none;
-    border-bottom: 1px solid var(--smax-grey-100);
+    border-bottom: 1px solid var(--color-bg);
   }
   .action-col {
     border-left: none; border-right: none;
-    border-top: 1px solid var(--smax-grey-200);
-    border-bottom: 1px solid var(--smax-grey-200);
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
   }
   .merge-arrow { flex-direction: row; }
   .action-buttons { flex-direction: row; flex-wrap: wrap; }

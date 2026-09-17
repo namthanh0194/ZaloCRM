@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+﻿<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <Teleport to="body">
@@ -16,6 +16,15 @@
         role="menu"
         @click.stop
       >
+        <template v-if="activeTab === 'deleted'">
+          <button class="ctx-item" role="menuitem" @click="onAction('restore')">
+            <svg class="ctx-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+            </svg>
+            <span class="ctx-item__label">Khôi phục hội thoại</span>
+          </button>
+        </template>
+        <template v-else>
         <!-- Chuyển tab: từ Ưu tiên → Cá nhân, hoặc từ Cá nhân/Chính → Ưu tiên.
              activeTab='other' nghĩa là đang ở tab Ưu tiên. -->
         <button
@@ -62,12 +71,27 @@
 
         <!-- Xóa đoạn hội thoại (xóa mềm — mở hộp xác nhận ở component cha) -->
         <div class="ctx-divider"></div>
+                <button
+          v-if="canManageAccess"
+          class="ctx-item"
+          role="menuitem"
+          @click="onAction('manage-access')"
+        >
+          <svg class="ctx-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <span class="ctx-item__label">Phân quyền hội thoại</span>
+        </button>
         <button class="ctx-item is-danger" role="menuitem" @click="onAction('delete')">
           <svg class="ctx-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
           </svg>
           <span class="ctx-item__label">Xóa đoạn hội thoại</span>
         </button>
+        </template>
       </div>
     </div>
   </Teleport>
@@ -89,6 +113,7 @@ const props = defineProps<{
   followBusy: boolean;
   /** false khi thiếu contactId/nickId (vd nhóm chưa map contact) → ẩn item Theo dõi. */
   canFollow: boolean;
+  canManageAccess?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -96,7 +121,9 @@ const emit = defineEmits<{
   'move-main': [];
   'move-other': [];
   'toggle-follow': [];
+  'manage-access': [];
   delete: [];
+  restore: [];
 }>();
 
 const menuRef = ref<HTMLElement | null>(null);
@@ -170,14 +197,16 @@ onBeforeUnmount(() => {
 function close() {
   emit('update:modelValue', false);
 }
-function onAction(name: 'move-main' | 'move-other' | 'toggle-follow' | 'delete') {
+function onAction(name: 'move-main' | 'move-other' | 'toggle-follow' | 'manage-access' | 'delete' | 'restore') {
   // toggle-follow KHÔNG đóng menu (sale có thể muốn xem trạng thái đổi); các action
   // khác đóng menu ngay như Zalo native.
   switch (name) {
     case 'move-main':     emit('move-main');     close(); break;
     case 'move-other':    emit('move-other');    close(); break;
     case 'delete':        emit('delete');        close(); break;
+    case 'restore':       emit('restore');       close(); break;
     case 'toggle-follow': emit('toggle-follow');          break;
+    case 'manage-access': emit('manage-access'); close(); break;
   }
 }
 </script>

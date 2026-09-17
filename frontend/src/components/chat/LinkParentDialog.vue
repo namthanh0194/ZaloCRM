@@ -117,12 +117,12 @@ function close() {
 </script>
 
 <style scoped>
-.result-list { max-height: 320px; overflow-y: auto; border: 1px solid var(--smax-grey-200); border-radius: 6px; }
-.result-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--smax-grey-100); }
+.result-list { max-height: 320px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: 6px; }
+.result-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--color-bg); }
 .result-row:last-child { border-bottom: none; }
 .result-row:hover { background: rgba(0,0,0,0.03); }
 .result-row.selected { background: rgba(0,242,255,0.10); }
 .info { flex: 1; min-width: 0; }
 .name { font-weight: 500; font-size: 13px; }
-.meta { display: flex; gap: 10px; font-size: 11px; color: var(--smax-grey-600); }
+.meta { display: flex; gap: 10px; font-size: 11px; color: var(--color-text-secondary); }
 </style>

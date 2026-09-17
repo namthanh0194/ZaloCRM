@@ -70,12 +70,12 @@ const roleClass = computed(() => `role-${authStore.user?.role || 'member'}`);
 <style scoped>
 .profile-page { max-width: 720px; font-family: inherit; }
 .page-head { margin-bottom: 24px; }
-.page-title { font-size: 20px; font-weight: 700; color: #1F2D3D; margin: 0 0 4px; }
-.page-desc { font-size: 13px; color: #6B7785; margin: 0; }
+.page-title { font-size: 20px; font-weight: 700; color: var(--color-text, #1F2D3D); margin: 0 0 4px; }
+.page-desc { font-size: 13px; color: var(--color-text-secondary, #6B7785); margin: 0; }
 
 .profile-card {
   background: white;
-  border: 1px solid #E4E5E9;
+  border: 1px solid var(--color-border, #E4E5E9);
   border-radius: 12px;
   padding: 24px;
   display: flex;
@@ -87,8 +87,8 @@ const roleClass = computed(() => `role-${authStore.user?.role || 'member'}`);
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #5E6AD2, #8B5CF6);
-  color: white;
+  background: linear-gradient(135deg, var(--color-primary, #1786be), #8B5CF6);
+  color: var(--color-on-primary);
   font-size: 24px;
   font-weight: 700;
   display: flex;
@@ -101,22 +101,22 @@ const roleClass = computed(() => `role-${authStore.user?.role || 'member'}`);
   width: 100px;
   font-size: 11.5px;
   font-weight: 600;
-  color: #6B7785;
+  color: var(--color-text-secondary, #6B7785);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-.pc-value { font-size: 14px; color: #1F2D3D; font-weight: 500; }
-.pc-value.muted { font-size: 12px; color: #97A0AC; font-family: monospace; }
+.pc-value { font-size: 14px; color: var(--color-text, #1F2D3D); font-weight: 500; }
+.pc-value.muted { font-size: 12px; color: var(--color-text-muted, #97A0AC); font-family: monospace; }
 
 .role-chip {
   display: inline-block;
   padding: 3px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 11.5px;
   font-weight: 600;
 }
 .role-chip.role-owner { background: #FEF3C7; color: #92400E; }
-.role-chip.role-admin { background: #EEF0FF; color: #5E6AD2; }
+.role-chip.role-admin { background: var(--color-primary-subtle, #EEF0FF); color: var(--color-primary, #1786be); }
 .role-chip.role-member { background: #DCFCE7; color: #166534; }
 
 .actions { display: flex; gap: 10px; }
@@ -125,16 +125,16 @@ const roleClass = computed(() => `role-${authStore.user?.role || 'member'}`);
   padding: 9px 16px;
   font-size: 13px;
   font-weight: 500;
-  border-radius: 8px;
-  border: 1px solid #E4E5E9;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border, #E4E5E9);
   background: white;
-  color: #1F2D3D;
+  color: var(--color-text, #1F2D3D);
   cursor: pointer;
   font-family: inherit;
   text-decoration: none;
   display: inline-block;
 }
 .btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-primary { background: #5E6AD2; border-color: #5E6AD2; color: white; }
+.btn-primary { background: var(--color-primary, #1786be); border-color: var(--color-primary, #1786be); color: var(--color-on-primary); }
 .btn-primary:hover { background: #4E5AB8; }
 </style>

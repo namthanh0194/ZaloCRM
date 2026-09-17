@@ -209,7 +209,7 @@ function silentPill(days: number): string {
               </div>
               <!-- legend -->
               <div
-                style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--rk-muted); font-weight: 600"
+                style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--color-text-muted); font-weight: 600"
               >
                 <span>Ít</span>
                 <span class="c l1" style="width: 14px; height: 14px; border-radius: 3px; display: inline-block"></span>
@@ -264,7 +264,7 @@ function silentPill(days: number): string {
             <div class="card">
               <div class="card-h">
                 <div class="t">
-                  <v-icon size="18" style="color: var(--rk-warn)">mdi-snowflake-alert</v-icon>
+                  <v-icon size="18" style="color: var(--color-warning)">mdi-snowflake-alert</v-icon>
                   KH đang nguội cần cứu
                 </div>
               </div>
@@ -302,7 +302,7 @@ function silentPill(days: number): string {
             <div class="card">
               <div class="card-h">
                 <div class="t">
-                  <v-icon size="18" style="color: var(--rk-danger)">mdi-fire</v-icon>
+                  <v-icon size="18" style="color: var(--color-danger)">mdi-fire</v-icon>
                   KH đang nóng nên đẩy
                 </div>
               </div>

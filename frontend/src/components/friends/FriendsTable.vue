@@ -628,15 +628,15 @@ function healthTooltip(f: DbFriend): string {
 .table-wrap {
   flex: 1;
   overflow: auto;
-  background: var(--surface);
+  background: var(--color-surface);
   /* Phase 3 — smooth horizontal scroll khi nhiều cột toggle bật */
   scroll-behavior: smooth;
   scrollbar-width: thin;
 }
 .table-wrap::-webkit-scrollbar { height: 10px; width: 10px; }
-.table-wrap::-webkit-scrollbar-track { background: var(--surface-2); }
+.table-wrap::-webkit-scrollbar-track { background: var(--color-bg); }
 .table-wrap::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 5px; }
-.table-wrap::-webkit-scrollbar-thumb:hover { background: var(--ink-4); }
+.table-wrap::-webkit-scrollbar-thumb:hover { background: var(--color-text-disabled); }
 
 .ftable {
   /* min-width đảm bảo cột không bị squash khi nhiều cột bật; horizontal scroll active */
@@ -654,16 +654,16 @@ function healthTooltip(f: DbFriend): string {
   transition: background 0.12s, color 0.12s;
 }
 .ftable thead th.sortable:hover {
-  background: var(--brand-soft);
-  color: var(--brand-700);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary-active);
 }
 .ftable thead th.sort-active {
-  background: var(--brand-soft);
-  color: var(--brand-700);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary-active);
 }
 .ftable thead th .sort-arrow {
   font-size: 11px;
-  color: var(--brand);
+  color: var(--color-primary);
   margin-left: 2px;
   font-weight: 700;
 }
@@ -674,29 +674,29 @@ function healthTooltip(f: DbFriend): string {
   position: sticky;
   left: 0;
   z-index: 3;
-  background: var(--surface);
+  background: var(--color-surface);
 }
-.ftable thead th.cb-col { z-index: 4; background: var(--surface-2); }
+.ftable thead th.cb-col { z-index: 4; background: var(--color-bg); }
 .ftable thead th:nth-child(2),
 .ftable tbody td:nth-child(2) {
   position: sticky;
   left: 32px;  /* sau cb-col 32px */
   z-index: 3;
-  background: var(--surface);
-  box-shadow: 1px 0 0 var(--line);  /* viền chia tách rõ */
+  background: var(--color-surface);
+  box-shadow: 1px 0 0 var(--color-border);  /* viền chia tách rõ */
 }
-.ftable thead th:nth-child(2) { z-index: 4; background: var(--surface-2); }
+.ftable thead th:nth-child(2) { z-index: 4; background: var(--color-bg); }
 .ftable tbody tr:hover td:nth-child(1),
-.ftable tbody tr:hover td:nth-child(2) { background: var(--brand-softer); }
+.ftable tbody tr:hover td:nth-child(2) { background: var(--color-primary-subtle); }
 .ftable tbody tr.selected td:nth-child(1),
-.ftable tbody tr.selected td:nth-child(2) { background: var(--brand-soft); }
+.ftable tbody tr.selected td:nth-child(2) { background: var(--color-primary-subtle); }
 .ftable thead th {
   position: sticky; top: 0;
-  background: var(--surface-2); z-index: 2;
+  background: var(--color-bg); z-index: 2;
   padding: 9px 10px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--color-border);
   font-weight: 700; font-size: 10.5px;
-  color: var(--ink-4);
+  color: var(--color-text-disabled);
   text-transform: uppercase; letter-spacing: .04em;
   text-align: left; white-space: nowrap;
 }
@@ -707,14 +707,14 @@ function healthTooltip(f: DbFriend): string {
 
 .ftable tbody td {
   padding: 9px 10px;
-  border-bottom: 1px solid var(--line-2);
+  border-bottom: 1px solid var(--color-border-strong);
   vertical-align: middle;
-  color: var(--ink-2);
+  color: var(--color-text-secondary);
 }
 .ftable tbody td.cb-col { padding-right: 4px; }
 .ftable tbody tr { cursor: pointer; transition: background .12s; }
-.ftable tbody tr:hover { background: var(--brand-softer); }
-.ftable tbody tr.selected { background: var(--brand-soft); }
+.ftable tbody tr:hover { background: var(--color-primary-subtle); }
+.ftable tbody tr.selected { background: var(--color-primary-subtle); }
 
 .ftable.compact tbody td { padding: 5px 10px; }
 .ftable.detailed tbody td { padding: 12px 10px; }
@@ -740,14 +740,14 @@ function healthTooltip(f: DbFriend): string {
 }
 .cell-customer .info { min-width: 0; }
 .cell-customer .info .name { font-weight: 600; }
-.cell-customer .info .name { color: var(--ink); }
-.cell-customer .info .name .alias { color: var(--ink-4); font-weight: 400; font-size: 11px; }
-.cell-customer .info .sub { font-size: 11px; color: var(--ink-4); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.cell-customer .info .name { color: var(--color-text); }
+.cell-customer .info .name .alias { color: var(--color-text-disabled); font-weight: 400; font-size: 11px; }
+.cell-customer .info .sub { font-size: 11px; color: var(--color-text-disabled); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .cell-customer .info .sub .sub-uid {
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-size: 10.5px;
-  color: var(--ink-3);
-  background: var(--surface-3);
+  color: var(--color-text-muted);
+  background: var(--color-surface-secondary);
   padding: 1px 6px;
   border-radius: 5px;
   white-space: nowrap;
@@ -774,12 +774,12 @@ function healthTooltip(f: DbFriend): string {
 .cell-nick .nick-av.offline { opacity: 0.5; }
 .cell-nick .nick-info { min-width: 0; }
 .cell-nick .nick-name {
-  font-weight: 600; font-size: 12px; color: var(--ink);
+  font-weight: 600; font-size: 12px; color: var(--color-text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   max-width: 130px;
 }
 .cell-nick .nick-sub {
-  font-size: 10.5px; color: var(--ink-4);
+  font-size: 10.5px; color: var(--color-text-disabled);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
@@ -830,7 +830,7 @@ function healthTooltip(f: DbFriend): string {
 /* ── KB date ────────────────────────────────────────────────────────────── */
 .kb-date {
   font-size: 11px;
-  color: var(--ink-3);
+  color: var(--color-text-muted);
   white-space: nowrap;
 }
 
@@ -883,14 +883,14 @@ function healthTooltip(f: DbFriend): string {
 .hb-fill.fit      { background: #059669; }   /* Fit xanh lá (phù hợp) */
 .hb-fill.velocity { background: #d97706; }   /* Velocity cam (tốc độ) */
 
-.alias-cell { font-size: 12px; color: var(--ink); }
-.alias-empty { font-size: 12px; color: var(--ink-4); font-style: italic; }
-.dim-cell { color: var(--ink-4); font-size: 11px; }
-.last-int { font-size: 11.5px; color: var(--ink-3); }
+.alias-cell { font-size: 12px; color: var(--color-text); }
+.alias-empty { font-size: 12px; color: var(--color-text-disabled); font-style: italic; }
+.dim-cell { color: var(--color-text-disabled); font-size: 11px; }
+.last-int { font-size: 11.5px; color: var(--color-text-muted); }
 
 .badge {
   display: inline-flex; align-items: center; gap: 5px;
-  height: 22px; padding: 0 10px; border-radius: var(--r-pill);
+  height: 22px; padding: 0 10px; border-radius: var(--radius-pill);
   font-size: 11.5px; font-weight: 700; white-space: nowrap; line-height: 1;
 }
 .badge.success { background: #dcfce7; color: #166534; }
@@ -907,7 +907,7 @@ function healthTooltip(f: DbFriend): string {
   min-width: 70px;
 }
 .score-bar {
-  flex: 1; height: 4px; background: var(--line);
+  flex: 1; height: 4px; background: var(--color-border);
   border-radius: 2px; overflow: hidden; min-width: 40px;
 }
 .score-bar .fill {
@@ -915,16 +915,16 @@ function healthTooltip(f: DbFriend): string {
   background: linear-gradient(90deg, var(--score-low), var(--score-mid), var(--score-high));
   transition: width .2s;
 }
-.score-num { font-weight: 700; font-size: 11px; color: var(--ink-2); font-family: var(--mono, ui-monospace, monospace); }
+.score-num { font-weight: 700; font-size: 11px; color: var(--color-text-secondary); font-family: var(--mono, ui-monospace, monospace); }
 
 .tag-chips {
   display: flex; gap: 3px; flex-wrap: wrap;
   max-width: 180px;
 }
 .tag-chip {
-  padding: 1px 7px; border-radius: var(--r-pill);
-  background: var(--surface-3); border: 1px solid var(--line);
-  font-size: 10px; color: var(--ink-2);
+  padding: 1px 7px; border-radius: var(--radius-pill);
+  background: var(--color-surface-secondary); border: 1px solid var(--color-border);
+  font-size: 10px; color: var(--color-text-secondary);
 }
 .tag-chip.red { background: #fee2e2; color: #991b1b; border-color: transparent; }
 .tag-chip.green { background: #dcfce7; color: #166534; border-color: transparent; }
@@ -938,24 +938,24 @@ function healthTooltip(f: DbFriend): string {
 }
 .ftable tbody tr:hover .row-actions { opacity: 1; }
 .row-actions button {
-  width: 26px; height: 26px; border-radius: var(--r-xs);
-  border: 1px solid var(--line); background: var(--surface);
-  color: var(--ink-2); font-size: 12px; cursor: pointer;
+  width: 26px; height: 26px; border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border); background: var(--color-surface);
+  color: var(--color-text-secondary); font-size: 12px; cursor: pointer;
   font-family: inherit;
   transition: all .12s;
 }
 .row-actions button:hover {
-  background: var(--brand); color: #fff; border-color: var(--brand);
+  background: var(--color-primary); color: #fff; border-color: var(--color-primary);
 }
 
 .nick-log {
   display: inline-flex; flex-direction: column;
   align-items: center; gap: 1px;
-  padding: 2px 6px; border-radius: var(--r-xs);
-  background: var(--surface-3); font-size: 10px; color: var(--ink-4);
+  padding: 2px 6px; border-radius: var(--radius-sm);
+  background: var(--color-surface-secondary); font-size: 10px; color: var(--color-text-disabled);
   min-width: 36px;
 }
-.nick-log b { font-size: 13px; color: var(--ink); line-height: 1; }
+.nick-log b { font-size: 13px; color: var(--color-text); line-height: 1; }
 .nick-log.warm { background: #fef3c7; color: #92400e; }
 .nick-log.warm b { color: #78350f; }
 .nick-log.hot { background: #fee2e2; color: #991b1b; }
@@ -963,10 +963,10 @@ function healthTooltip(f: DbFriend): string {
 
 .empty {
   padding: 60px 24px;
-  text-align: center; color: var(--ink-4);
+  text-align: center; color: var(--color-text-disabled);
 }
 .empty .icon { font-size: 36px; }
-.empty h3 { color: var(--ink); margin: 8px 0 4px; }
+.empty h3 { color: var(--color-text); margin: 8px 0 4px; }
 
 /* Customer avatar palette — same hash as nick sidebar */
 .av-c1 { background: linear-gradient(135deg, #2f6ee5, #1d4ed8); }

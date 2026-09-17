@@ -257,29 +257,29 @@ function fmtTime(a: Appointment): string {
 @import '@/assets/airtable.css';
 
 .apt-sidebar {
-  background: var(--at-surface-soft);
-  padding: var(--at-s-lg);
+  background: var(--color-surface-secondary);
+  padding: var(--space-6);
   overflow-y: auto;
   height: 100%;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  color: var(--at-body);
+  color: var(--color-text-secondary);
 }
-.side-section { margin-bottom: var(--at-s-lg); }
+.side-section { margin-bottom: var(--space-6); }
 .side-section h4 {
-  margin: 0 0 var(--at-s-xs);
+  margin: 0 0 var(--space-2);
   font-size: 11px;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--at-muted);
+  color: var(--color-text-muted);
 }
 
 /* Scope toggle (segmented) */
 .scope-toggle {
   display: flex;
-  background: var(--at-canvas);
-  border: 1px solid var(--at-hairline);
-  border-radius: var(--at-r-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 3px;
   gap: 2px;
 }
@@ -288,15 +288,15 @@ function fmtTime(a: Appointment): string {
   background: transparent;
   border: none;
   border-radius: 8px;
-  color: var(--at-body);
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   font-family: inherit;
 }
 .scope-toggle button.active {
-  background: var(--at-ink);
-  color: var(--at-on-primary);
+  background: var(--color-text);
+  color: var(--color-on-primary);
 }
 
 /* Expansion box xổ ra từ Phạm vi khi pick Nhóm/Tất cả.
@@ -304,39 +304,39 @@ function fmtTime(a: Appointment): string {
    nó là sub-content thuộc về tab Phạm vi vừa bấm. */
 .scope-expansion {
   position: relative;
-  margin-top: var(--at-s-xs);
-  padding: var(--at-s-sm);
-  background: var(--at-surface-strong);
-  border: 1px solid var(--at-border-strong);
-  border-radius: var(--at-r-md);
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-border);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
 }
 .scope-expansion__arrow {
   position: absolute;
   top: -7px;
   left: 24px;
   width: 12px; height: 12px;
-  background: var(--at-surface-strong);
-  border-left: 1px solid var(--at-border-strong);
-  border-top: 1px solid var(--at-border-strong);
+  background: var(--color-border);
+  border-left: 1px solid var(--color-border-strong);
+  border-top: 1px solid var(--color-border-strong);
   transform: rotate(45deg);
 }
 .scope-expansion__head {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: var(--at-s-xs);
+  margin-bottom: var(--space-2);
   font-size: 11.5px;
   font-weight: 500;
-  color: var(--at-ink);
+  color: var(--color-text);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 .scope-expansion__head .badge {
   font-size: 10px;
-  background: var(--at-ink);
-  color: var(--at-on-primary);
+  background: var(--color-text);
+  color: var(--color-on-primary);
   padding: 1px 6px;
-  border-radius: var(--at-r-pill);
+  border-radius: var(--radius-pill);
   font-variant-numeric: tabular-nums;
   font-weight: 500;
   letter-spacing: 0;
@@ -345,20 +345,20 @@ function fmtTime(a: Appointment): string {
 /* Sale filter list (trong expansion box) */
 .sale-list { display: flex; flex-direction: column; gap: 2px; }
 .sale-list .sale {
-  display: flex; align-items: center; gap: var(--at-s-xs);
+  display: flex; align-items: center; gap: var(--space-2);
   padding: 6px 8px;
-  border-radius: var(--at-r-sm);
-  background: var(--at-canvas);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
   cursor: pointer;
   font-size: 13px;
-  color: var(--at-body);
+  color: var(--color-text-secondary);
 }
-.sale-list .sale:active { background: var(--at-surface-soft); }
+.sale-list .sale:active { background: var(--color-surface-secondary); }
 .sale-list .sale.active {
-  color: var(--at-ink);
+  color: var(--color-text);
   font-weight: 500;
-  background: var(--at-canvas);
-  box-shadow: inset 0 0 0 1px var(--at-ink);
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 1px var(--color-text);
 }
 .sale-list .sale .swatch {
   width: 10px; height: 10px;
@@ -368,36 +368,36 @@ function fmtTime(a: Appointment): string {
 .sale-list .sale .name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sale-list .sale .count {
   font-size: 11px;
-  color: var(--at-muted);
+  color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
 }
 
 /* Mini calendar — Airtable style */
 .mini-cal {
-  background: var(--at-canvas);
-  border: 1px solid var(--at-hairline);
-  border-radius: var(--at-r-md);
-  padding: var(--at-s-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
 }
 .mini-cal-head {
   display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: var(--at-s-xs);
+  margin-bottom: var(--space-2);
 }
 .mini-cal-head .month {
   font-size: 13px;
   font-weight: 500;
-  color: var(--at-ink);
+  color: var(--color-text);
 }
 .mini-cal-head button {
   background: transparent;
   border: none;
-  color: var(--at-muted);
+  color: var(--color-text-muted);
   font-size: 13px;
   width: 24px; height: 24px;
-  border-radius: var(--at-r-sm);
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
-.mini-cal-head button:active { background: var(--at-surface-soft); }
+.mini-cal-head button:active { background: var(--color-surface-secondary); }
 .mini-cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -405,7 +405,7 @@ function fmtTime(a: Appointment): string {
 }
 .mini-cal-grid .dow {
   font-size: 10px;
-  color: var(--at-muted);
+  color: var(--color-text-muted);
   text-align: center;
   padding: 4px 0;
   font-weight: 500;
@@ -415,21 +415,21 @@ function fmtTime(a: Appointment): string {
   text-align: center;
   aspect-ratio: 1;
   display: flex; align-items: center; justify-content: center;
-  border-radius: var(--at-r-sm);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   position: relative;
-  color: var(--at-body);
+  color: var(--color-text-secondary);
 }
-.mini-cal-grid .day:active { background: var(--at-surface-soft); }
-.mini-cal-grid .day.muted { color: var(--at-muted); opacity: 0.4; }
+.mini-cal-grid .day:active { background: var(--color-surface-secondary); }
+.mini-cal-grid .day.muted { color: var(--color-text-muted); opacity: 0.4; }
 .mini-cal-grid .day.today {
-  background: var(--at-ink);
-  color: var(--at-on-primary);
+  background: var(--color-text);
+  color: var(--color-on-primary);
   font-weight: 500;
 }
 .mini-cal-grid .day.selected:not(.today) {
-  background: var(--at-coral);
-  color: var(--at-on-primary);
+  background: var(--color-danger);
+  color: var(--color-on-primary);
   font-weight: 500;
   opacity: 0.15;
 }
@@ -440,44 +440,44 @@ function fmtTime(a: Appointment): string {
   left: 50%;
   transform: translateX(-50%);
   width: 4px; height: 4px;
-  background: var(--at-coral);
+  background: var(--color-danger);
   border-radius: 50%;
 }
-.mini-cal-grid .day.today.has-events::after { background: var(--at-on-primary); }
+.mini-cal-grid .day.today.has-events::after { background: var(--color-on-primary); }
 
 /* Filter chips (status / type) */
 .filter-grid { display: flex; flex-direction: column; gap: 4px; }
 .filter-chip {
-  display: flex; align-items: center; gap: var(--at-s-xs);
+  display: flex; align-items: center; gap: var(--space-2);
   font-size: 12.5px;
   cursor: pointer;
   padding: 6px 8px;
-  border-radius: var(--at-r-sm);
-  color: var(--at-body);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
 }
-.filter-chip:active { background: var(--at-canvas); }
+.filter-chip:active { background: var(--color-surface); }
 .filter-chip input[type=checkbox] {
-  accent-color: var(--at-ink);
+  accent-color: var(--color-text);
   width: 14px; height: 14px;
   flex-shrink: 0;
 }
 .filter-chip .pill {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 2px 8px;
-  border-radius: var(--at-r-pill);
+  border-radius: var(--radius-pill);
   font-weight: 500;
   font-size: 11px;
   letter-spacing: 0.12px;
 }
-.filter-chip .pill.status-scheduled { background: var(--at-canvas); color: var(--at-ink); border: 1px solid var(--at-hairline); }
+.filter-chip .pill.status-scheduled { background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border); }
 .filter-chip .pill.status-overdue   { background: #fdf3df; color: #7a5818; }   /* mustard tint */
 .filter-chip .pill.status-completed { background: #e3ede4; color: #0a2e0e; }   /* forest tint */
-.filter-chip .pill.status-cancelled { background: var(--at-surface-strong); color: var(--at-muted); }
+.filter-chip .pill.status-cancelled { background: var(--color-border); color: var(--color-text-muted); }
 .filter-chip .pill.status-no_show   { background: #fbe6dc; color: #7a2000; }   /* coral tint */
-.filter-chip .pill.type             { background: var(--at-canvas); color: var(--at-body); border: 1px solid var(--at-hairline); }
+.filter-chip .pill.type             { background: var(--color-surface); color: var(--color-text-secondary); border: 1px solid var(--color-border); }
 .filter-chip .count {
   margin-left: auto;
-  color: var(--at-muted);
+  color: var(--color-text-muted);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
@@ -485,46 +485,46 @@ function fmtTime(a: Appointment): string {
 /* Upcoming preview */
 .upcoming { display: flex; flex-direction: column; gap: 6px; }
 .upcoming .up-item {
-  background: var(--at-canvas);
-  border: 1px solid var(--at-hairline);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-left-width: 3px;
-  border-radius: var(--at-r-md);
-  padding: var(--at-s-xs) var(--at-s-sm);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
   cursor: pointer;
 }
-.upcoming .up-item:active { background: var(--at-surface-soft); }
+.upcoming .up-item:active { background: var(--color-surface-secondary); }
 .upcoming .up-item .row { display: flex; align-items: center; gap: 6px; }
 .upcoming .up-item .time {
   font-weight: 500;
   font-size: 12px;
-  color: var(--at-ink);
+  color: var(--color-text);
   font-family: ui-monospace, 'SF Mono', Consolas, monospace;
 }
-.upcoming .up-item .name { font-size: 12.5px; color: var(--at-body); }
+.upcoming .up-item .name { font-size: 12.5px; color: var(--color-text-secondary); }
 .upcoming .up-item .meta {
   font-size: 11px;
-  color: var(--at-muted);
+  color: var(--color-text-muted);
   margin-top: 2px;
 }
 
 /* Cream callout — keyboard tip */
 .sidebar-callout {
-  background: var(--at-cream);
-  border-radius: var(--at-r-md);
-  padding: var(--at-s-md);
+  background: var(--color-primary-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
   font-size: 12.5px;
   line-height: 1.45;
-  color: var(--at-ink);
+  color: var(--color-text);
 }
 .sidebar-callout strong { font-weight: 500; }
 .sidebar-callout kbd {
   display: inline-block;
   padding: 0 5px;
-  background: var(--at-canvas);
-  border: 1px solid var(--at-mustard);
-  border-radius: var(--at-r-xs);
+  background: var(--color-surface);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-sm);
   font-family: ui-monospace, monospace;
   font-size: 11px;
-  color: var(--at-ink);
+  color: var(--color-text);
 }
 </style>

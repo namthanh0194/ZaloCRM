@@ -363,7 +363,7 @@ onMounted(loadData);
 .refresh-btn,
 .scan-btn {
   background: #fff;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--color-border);
   padding: 8px 14px;
   border-radius: 8px;
   cursor: pointer;
@@ -371,12 +371,12 @@ onMounted(loadData);
   font-weight: 600;
 }
 .scan-btn {
-  background: #6366F1;
+  background: var(--color-primary);
   color: white;
   border-color: #6366F1;
 }
 .scan-btn:hover {
-  background: #4F46E5;
+  background: var(--color-primary-active);
 }
 .stuck-actions {
   display: flex;
@@ -394,11 +394,11 @@ onMounted(loadData);
   width: 100%;
   height: 36px;
   padding: 0 32px 0 12px;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   font-size: 13px;
   background: #fff;
-  color: #111827;
+  color: var(--color-text);
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -415,12 +415,12 @@ onMounted(loadData);
   background: transparent;
   border: none;
   font-size: 16px;
-  color: #6B7280;
+  color: var(--color-text-muted);
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 4px;
 }
-.clear-search:hover { color: #111827; background: #F3F4F6; }
+.clear-search:hover { color: var(--color-text); background: #F3F4F6; }
 
 .loading,
 .error,
@@ -429,7 +429,7 @@ onMounted(loadData);
   border-radius: 12px;
   padding: 48px;
   text-align: center;
-  color: #6B7280;
+  color: var(--color-text-muted);
 }
 .empty-icon {
   font-size: 48px;
@@ -437,7 +437,7 @@ onMounted(loadData);
 }
 .empty h2 {
   margin: 0 0 8px;
-  color: #111827;
+  color: var(--color-text);
 }
 
 .stuck-banner {
@@ -463,7 +463,7 @@ onMounted(loadData);
   gap: 16px;
 }
 .stage-group {
-  background: white;
+  background: var(--color-surface);
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
@@ -486,7 +486,7 @@ onMounted(loadData);
 }
 .stage-meta {
   font-size: 13px;
-  color: #6B7280;
+  color: var(--color-text-muted);
 }
 .alert-label {
   font-size: 12px;
@@ -550,18 +550,18 @@ onMounted(loadData);
   font-size: 11px;
   font-weight: 600;
 }
-.tag-active { background: #D1FAE5; color: #047857; }
-.tag-stuck { background: #FEE2E2; color: #DC2626; }
-.tag-cold { background: #DBEAFE; color: #1E40AF; }
-.tag-cooling { background: #E0F2FE; color: #075985; }
-.tag-frozen { background: #F3F4F6; color: #6B7280; }
-.tag-ready { background: #FEF3C7; color: #B45309; }
-.tag-rewarmed { background: #FCE7F3; color: #BE185D; }
-.tag-atrisk { background: #FED7AA; color: #9A3412; }
+.tag-active { background: var(--crm-lead-active-bg); color: var(--crm-lead-active-text); }
+.tag-stuck { background: var(--crm-lead-stuck-bg); color: var(--crm-lead-stuck-text); }
+.tag-cold { background: var(--crm-lead-cold-bg); color: var(--crm-lead-cold-text); }
+.tag-cooling { background: var(--crm-lead-cooling-bg); color: var(--crm-lead-cooling-text); }
+.tag-frozen { background: var(--crm-lead-frozen-bg); color: var(--crm-lead-frozen-text); }
+.tag-ready { background: var(--crm-lead-ready-bg); color: var(--crm-lead-ready-text); }
+.tag-rewarmed { background: var(--crm-lead-rewarmed-bg); color: var(--crm-lead-rewarmed-text); }
+.tag-atrisk { background: var(--crm-lead-atrisk-bg); color: var(--crm-lead-atrisk-text); }
 
 .friend-meta {
   font-size: 12px;
-  color: #6B7280;
+  color: var(--color-text-muted);
 }
 
 .suggest-box {
@@ -591,20 +591,18 @@ onMounted(loadData);
   white-space: nowrap;
 }
 .btn-primary {
-  background: #6366F1;
+  background: var(--color-primary);
   color: white;
 }
 .btn-primary:hover {
-  background: #4F46E5;
+  background: var(--color-primary-active);
 }
 .btn-secondary {
-  background: #F3F4F6;
-  color: #374151;
-  border: 1px solid #E5E7EB;
+  background: var(--color-surface-secondary); color: var(--color-text-secondary); border: 1px solid var(--color-border);
 }
 .btn-ghost {
   background: transparent;
-  color: #6B7280;
+  color: var(--color-text-muted);
 }
 
 .toast {
@@ -641,7 +639,7 @@ onMounted(loadData);
   z-index: 100;
 }
 .modal-card {
-  background: white;
+  background: var(--color-surface);
   border-radius: 12px;
   width: 90%;
   max-width: 520px;
@@ -672,12 +670,12 @@ onMounted(loadData);
   display: block;
   font-size: 12px;
   font-weight: 600;
-  color: #6B7280;
+  color: var(--color-text-muted);
   margin-bottom: 8px;
 }
 .modal-textarea {
   width: 100%;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 10px;
   font-family: inherit;

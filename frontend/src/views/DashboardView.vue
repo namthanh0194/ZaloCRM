@@ -2,11 +2,6 @@
 <!-- Copyright (C) 2026 Nguyễn Tiến Lộc -->
 <template>
   <div class="airtable-scope dh-v4">
-    <!-- Attribution marquee (Apache License) -->
-    <div v-if="attribution.enabled.value" class="dh-attr">
-      <a :href="attribution.href" target="_blank" rel="noopener">{{ attribution.text }}</a>
-    </div>
-
     <!-- ── Role-tab strip — chỉ hiện khi có quyền >1 tab (sale ẩn) ── -->
     <div v-if="hub.hasTeamSection.value || hub.hasSystemSection.value" class="at-roletabs">
       <button class="at-roletab" :class="{ 'is-active': activeTab === 'me' }" @click="activeTab = 'me'">
@@ -90,37 +85,31 @@
         </div>
 
         <!-- 6 KPI -->
-        <div class="at-kpi-grid">
-          <div class="at-kpi-tile at-kpi--clickable at-kpi--danger" @click="goToInbox">
-            <div class="at-kpi-label"><Inbox :size="13" :stroke-width="2" /> Chưa rep</div>
-            <div class="at-kpi-value"><PrivVal :split="me?.kpi.unreplied" /></div>
-            <div class="at-kpi-sub">Cần trả lời ngay</div>
-          </div>
-          <div class="at-kpi-tile at-kpi--clickable at-kpi--warn" @click="goToAppts">
-            <div class="at-kpi-label"><CalendarClock :size="13" :stroke-width="2" /> Hẹn hôm nay</div>
-            <div class="at-kpi-value"><PrivVal :split="me?.kpi.todayAppointments" /></div>
-            <div class="at-kpi-sub">Lịch hẹn của bạn</div>
-          </div>
-          <div class="at-kpi-tile at-kpi--clickable at-kpi--info">
-            <div class="at-kpi-label"><Eye :size="13" :stroke-width="2" /> Đang theo dõi</div>
-            <div class="at-kpi-value">{{ me?.sessions?.active ?? 0 }}</div>
-            <div class="at-kpi-sub">{{ me?.sessions?.replied ?? 0 }} KH vừa rep</div>
-          </div>
-          <div class="at-kpi-tile at-kpi--clickable" @click="goToContacts">
-            <div class="at-kpi-label"><Target :size="13" :stroke-width="2" /> KH của tôi</div>
-            <div class="at-kpi-value">{{ me?.kpi.totalContacts ?? 0 }}</div>
-            <div class="at-kpi-sub">{{ me?.interactionToday?.newLeads ?? 0 }} mới hôm nay</div>
-          </div>
-          <div class="at-kpi-tile at-kpi--clickable at-kpi--warn">
-            <div class="at-kpi-label"><Moon :size="13" :stroke-width="2" /> KH đình trệ</div>
-            <div class="at-kpi-value"><PrivVal :split="me?.kpi.dormantContacts" /></div>
-            <div class="at-kpi-sub">&gt;7 ngày không nhắn</div>
-          </div>
-          <div class="at-kpi-tile at-kpi--clickable at-kpi--good">
-            <div class="at-kpi-label"><CircleCheck :size="13" :stroke-width="2" /> Chốt tháng</div>
-            <div class="at-kpi-value">{{ me?.kpi.closedThisMonth ?? 0 }}</div>
-            <div class="at-kpi-sub">Khách đã chốt</div>
-          </div>
+        <div class="dashboard-kpi-grid">
+          <StatCard label="Chưa rep" subtext="Cần trả lời ngay" variant="danger" clickable @click="goToInbox">
+            <template #icon><Inbox :size="15" :stroke-width="2" /></template>
+            <PrivVal :split="me?.kpi.unreplied" />
+          </StatCard>
+          <StatCard label="Hẹn hôm nay" subtext="Lịch hẹn của bạn" variant="warning" clickable @click="goToAppts">
+            <template #icon><CalendarClock :size="15" :stroke-width="2" /></template>
+            <PrivVal :split="me?.kpi.todayAppointments" />
+          </StatCard>
+          <StatCard label="Đang theo dõi" :subtext="`${me?.sessions?.replied ?? 0} KH vừa rep`" variant="info">
+            <template #icon><Eye :size="15" :stroke-width="2" /></template>
+            {{ me?.sessions?.active ?? 0 }}
+          </StatCard>
+          <StatCard label="KH của tôi" :subtext="`${me?.interactionToday?.newLeads ?? 0} mới hôm nay`" clickable @click="goToContacts">
+            <template #icon><Target :size="15" :stroke-width="2" /></template>
+            {{ me?.kpi.totalContacts ?? 0 }}
+          </StatCard>
+          <StatCard label="KH đình trệ" subtext=">7 ngày không nhắn" variant="warning">
+            <template #icon><Moon :size="15" :stroke-width="2" /></template>
+            <PrivVal :split="me?.kpi.dormantContacts" />
+          </StatCard>
+          <StatCard label="Chốt tháng" subtext="Khách đã chốt" variant="success">
+            <template #icon><CircleCheck :size="15" :stroke-width="2" /></template>
+            {{ me?.kpi.closedThisMonth ?? 0 }}
+          </StatCard>
         </div>
 
         <div class="at-dash-grid-2">
@@ -197,7 +186,7 @@
                 <div v-for="a in me?.reminders?.overdue ?? []" :key="'ov'+a.id" class="at-list-row" @click="goToAppts">
                   <span class="at-list-row__av at-list-row__av--r"><TriangleAlert :size="15" :stroke-width="2" /></span>
                   <div>
-                    <div class="at-list-row__nm" style="color:var(--at-atlas-danger)">Hẹn QUÁ HẠN — {{ a.contactName || a.title }}</div>
+                    <div class="at-list-row__nm" style="color:var(--color-danger)">Hẹn QUÁ HẠN — {{ a.contactName || a.title }}</div>
                     <div class="at-list-row__mt">{{ apptHM(a.appointmentDate, a.appointmentTime) }} · {{ a.location || 'Không rõ địa điểm' }}</div>
                   </div>
                   <span class="at-list-row__rt"><TriangleAlert :size="13" :stroke-width="2" /></span>
@@ -236,7 +225,7 @@
               <div class="at-quota">
                 <div v-for="n in me?.quotaNicks ?? []" :key="n.id" class="at-quota__line">
                   <div class="at-quota__top">
-                    <span class="at-quota__nm" :style="n.isPrivate ? 'color:var(--at-atlas-warning)' : ''">
+                    <span class="at-quota__nm" :style="n.isPrivate ? 'color:var(--color-warning)' : ''">
                       <Lock v-if="n.isPrivate" :size="12" :stroke-width="2" />{{ n.displayName }}
                     </span>
                     <span class="at-quota__vl">{{ n.isPrivate ? '—' : (n.messagesToday + '/300') }}</span>
@@ -285,7 +274,7 @@
               </span>
               <span v-if="!statusChips.length" class="at-statchip">Chưa có dữ liệu</span>
             </div>
-            <div class="at-card__head" style="border-top:1px solid var(--at-hairline)"><div class="at-card__title" style="font-size:12px"><Bookmark :size="13" :stroke-width="2" /> Tag phổ biến</div></div>
+            <div class="at-card__head" style="border-top:1px solid var(--color-border)"><div class="at-card__title" style="font-size:12px"><Bookmark :size="13" :stroke-width="2" /> Tag phổ biến</div></div>
             <div class="at-chipwrap">
               <span v-for="t in me?.topTags ?? []" :key="t.tag" class="at-statchip">{{ t.tag }} <span class="at-statchip__c">{{ t.count }}</span></span>
               <span v-if="!me?.topTags?.length" class="at-statchip">Chưa gắn tag</span>
@@ -343,7 +332,7 @@
                 <td class="num"><PrivVal :split="u.unreplied" /></td>
                 <td class="num"><PrivVal :split="u.todayAppointments" /></td>
                 <td class="num">{{ u.totalContacts }}</td>
-                <td class="num" :style="u.closedThisWeek > 0 ? 'color:var(--at-atlas-success)' : ''">{{ u.closedThisWeek }}</td>
+                <td class="num" :style="u.closedThisWeek > 0 ? 'color:var(--color-success)' : ''">{{ u.closedThisWeek }}</td>
                 <td><span class="at-miniact" @click="selectUser(u.userId); activeTab = 'me'">Xem <ChevronDown :size="12" :stroke-width="2" style="transform:rotate(-90deg)" /></span></td>
               </tr>
             </tbody>
@@ -367,11 +356,11 @@
             <div class="at-scoredist">
               <div class="at-scoreline">
                 <div class="at-scoreline__top"><span class="at-scoreline__nm">Tỷ lệ rep team hôm nay</span><span class="at-scoreline__vl">{{ team?.responsePerf?.replyRate ?? 0 }}%</span></div>
-                <div class="at-bar"><div class="at-bar__seg" :style="`width:${team?.responsePerf?.replyRate ?? 0}%;background:var(--at-atlas-success)`"></div></div>
+                <div class="at-bar"><div class="at-bar__seg" :style="`width:${team?.responsePerf?.replyRate ?? 0}%;background:var(--color-success)`"></div></div>
               </div>
               <div class="at-scoreline">
                 <div class="at-scoreline__top"><span class="at-scoreline__nm">KH phản hồi / Tin gửi</span><span class="at-scoreline__vl">{{ team?.responsePerf?.replied ?? 0 }} / {{ team?.responsePerf?.sent ?? 0 }}</span></div>
-                <div class="at-bar"><div class="at-bar__seg" :style="`width:${team?.responsePerf?.replyRate ?? 0}%;background:var(--at-action)`"></div></div>
+                <div class="at-bar"><div class="at-bar__seg" :style="`width:${team?.responsePerf?.replyRate ?? 0}%;background:var(--color-primary)`"></div></div>
               </div>
             </div>
           </div>
@@ -423,7 +412,7 @@
                   <td><div class="at-tname"><span class="at-tname__av" :style="avBg(d.departmentId)">{{ initials(d.departmentName) }}</span> {{ d.departmentName }}</div></td>
                   <td class="num">{{ d.memberCount }}</td>
                   <td class="num">{{ d.newLeadsThisMonth }}</td>
-                  <td class="num" style="color:var(--at-atlas-success)">{{ d.closedThisMonth }}</td>
+                  <td class="num" style="color:var(--color-success)">{{ d.closedThisMonth }}</td>
                 </tr>
               </tbody>
             </table>
@@ -461,8 +450,8 @@ import { ref, computed, onMounted, onUnmounted, h, type Component } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router';
 import { useDashboardActionHub, type PrivacySplit } from '@/composables/use-dashboard-action-hub';
-import { useAttribution } from '@/composables/use-attribution';
 import Avatar from '@/components/ui/Avatar.vue';
+import { StatCard } from '@/design-system';
 import {
   Sun, Target, Users, Shield, User, ChevronDown, Lock, Search,
   Inbox, CalendarClock, Eye, Moon, CircleCheck, Flame, Bell,
@@ -472,7 +461,6 @@ import {
 } from 'lucide-vue-next';
 import '@/assets/atlas-v2-dashboard.css';
 
-const attribution = useAttribution();
 const auth = useAuthStore();
 const router = useRouter();
 const hub = useDashboardActionHub();
@@ -556,7 +544,7 @@ const statusChips = computed(() => {
 
 // ── Funnel bars (system) ──
 const FUNNEL_ORDER = ['new', 'contacted', 'negotiating', 'nurturing', 'caring', 'interested', 'closed_won', 'closed', 'chot', 'cold'];
-const FUNNEL_COLOR: Record<string, string> = { new: '#bfdbfe', contacted: '#93c5fd', negotiating: '#60a5fa', nurturing: '#fbbf24', caring: '#fbbf24', interested: '#34d399', closed_won: 'var(--at-atlas-success)', closed: 'var(--at-atlas-success)', chot: 'var(--at-atlas-success)', cold: '#94a3b8' };
+const FUNNEL_COLOR: Record<string, string> = { new: '#bfdbfe', contacted: '#93c5fd', negotiating: '#60a5fa', nurturing: '#fbbf24', caring: '#fbbf24', interested: '#34d399', closed_won: 'var(--color-success)', closed: 'var(--color-success)', chot: 'var(--color-success)', cold: '#94a3b8' };
 const funnelBars = computed(() => {
   const f = (system.value?.funnel ?? []).filter((x) => x.status && x.count > 0);
   const max = Math.max(1, ...f.map((x) => x.count));
@@ -608,7 +596,7 @@ function apptHM(iso: string, time: string | null): string {
 function quotaSeg(msgs: number | null): string {
   const v = msgs ?? 0;
   const pct = Math.min(100, Math.round((v / 300) * 100));
-  const color = v > 270 ? 'var(--at-atlas-danger)' : v > 210 ? 'var(--at-atlas-warning)' : 'var(--at-atlas-success)';
+  const color = v > 270 ? 'var(--color-danger)' : v > 210 ? 'var(--color-warning)' : 'var(--color-success)';
   return `width:${pct}%;background:${color}`;
 }
 function bandSeg(mid: number | undefined, hi: number | undefined, midColor: string, hiColor: string): string {
@@ -662,7 +650,7 @@ function onOutsideClick(e: MouseEvent) {
   margin: 0 auto;
   /* App khoá cuộn cấp trang (main.css overflow:hidden) → dashboard PHẢI tự cuộn,
      không thì nội dung tràn không kéo xuống được (anh báo 2026-06-17). */
-  height: calc(100vh - var(--smax-topnav-h, 48px));
+  height: calc(100vh - var(--layout-topnav-height, 48px));
   overflow-y: auto;
   padding-bottom: 32px;
   /* Score line màu theo 3 hệ điểm */
@@ -670,9 +658,21 @@ function onOutsideClick(e: MouseEvent) {
   --eng-c: #2563eb;
   --prio-c: #dc2626;
 }
-.dh-attr {
-  font-size: 10px; color: var(--at-hint, #97a0b3);
-  padding: 2px 14px; text-align: center; opacity: 0.7;
+.dashboard-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-3, 12px);
+  margin-bottom: var(--space-3, 12px);
+}
+@media (max-width: 1280px) {
+  .dashboard-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 720px) {
+  .dashboard-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .dh-tabpanel { animation: dh-fade 0.15s ease-out; }
 @keyframes dh-fade { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
@@ -681,36 +681,36 @@ function onOutsideClick(e: MouseEvent) {
 .dh-pdd {
   position: absolute; top: calc(100% + 4px); right: 0; z-index: 30;
   width: 260px; max-height: 360px; overflow-y: auto;
-  background: #fff; border: 1px solid var(--at-hairline, #e2e8f0);
+  background: #fff; border: 1px solid var(--color-border, #e2e8f0);
   border-radius: 9px; box-shadow: 0 8px 28px rgba(15,23,42,0.16); padding: 6px;
 }
-.dh-pdd-search { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-bottom: 1px solid var(--at-hairline, #eef2f6); margin-bottom: 4px; color: var(--at-hint, #97a0b3); }
+.dh-pdd-search { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-bottom: 1px solid var(--color-border, #eef2f6); margin-bottom: 4px; color: var(--color-text-disabled, #97a0b3); }
 .dh-pdd-search input { border: 0; outline: 0; flex: 1; font-size: 12.5px; font-family: inherit; }
-.dh-pdd-group { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--at-hint, #94a3b8); padding: 6px 8px 2px; letter-spacing: 0.3px; }
+.dh-pdd-group { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--color-text-disabled, #94a3b8); padding: 6px 8px 2px; letter-spacing: 0.3px; }
 .dh-pdd-item { padding: 6px 8px; font-size: 12.5px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-.dh-pdd-item:hover { background: var(--at-surface-soft, #f8fafc); }
-.dh-pdd-item.active { background: var(--at-action-soft, #e4f1f8); color: var(--at-action, #1786be); font-weight: 600; }
-.dh-pdd-dept { font-size: 10.5px; color: var(--at-hint, #94a3b8); }
+.dh-pdd-item:hover { background: var(--color-surface-secondary, #f8fafc); }
+.dh-pdd-item.active { background: var(--color-primary-subtle, #e4f1f8); color: var(--color-primary, #1786be); font-weight: 600; }
+.dh-pdd-dept { font-size: 10.5px; color: var(--color-text-disabled, #94a3b8); }
 
 /* ── Thẻ "Cần rep gấp" nâng cấp: avatar thật + preview tin + trạng thái KH ── */
 .at-urgent-row {
   display: grid; grid-template-columns: 38px 1fr auto; gap: 10px;
   align-items: center; padding: 8px 12px; cursor: pointer;
-  border-bottom: 1px solid var(--at-hairline, #eef2f6);
+  border-bottom: 1px solid var(--color-border, #eef2f6);
 }
 .at-urgent-row:last-child { border-bottom: 0; }
-.at-urgent-row:hover { background: var(--at-surface-soft, #f8fafc); }
+.at-urgent-row:hover { background: var(--color-surface-secondary, #f8fafc); }
 .at-urgent-av { flex-shrink: 0; }
 .at-urgent-body { min-width: 0; }
 .at-urgent-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.at-urgent-nm { font-size: 12.5px; font-weight: 600; color: var(--at-ink, #141a24); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-flex; align-items: center; gap: 3px; }
-.at-urgent-time { font-size: 10.5px; color: var(--at-hint, #94a3b8); flex-shrink: 0; }
+.at-urgent-nm { font-size: 12.5px; font-weight: 600; color: var(--color-text, #141a24); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-flex; align-items: center; gap: 3px; }
+.at-urgent-time { font-size: 10.5px; color: var(--color-text-disabled, #94a3b8); flex-shrink: 0; }
 .at-urgent-preview {
-  font-size: 11.5px; color: var(--at-body, #475066); margin-top: 1px;
+  font-size: 11.5px; color: var(--color-text-secondary, #475066); margin-top: 1px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .at-urgent-preview.is-blur { filter: blur(3.5px); user-select: none; letter-spacing: 1px; }
 .at-urgent-meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
-.at-urgent-nick { font-size: 10.5px; color: var(--at-hint, #94a3b8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.at-urgent-nick { font-size: 10.5px; color: var(--color-text-disabled, #94a3b8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .at-statchip--sm { font-size: 10px; padding: 1px 7px; }
 </style>

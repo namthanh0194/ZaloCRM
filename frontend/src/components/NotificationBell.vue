@@ -18,7 +18,18 @@
       </v-btn>
     </template>
     <v-card style="max-height: 400px; overflow-y: auto;">
-      <v-card-title class="text-body-1 font-weight-bold pa-3">Thông báo</v-card-title>
+      <div class="d-flex justify-space-between align-center pa-3">
+        <span class="text-body-1 font-weight-bold">Thông báo</span>
+        <v-btn
+          size="x-small"
+          variant="tonal"
+          color="primary"
+          prepend-icon="mdi-volume-high"
+          @click="testSoundAndPopup"
+        >
+          Thử chuông & Popup
+        </v-btn>
+      </div>
       <v-divider />
       <v-list density="compact" v-if="notifications.length > 0">
         <v-list-item
@@ -48,6 +59,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '@/api/index';
+import { useChatNotification } from '@/composables/use-chat-notification';
 
 interface Notification {
   id: string;
@@ -60,6 +72,11 @@ interface Notification {
 const notifications = ref<Notification[]>([]);
 const router = useRouter();
 const bellMenu = ref(false); // 2026-06-09 — điều khiển đóng menu chủ động
+const chatNotification = useChatNotification();
+
+function testSoundAndPopup() {
+  chatNotification.testNotification();
+}
 let interval: ReturnType<typeof setInterval>;
 
 async function fetchNotifications() {

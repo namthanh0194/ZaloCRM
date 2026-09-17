@@ -202,16 +202,16 @@ function formatSendTime(iso: string | null): string {
 <style scoped>
 .spd-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 2000; }
 .spd-modal { background: #fff; border-radius: 12px; width: min(760px, 94vw); max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
-.spd-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--line, #e6e8eb); }
+.spd-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--color-border, #e6e8eb); }
 .spd-title { display: flex; align-items: center; gap: 7px; font-size: 15px; }
 .spd-x { border: none; background: transparent; cursor: pointer; color: #6b7280; }
-.spd-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 18px; border-bottom: 1px solid var(--line, #e6e8eb); }
+.spd-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 18px; border-bottom: 1px solid var(--color-border, #e6e8eb); }
 .spd-picker-lb { font-size: 13px; color: #6b7280; }
 .spd-chip { display: inline-flex; align-items: center; gap: 4px; background: #e7f3fb; color: #1786be; border-radius: 14px; padding: 3px 6px 3px 10px; font-size: 13px; font-weight: 500; }
 .spd-chip-x { border: none; background: transparent; cursor: pointer; color: #1786be; display: inline-flex; }
 .spd-search-wrap { position: relative; }
-.spd-search { border: 1px solid var(--line, #d6dade); border-radius: 14px; padding: 4px 12px; font-size: 13px; min-width: 200px; }
-.spd-search-pop { position: absolute; top: 110%; left: 0; background: #fff; border: 1px solid var(--line, #e6e8eb); border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.12); min-width: 240px; max-height: 240px; overflow-y: auto; z-index: 10; }
+.spd-search { border: 1px solid var(--color-border, #d6dade); border-radius: 14px; padding: 4px 12px; font-size: 13px; min-width: 200px; }
+.spd-search-pop { position: absolute; top: 110%; left: 0; background: #fff; border: 1px solid var(--color-border, #e6e8eb); border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.12); min-width: 240px; max-height: 240px; overflow-y: auto; z-index: 10; }
 .spd-search-item { display: block; width: 100%; text-align: left; border: none; background: transparent; padding: 8px 12px; font-size: 13px; cursor: pointer; }
 .spd-search-item:hover { background: #f2f6f8; }
 .spd-muted { color: #9ca3af; }
@@ -231,9 +231,9 @@ function formatSendTime(iso: string | null): string {
 /* Bong bóng gửi đi — xanh nhạt, đuôi bên phải (giống tin mình gửi trên Zalo) */
 .spd-bubble-text { background: #cfe9fb; color: #0f2533; border-radius: 12px 12px 3px 12px; padding: 8px 12px; font-size: 13.5px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; max-width: 90%; }
 .spd-bubble-img { max-width: 72%; border-radius: 10px; display: block; }
-.spd-bubble-file { display: inline-flex; align-items: center; gap: 5px; background: #fff; border: 1px solid var(--line,#e6e8eb); border-radius: 10px; padding: 6px 10px; font-size: 13px; color: #42526e; }
+.spd-bubble-file { display: inline-flex; align-items: center; gap: 5px; background: #fff; border: 1px solid var(--color-border,#e6e8eb); border-radius: 10px; padding: 6px 10px; font-size: 13px; color: #42526e; }
 .spd-bubble-empty { font-size: 12px; color: #9ca3af; font-style: italic; align-self: flex-end; }
 /* Dòng kết thúc luồng */
 .spd-done { align-self: center; display: inline-flex; align-items: center; gap: 5px; margin-top: 4px; padding: 5px 12px; background: #e7f6ec; color: #157f3c; border-radius: 14px; font-size: 12px; font-weight: 500; }
-.spd-meta { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line, #e6e8eb); display: flex; flex-wrap: wrap; gap: 8px; font-size: 12.5px; color: #6b7280; }
+.spd-meta { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--color-border, #e6e8eb); display: flex; flex-wrap: wrap; gap: 8px; font-size: 12.5px; color: #6b7280; }
 </style>

@@ -190,14 +190,14 @@ function relativeTime(iso: string | null): string {
 .sip-num {
   font-size: 26px;
   font-weight: 800;
-  color: var(--smax-grey-900, #1a1f2e);
+  color: var(--color-text, #1a1f2e);
   line-height: 1;
   letter-spacing: -0.5px;
 }
 .sip-max {
   font-size: 11px;
   font-weight: 500;
-  color: var(--smax-grey-400, #a8aebb);
+  color: var(--color-text-disabled, #a8aebb);
 }
 .sip-stage-tag {
   font-size: 9.5px;
@@ -223,7 +223,7 @@ function relativeTime(iso: string | null): string {
 .sip-trend.neg { color: #b91c1c; background: #fee2e2; }
 .sip-meta {
   font-size: 10px;
-  color: var(--smax-grey-400, #a8aebb);
+  color: var(--color-text-disabled, #a8aebb);
   margin-top: -2px;
 }
 
@@ -250,7 +250,7 @@ function relativeTime(iso: string | null): string {
 .sip-dim-label {
   font-size: 11.5px;
   font-weight: 600;
-  color: var(--smax-grey-700, #3d4456);
+  color: var(--color-text-secondary, #3d4456);
   letter-spacing: 0.1px;
   white-space: nowrap;
   overflow: hidden;
@@ -258,7 +258,7 @@ function relativeTime(iso: string | null): string {
 }
 .sip-dim-bar {
   height: 6px;
-  background: var(--smax-grey-100, #eef0f4);
+  background: var(--color-bg, #eef0f4);
   border-radius: 4px;
   position: relative;
   overflow: hidden;
@@ -277,7 +277,7 @@ function relativeTime(iso: string | null): string {
 .sip-dim-val {
   font-size: 13px;
   font-weight: 700;
-  color: var(--smax-grey-900, #1a1f2e);
+  color: var(--color-text, #1a1f2e);
   font-family: 'SF Mono', Monaco, monospace;
   text-align: right;
   line-height: 1;
@@ -295,12 +295,12 @@ function relativeTime(iso: string | null): string {
   font-size: 9.5px;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  color: var(--smax-grey-600, #5a6478);
+  color: var(--color-text-secondary, #5a6478);
   font-weight: 600;
 }
 .sip-signals-expand {
   font-size: 10.5px;
-  color: var(--smax-primary, #2962ff);
+  color: var(--color-primary, #2962ff);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -310,7 +310,7 @@ function relativeTime(iso: string | null): string {
 .sip-signals-expand:hover { text-decoration: underline; }
 .sip-signals-empty {
   font-size: 11px;
-  color: var(--smax-grey-400, #a8aebb);
+  color: var(--color-text-disabled, #a8aebb);
   padding: 4px 2px;
   font-style: italic;
 }
@@ -327,7 +327,7 @@ function relativeTime(iso: string | null): string {
 .sip-signal-icon.pos { color: #16a34a; }
 .sip-signal-icon.neg { color: #ef4444; }
 .sip-signal-label {
-  color: var(--smax-grey-700, #3d4456);
+  color: var(--color-text-secondary, #3d4456);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -340,7 +340,7 @@ function relativeTime(iso: string | null): string {
 .sip-signal-delta.pos { color: #16a34a; }
 .sip-signal-delta.neg { color: #ef4444; }
 .sip-signal-time {
-  color: var(--smax-grey-400, #a8aebb);
+  color: var(--color-text-disabled, #a8aebb);
   font-size: 9.5px;
   font-family: 'SF Mono', Monaco, monospace;
   min-width: 20px;
@@ -383,9 +383,9 @@ function relativeTime(iso: string | null): string {
 .sip-empty {
   text-align: center;
   padding: 12px 8px;
-  color: var(--smax-grey-400, #a8aebb);
+  color: var(--color-text-disabled, #a8aebb);
 }
 .sip-empty-icon { font-size: 24px; display: block; margin-bottom: 4px; }
-.sip-empty p { font-size: 12px; margin: 0 0 2px; font-weight: 500; color: var(--smax-grey-600, #5a6478); }
+.sip-empty p { font-size: 12px; margin: 0 0 2px; font-weight: 500; color: var(--color-text-secondary, #5a6478); }
 .sip-empty small { font-size: 10px; }
 </style>

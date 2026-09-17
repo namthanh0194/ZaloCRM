@@ -116,6 +116,14 @@ export async function generateText(provider: string, apiKey: string, model: stri
   if (provider === 'qwen') return generateWithOpenaiCompat(`${baseUrl}/compatible-mode/v1/chat/completions`, apiKey, model, system, prompt, maxTokens);
   if (provider === 'kimi') return generateWithOpenaiCompat(`${baseUrl}/v1/chat/completions`, apiKey, model, system, prompt, maxTokens);
 
+  if (baseUrl) {
+    const completionsUrl = baseUrl.endsWith('/chat/completions')
+      ? baseUrl
+      : baseUrl.endsWith('/v1')
+        ? `${baseUrl}/chat/completions`
+        : `${baseUrl}/v1/chat/completions`;
+    return generateWithOpenaiCompat(completionsUrl, apiKey, model, system, prompt, undefined, 'max_tokens', 180_000);
+  }
   throw new Error(`Unsupported AI provider: ${provider}`);
 }
 

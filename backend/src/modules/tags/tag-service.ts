@@ -132,7 +132,23 @@ export async function findOrCreateTag(
         zaloAccountId: null,
       },
     });
-    if (existing) return existing;
+    if (existing) {
+      if (existing.archivedAt) {
+        return tx.tag.update({
+          where: { id: existing.id },
+          data: {
+            name: opts.name.trim(),
+            color: opts.color ?? existing.color,
+            emoji: opts.emoji ?? existing.emoji,
+            source: opts.source,
+            priority: PRIORITY_MAP[opts.source],
+            archivedAt: null,
+            isActive: true,
+          },
+        });
+      }
+      return existing;
+    }
   }
 
   return tx.tag.create({

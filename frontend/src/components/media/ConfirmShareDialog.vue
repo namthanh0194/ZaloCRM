@@ -24,14 +24,14 @@ defineEmits<{ cancel: []; confirm: [] }>();
 <style scoped>
 .cs-overlay { position:fixed; inset:0; z-index:120; background:rgba(15,23,42,.32); display:flex; align-items:center; justify-content:center; }
 .cs-box {
-  --ink:#181d26; --muted:#41454d; --hairline:#dddddd; --coral:#aa2d00;
-  width:380px; max-width:92vw; background:#fff; border:1px solid var(--hairline); border-radius:12px;
+  --coral:#aa2d00;
+  width:380px; max-width:92vw; background:#fff; border:1px solid var(--color-border); border-radius:12px;
   padding:22px 24px; box-shadow:0 16px 48px rgba(15,23,42,.22); text-align:center;
 }
 .cs-ic { font-size:34px; margin-bottom:8px; }
-.cs-ttl { font-size:16px; color:var(--ink); margin:0 0 8px; font-weight:600; }
-.cs-msg { font-size:13.5px; color:var(--muted); line-height:1.55; margin:0 0 18px; text-align:left; }
+.cs-ttl { font-size:16px; color:var(--color-text); margin:0 0 8px; font-weight:600; }
+.cs-msg { font-size:13.5px; color:var(--color-text-muted); line-height:1.55; margin:0 0 18px; text-align:left; }
 .cs-acts { display:flex; gap:10px; }
-.cs-cancel { flex:1; border:1px solid var(--hairline); background:#fff; color:var(--ink); border-radius:8px; padding:10px; font-size:13px; font-weight:500; cursor:pointer; }
+.cs-cancel { flex:1; border:1px solid var(--color-border); background:#fff; color:var(--color-text); border-radius:8px; padding:10px; font-size:13px; font-weight:500; cursor:pointer; }
 .cs-ok { flex:1; border:1px solid #f0c4b3; background:#fbe9e2; color:var(--coral); border-radius:8px; padding:10px; font-size:13px; font-weight:600; cursor:pointer; }
 </style>

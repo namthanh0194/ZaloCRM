@@ -299,7 +299,7 @@ const autoTagContext = computed<string>(() => {
   transition: background 0.12s;
 }
 .activity-item:hover {
-  background: var(--smax-grey-50, #fafbfc);
+  background: var(--color-surface-secondary, #fafbfc);
 }
 .act-icon {
   font-size: 14px;
@@ -313,14 +313,14 @@ const autoTagContext = computed<string>(() => {
   min-width: 0;
 }
 .act-text {
-  color: var(--smax-text, #212121);
+  color: var(--color-text, #212121);
   word-break: break-word;
 }
 .act-text strong {
   font-weight: 600;
 }
 .act-details {
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   margin-left: 2px;
 }
 .act-meta {
@@ -328,10 +328,10 @@ const autoTagContext = computed<string>(() => {
   align-items: center;
   gap: 5px;
   font-size: 11px;
-  color: var(--smax-grey-500);
+  color: var(--color-text-muted);
   margin-top: 1px;
 }
-.act-sep { color: var(--smax-grey-300); }
+.act-sep { color: var(--color-border-strong); }
 .act-actor {
   font-weight: 500;
   cursor: pointer;
@@ -340,15 +340,15 @@ const autoTagContext = computed<string>(() => {
   transition: background 0.12s;
 }
 .act-actor:hover {
-  background: var(--smax-primary-soft, #e3f2fd);
-  color: var(--smax-primary, #2962ff);
+  background: var(--color-primary-subtle, #e3f2fd);
+  color: var(--color-primary, #2962ff);
 }
 
 /* Diff block 2-line cho customer_update */
 .diff-block {
   margin-top: 4px;
-  background: var(--smax-grey-50, #fafbfc);
-  border-left: 2px solid var(--smax-grey-200);
+  background: var(--color-surface-secondary, #fafbfc);
+  border-left: 2px solid var(--color-border);
   padding: 4px 8px;
   border-radius: 0 4px 4px 0;
 }
@@ -361,7 +361,7 @@ const autoTagContext = computed<string>(() => {
 }
 .diff-field {
   font-weight: 600;
-  color: var(--smax-grey-700);
+  color: var(--color-text-secondary);
   flex-shrink: 0;
   min-width: 80px;
 }
@@ -389,10 +389,10 @@ const autoTagContext = computed<string>(() => {
 }
 .diff-val.null {
   font-style: italic;
-  color: var(--smax-grey-400);
+  color: var(--color-text-disabled);
 }
 .diff-arrow {
-  color: var(--smax-grey-400);
+  color: var(--color-text-disabled);
   font-size: 11px;
   flex-shrink: 0;
 }
@@ -400,11 +400,11 @@ const autoTagContext = computed<string>(() => {
 /* Diff styling cho inline (act-details — status/score/tag) */
 .act-details :deep(.diff-old) {
   text-decoration: line-through;
-  color: var(--smax-grey-500);
+  color: var(--color-text-muted);
 }
 .act-details :deep(.diff-new) {
   font-weight: 600;
-  color: var(--smax-primary, #2962ff);
+  color: var(--color-primary, #2962ff);
 }
 .act-details :deep(.diff-green) {
   color: #00897b;
@@ -416,7 +416,7 @@ const autoTagContext = computed<string>(() => {
 }
 .act-details :deep(em) {
   font-style: normal;
-  background: var(--smax-grey-100, #f5f6fa);
+  background: var(--color-bg, #f5f6fa);
   padding: 1px 6px;
   border-radius: 4px;
   font-size: 11px;
@@ -478,8 +478,8 @@ const autoTagContext = computed<string>(() => {
 /* Auto-tag diff block — chip giống TagCrmBar.tag-auto (tonal + AUTO badge) */
 .autotag-diff {
   margin-top: 4px;
-  background: var(--smax-grey-50, #fafbfc);
-  border-left: 2px solid var(--smax-grey-200);
+  background: var(--color-surface-secondary, #fafbfc);
+  border-left: 2px solid var(--color-border);
   padding: 7px 8px 4px; /* top hơi lớn để chừa AUTO badge nhô lên */
   border-radius: 0 4px 4px 0;
   display: flex;
@@ -546,7 +546,7 @@ const autoTagContext = computed<string>(() => {
 }
 .autotag-context {
   font-size: 10.5px;
-  color: var(--smax-grey-500);
+  color: var(--color-text-muted);
   margin-top: 1px;
   font-style: italic;
 }
@@ -562,9 +562,9 @@ const autoTagContext = computed<string>(() => {
   white-space: nowrap;
 }
 .act-details :deep(.status-pill.empty) {
-  background: var(--smax-grey-100, #f5f6fa);
-  color: var(--smax-grey-500);
-  border-color: var(--smax-grey-200);
+  background: var(--color-bg, #f5f6fa);
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
   font-style: italic;
   font-weight: 500;
 }

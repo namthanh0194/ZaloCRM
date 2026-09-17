@@ -32,13 +32,17 @@
         <span class="t2-tab-emoji">📇</span> CRM Tag
         <span class="t2-tab-count">{{ stats.crm }}</span>
       </button>
+      <button :class="['t2-tab', { active: activeTab === 'archived' }]" @click="activeTab = 'archived'">
+        <span class="t2-tab-emoji">📦</span> Đã Archive
+        <span class="t2-tab-count">{{ stats.archived }}</span>
+      </button>
       <div class="t2-tab-spacer"></div>
-      <button class="t2-btn-secondary" @click="recountUsage" :disabled="loading">🔄 Recount usage</button>
-      <button class="t2-btn-primary" @click="openCreateDialog">+ Tạo Tag</button>
+      <button v-if="activeTab !== 'archived'" class="t2-btn-secondary" @click="recountUsage" :disabled="loading">🔄 Recount usage</button>
+      <button v-if="activeTab !== 'archived'" class="t2-btn-primary" @click="openCreateDialog">+ Tạo Tag</button>
     </nav>
 
     <!-- Filters: source chips + nick dropdown (Friend tab only) -->
-    <div class="t2-filters">
+    <div class="t2-filters" v-if="activeTab !== 'archived'">
       <div class="t2-filter-row">
         <span class="t2-filter-label">Nguồn:</span>
         <button
@@ -114,9 +118,21 @@
             </td>
             <td class="t2-cell-action">
               <div class="t2-action-group">
-                <button class="t2-btn-sm primary" @click="openEditDialog(tag)">Sửa</button>
-                <button class="t2-btn-sm" @click="openMergeDialog(tag)" :disabled="tag.source === 'zalo_real'">Merge</button>
-                <button class="t2-btn-sm danger" @click="archiveTag(tag.id)" :disabled="tag.source === 'zalo_real'">Archive</button>
+                <template v-if="tag.archivedAt">
+                  <button
+                    class="t2-btn-sm primary font-weight-bold"
+                    @click="restoreTag(tag)"
+                    :disabled="restoringId === tag.id"
+                    title="Khôi phục lại tag này vào danh sách hoạt động"
+                  >
+                    {{ restoringId === tag.id ? 'Đang xử lý…' : '↻ Khôi phục' }}
+                  </button>
+                </template>
+                <template v-else>
+                  <button class="t2-btn-sm primary" @click="openEditDialog(tag)">Sửa</button>
+                  <button class="t2-btn-sm" @click="openMergeDialog(tag)" :disabled="tag.source === 'zalo_real'">Merge</button>
+                  <button class="t2-btn-sm danger" @click="archiveTag(tag.id)" :disabled="tag.source === 'zalo_real'">Archive</button>
+                </template>
               </div>
             </td>
           </tr>
@@ -246,7 +262,8 @@ interface TagV2 {
   zaloAccount: ZaloAccount | null;
 }
 
-const activeTab = ref<'friend' | 'crm'>('friend');
+const activeTab = ref<'friend' | 'crm' | 'archived'>('friend');
+const restoringId = ref<string | null>(null);
 const tags = ref<TagV2[]>([]);
 const zaloAccounts = ref<ZaloAccount[]>([]);
 const loading = ref(false);
@@ -301,10 +318,13 @@ const availableSources = computed(() =>
 const stats = computed(() => ({
   friend: tags.value.filter((t) => t.scope === 'friend' && !t.archivedAt).length,
   crm: tags.value.filter((t) => t.scope === 'crm' && !t.archivedAt).length,
+  archived: tags.value.filter((t) => !!t.archivedAt).length,
 }));
 
 const filteredTags = computed(() => {
-  let arr = tags.value.filter((t) => t.scope === activeTab.value);
+  let arr = activeTab.value === 'archived'
+    ? tags.value.filter((t) => !!t.archivedAt)
+    : tags.value.filter((t) => t.scope === activeTab.value && !t.archivedAt);
   if (filterSource.value) arr = arr.filter((t) => t.source === filterSource.value);
   if (filterNickId.value) arr = arr.filter((t) => t.zaloAccountId === filterNickId.value);
   if (searchQuery.value) {
@@ -347,17 +367,35 @@ function displaySlug(tag: TagV2): string {
 async function loadTags() {
   loading.value = true;
   try {
-    const [friendRes, crmRes, accRes] = await Promise.all([
+    const [friendRes, crmRes, archRes, accRes] = await Promise.all([
       api.get('/tags', { params: { scope: 'friend', limit: 500 } }),
       api.get('/tags', { params: { scope: 'crm', limit: 500 } }),
+      api.get('/tags', { params: { archived: 'true', limit: 500 } }),
       api.get('/tags/zalo-accounts'),
     ]);
-    tags.value = [...(friendRes.data.tags ?? []), ...(crmRes.data.tags ?? [])];
+    tags.value = [
+      ...(friendRes.data.tags ?? []),
+      ...(crmRes.data.tags ?? []),
+      ...(archRes.data.tags ?? []),
+    ];
     zaloAccounts.value = accRes.data.accounts ?? [];
   } catch (err) {
     console.error('[TagTaxonomyV2] load error', err);
   } finally {
     loading.value = false;
+  }
+}
+
+async function restoreTag(tag: TagV2) {
+  if (!confirm(`Khôi phục tag "${tag.name}"? Tag sẽ xuất hiện lại trong danh sách hoạt động.`)) return;
+  restoringId.value = tag.id;
+  try {
+    await api.post(`/tags/${tag.id}/restore`);
+    await loadTags();
+  } catch (err) {
+    alert('Khôi phục thất bại');
+  } finally {
+    restoringId.value = null;
   }
 }
 
@@ -472,7 +510,7 @@ watch(activeTab, () => {
   padding: 24px;
   max-width: 1366px;
   margin: 0 auto;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-family-sans);
   color: #181d26;
 }
 .t2-header { margin-bottom: 20px; }
@@ -486,17 +524,17 @@ watch(activeTab, () => {
   display: flex; align-items: center; gap: 6px;
   padding: 10px 16px; border: 1px solid transparent; border-bottom: none;
   background: transparent; color: #41454d; font-size: 13px; font-weight: 500;
-  cursor: pointer; border-radius: 8px 8px 0 0; margin-bottom: -1px;
+  cursor: pointer; border-radius: var(--radius-md) 8px 0 0; margin-bottom: -1px;
 }
-.t2-tab.active { background: #fff; border-color: #dddddd; color: #181d26; font-weight: 600; }
+.t2-tab.active { background: var(--color-surface); border-color: #dddddd; color: #181d26; font-weight: 600; }
 .t2-tab-emoji { font-size: 14px; }
-.t2-tab-count { background: #eef0f3; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+.t2-tab-count { background: #eef0f3; padding: 1px 8px; border-radius: var(--radius-lg); font-size: 11px; font-weight: 600; }
 .t2-tab-spacer { flex: 1; }
 
-.t2-btn-primary { background: #181d26; color: white; border: 1px solid #181d26; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; }
+.t2-btn-primary { background: #181d26; color: var(--color-on-primary); border: 1px solid #181d26; padding: 8px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; }
 .t2-btn-primary:hover { background: #2a2f3a; }
 .t2-btn-primary:disabled { background: #999; cursor: not-allowed; }
-.t2-btn-secondary { background: white; color: #41454d; border: 1px solid #dddddd; padding: 8px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+.t2-btn-secondary { background: white; color: #41454d; border: 1px solid #dddddd; padding: 8px 12px; border-radius: var(--radius-sm); font-size: 12px; cursor: pointer; }
 .t2-btn-secondary:hover { background: #f5f7fa; }
 .t2-btn-sm { background: white; color: #41454d; border: 1px solid #dddddd; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; white-space: nowrap; }
 .t2-btn-sm.primary { color: #0068FF; border-color: #b3d4ff; font-weight: 500; }
@@ -504,30 +542,40 @@ watch(activeTab, () => {
 .t2-btn-sm:hover:not(:disabled) { background: #f5f7fa; }
 .t2-btn-sm:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.t2-filters { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; padding: 10px 12px; background: #fafbfc; border: 1px solid #eef0f3; border-radius: 6px; }
+.t2-filters { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; padding: 10px 12px; background: #fafbfc; border: 1px solid #eef0f3; border-radius: var(--radius-sm); }
 .t2-filter-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .t2-filter-label { font-size: 11px; color: #41454d; font-weight: 600; min-width: 64px; }
 .t2-chip {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 4px 10px; background: white; border: 1px solid #dddddd;
-  border-radius: 14px; font-size: 11px; cursor: pointer; color: #41454d;
+  border-radius: var(--radius-xl); font-size: 11px; cursor: pointer; color: #41454d;
 }
-.t2-chip.active { background: #181d26; color: white; border-color: #181d26; }
+.t2-chip.active { background: #181d26; color: var(--color-on-primary); border-color: #181d26; }
 .t2-chip-dot { width: 8px; height: 8px; border-radius: 50%; }
 .t2-nick-select {
-  padding: 4px 8px; border: 1px solid #dddddd; border-radius: 6px; font-size: 12px; min-width: 240px;
+  padding: 4px 8px; border: 1px solid #dddddd; border-radius: var(--radius-sm); font-size: 12px; min-width: 240px;
 }
 
 .t2-search { margin-bottom: 12px; }
 .t2-search input {
-  width: 100%; padding: 8px 12px; border: 1px solid #dddddd; border-radius: 6px;
+  width: 100%; padding: 8px 12px; border: 1px solid #dddddd; border-radius: var(--radius-sm);
   font-size: 13px; box-sizing: border-box;
 }
 
-.t2-table-wrap { background: white; border: 1px solid #dddddd; border-radius: 8px; overflow-x: auto; }
-.t2-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
-
-/* Fixed width per column → tránh hàng nhảy vỡ */
+.t2-table-wrap {
+  background: white;
+  border: 1px solid #d0d7de;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.t2-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 12px;
+  table-layout: fixed;
+}
+/* Fixed width per column */
 .t2-col-name      { width: 26%; min-width: 200px; }
 .t2-col-slug      { width: 18%; min-width: 160px; }
 .t2-col-source    { width: 16%; min-width: 140px; }
@@ -535,23 +583,39 @@ watch(activeTab, () => {
 .t2-col-usage     { width: 7%;  min-width: 60px; }
 .t2-col-color     { width: 7%;  min-width: 50px; }
 .t2-col-action    { width: 18%; min-width: 200px; }
-
 .t2-table th {
-  text-align: left; padding: 8px 10px; background: #f5f7fa; color: #41454d;
-  font-weight: 600; border-bottom: 1px solid #dddddd; font-size: 11px; white-space: nowrap;
+  text-align: left;
+  padding: 10px 12px;
+  background: #f6f8fa;
+  color: #41454d;
+  font-weight: 600;
+  border-bottom: 1px solid #d0d7de;
+  font-size: 11px;
+  white-space: nowrap;
 }
+.t2-table th:first-child { border-top-left-radius: 7px; }
+.t2-table th:last-child { border-top-right-radius: 7px; }
 .t2-table td {
-  padding: 10px; border-bottom: 1px solid #eef0f3; vertical-align: middle;
+  padding: 10px 12px;
+  border-bottom: 1px solid #eef0f3;
+  vertical-align: middle;
   overflow: hidden;
+  background: white;
 }
-.t2-table tr:hover td { background: #fafbfc; }
-.t2-table tr.archived td { opacity: 0.5; }
+.t2-table tr:hover td { background: #f8fafc; }
+.t2-table tr:last-child td { border-bottom: none; }
+.t2-table tr:last-child td:first-child { border-bottom-left-radius: 7px; }
+.t2-table tr:last-child td:last-child { border-bottom-right-radius: 7px; }
+.t2-table tr.archived td {
+  background: #fafbfc;
+  opacity: 0.85;
+}
 
 /* Tag pill — đồng nhất style UI chat (color-mix derive 3 màu phụ từ --tag-color) */
 .t2-cell-name { padding-right: 6px; }
 .t2-tag-pill {
   display: inline-flex; align-items: center; gap: 5px;
-  padding: 4px 12px; border-radius: 14px;
+  padding: 4px 12px; border-radius: var(--radius-xl);
   font-size: 13px; font-weight: 500;
   border: 1.4px solid;
   --tag-color: #546E7A;
@@ -586,8 +650,8 @@ watch(activeTab, () => {
 
 .t2-cell-source { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; max-width: 100%; }
 .t2-source-chip {
-  display: inline-block; padding: 2px 8px; border-radius: 10px;
-  color: white; font-size: 10px; font-weight: 500; white-space: nowrap; flex-shrink: 0;
+  display: inline-block; padding: 2px 8px; border-radius: var(--radius-lg);
+  color: var(--color-on-primary); font-size: 10px; font-weight: 500; white-space: nowrap; flex-shrink: 0;
 }
 .t2-source-nick {
   font-size: 11px; color: #41454d; font-weight: 500;
@@ -597,7 +661,7 @@ watch(activeTab, () => {
 .t2-cell-priority { text-align: center; }
 .t2-priority-badge {
   display: inline-block; min-width: 22px; text-align: center;
-  padding: 3px 7px; background: #181d26; color: white;
+  padding: 3px 7px; background: #181d26; color: var(--color-on-primary);
   border-radius: 4px; font-size: 11px; font-weight: 700;
 }
 
@@ -621,9 +685,9 @@ watch(activeTab, () => {
   position: fixed; inset: 0; background: rgba(0,0,0,0.4);
   display: flex; align-items: center; justify-content: center; z-index: 100;
 }
-.t2-modal { background: white; padding: 24px; border-radius: 8px; min-width: 460px; max-width: 560px; }
+.t2-modal { background: white; padding: 24px; border-radius: var(--radius-md); min-width: 460px; max-width: 560px; }
 .t2-modal h3 { margin: 0 0 16px 0; font-size: 16px; display: flex; align-items: center; gap: 10px; }
-.t2-modal-scope { font-size: 11px; color: #999; background: #eef0f3; padding: 2px 8px; border-radius: 10px; font-weight: 400; }
+.t2-modal-scope { font-size: 11px; color: #999; background: #eef0f3; padding: 2px 8px; border-radius: var(--radius-lg); font-weight: 400; }
 .t2-modal label { display: block; font-size: 12px; color: #41454d; margin: 12px 0 4px; font-weight: 500; }
 .t2-modal input, .t2-modal select {
   width: 100%; padding: 6px 10px; border: 1px solid #dddddd; border-radius: 4px;
@@ -634,7 +698,7 @@ watch(activeTab, () => {
 .t2-form-row > div { flex: 1; }
 .t2-form-priority input { width: 60px; }
 .t2-modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
-.t2-modal-actions button { padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.t2-modal-actions button { padding: 8px 14px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; }
 .t2-modal-actions button:not(.t2-btn-primary) { background: white; color: #41454d; border: 1px solid #dddddd; }
 
 .t2-palette {
@@ -656,7 +720,7 @@ watch(activeTab, () => {
 .t2-zalo-banner {
   display: flex; gap: 10px; align-items: flex-start;
   padding: 10px 12px; background: #e8f3ff; border: 1px solid #b3d4ff;
-  border-radius: 6px; margin-bottom: 12px; font-size: 12px; color: #003a8c; line-height: 1.5;
+  border-radius: var(--radius-sm); margin-bottom: 12px; font-size: 12px; color: #003a8c; line-height: 1.5;
 }
 .t2-zalo-icon-small { width: 20px; height: 20px; flex-shrink: 0; margin-top: 2px; }
 </style>

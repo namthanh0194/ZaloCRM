@@ -213,32 +213,32 @@ function fmt(iso: string): string {
 }
 .fh-modal {
   width: 100%; max-width: 560px; max-height: 84vh; display: flex; flex-direction: column;
-  background: var(--surface); border-radius: var(--r-lg, 14px); box-shadow: var(--sh-lg, 0 18px 50px rgba(0,0,0,.28));
+  background: var(--color-surface); border-radius: var(--radius-xl, 14px); box-shadow: var(--shadow-lg, 0 18px 50px rgba(0,0,0,.28));
   overflow: hidden;
 }
 .fh-head {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 13px 16px; border-bottom: 1px solid var(--line);
+  padding: 13px 16px; border-bottom: 1px solid var(--color-border);
 }
-.fh-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: var(--ink); }
-.fh-title svg { color: var(--brand); }
+.fh-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: var(--color-text); }
+.fh-title svg { color: var(--color-primary); }
 .fh-x {
-  width: 28px; height: 28px; border: 0; background: transparent; color: var(--ink-3);
-  border-radius: var(--r-sm, 8px); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border: 0; background: transparent; color: var(--color-text-muted);
+  border-radius: var(--radius-md, 8px); cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
 }
-.fh-x:hover { background: var(--surface-3); color: var(--ink); }
+.fh-x:hover { background: var(--color-surface-secondary); color: var(--color-text); }
 .fh-sub {
-  padding: 8px 16px; font-size: 12px; color: var(--ink-3); border-bottom: 1px solid var(--line-2, var(--line));
+  padding: 8px 16px; font-size: 12px; color: var(--color-text-muted); border-bottom: 1px solid var(--color-border-strong);
   display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
 }
-.fh-sub b { color: var(--ink-2); font-weight: 600; }
+.fh-sub b { color: var(--color-text-secondary); font-weight: 600; }
 .fh-cnt {
-  margin-left: auto; font-size: 11px; font-weight: 600; color: var(--brand-700);
-  background: var(--brand-soft); border-radius: var(--r-pill, 999px); padding: 2px 9px;
+  margin-left: auto; font-size: 11px; font-weight: 600; color: var(--color-primary-active);
+  background: var(--color-primary-subtle); border-radius: var(--radius-pill, 999px); padding: 2px 9px;
 }
 .fh-body { padding: 14px 16px; overflow-y: auto; }
-.fh-state { text-align: center; color: var(--ink-3); font-size: 13px; padding: 28px 0; }
-.fh-state.err { color: var(--error, #c0392b); }
+.fh-state { text-align: center; color: var(--color-text-muted); font-size: 13px; padding: 28px 0; }
+.fh-state.err { color: var(--color-danger, #c0392b); }
 
 .fh-tl { display: flex; flex-direction: column; gap: 12px; }
 .fh-row { display: flex; flex-direction: column; gap: 3px; }
@@ -247,37 +247,37 @@ function fmt(iso: string): string {
 .fh-bubble {
   max-width: 86%; border-radius: 12px; padding: 8px 11px; font-size: 13px; line-height: 1.45;
 }
-.fh-bubble.sent { background: var(--brand-soft); color: var(--ink); border-bottom-right-radius: 4px; }
-.fh-bubble.recv { background: var(--surface-3); color: var(--ink); border-bottom-left-radius: 4px; }
+.fh-bubble.sent { background: var(--color-primary-subtle); color: var(--color-text); border-bottom-right-radius: 4px; }
+.fh-bubble.recv { background: var(--color-surface-secondary); color: var(--color-text); border-bottom-left-radius: 4px; }
 .fh-brow { display: flex; align-items: center; gap: 7px; margin-bottom: 3px; }
-.fh-step { font-size: 10.5px; font-weight: 700; color: var(--brand-700); }
-.fh-who { font-size: 10.5px; font-weight: 700; color: var(--ink-2); }
-.fh-st { font-size: 10px; font-weight: 600; color: var(--ink-3); }
+.fh-step { font-size: 10.5px; font-weight: 700; color: var(--color-primary-active); }
+.fh-who { font-size: 10.5px; font-weight: 700; color: var(--color-text-secondary); }
+.fh-st { font-size: 10px; font-weight: 600; color: var(--color-text-muted); }
 .fh-st.seen { color: #1786be; }
-.fh-st.delivered { color: var(--ink-2); }
+.fh-st.delivered { color: var(--color-text-secondary); }
 .fh-text { white-space: pre-wrap; word-break: break-word; }
 .fh-imgs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .fh-imgs img {
-  width: 92px; height: 92px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line);
+  width: 92px; height: 92px; object-fit: cover; border-radius: 8px; border: 1px solid var(--color-border);
   cursor: zoom-in; display: block;
 }
 .fh-file {
   display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; max-width: 100%;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px;
-  font-size: 12px; color: var(--brand-700); text-decoration: none;
+  background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; padding: 6px 9px;
+  font-size: 12px; color: var(--color-primary-active); text-decoration: none;
 }
-.fh-file:hover { background: var(--surface-3); }
-.fh-file svg { flex-shrink: 0; color: var(--ink-3); }
+.fh-file:hover { background: var(--color-surface-secondary); }
+.fh-file svg { flex-shrink: 0; color: var(--color-text-muted); }
 .fh-fn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fh-time { font-size: 10px; color: var(--ink-4); padding: 0 3px; }
+.fh-time { font-size: 10px; color: var(--color-text-disabled); padding: 0 3px; }
 
 .fh-mark {
   display: flex; align-items: center; gap: 7px; align-self: center;
-  font-size: 11.5px; color: var(--ink-3); background: var(--surface-2, var(--surface-3));
-  border-radius: var(--r-pill, 999px); padding: 4px 12px;
+  font-size: 11.5px; color: var(--color-text-muted); background: var(--color-bg);
+  border-radius: var(--radius-pill, 999px); padding: 4px 12px;
 }
 .fh-mark.ok { color: #1b6b46; }
-.fh-mark.bad { color: var(--error, #c0392b); }
+.fh-mark.bad { color: var(--color-danger, #c0392b); }
 .fh-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; opacity: .6; }
-.fh-mtime { font-size: 10px; color: var(--ink-4); margin-left: 2px; }
+.fh-mtime { font-size: 10px; color: var(--color-text-disabled); margin-left: 2px; }
 </style>

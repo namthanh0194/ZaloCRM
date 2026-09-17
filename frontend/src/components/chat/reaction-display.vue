@@ -68,7 +68,7 @@ const boxTooltip = computed(() => {
   align-items: center;
   gap: 4px;
   background: white;
-  border: 1px solid var(--smax-grey-300, #d4d8e0);
+  border: 1px solid var(--color-border-strong, #d4d8e0);
   border-radius: 12px;
   padding: 2px 8px 2px 6px;
   cursor: pointer;
@@ -79,8 +79,8 @@ const boxTooltip = computed(() => {
   height: 24px;
 }
 .reaction-box:hover {
-  background: var(--smax-grey-50, #fafbfc);
-  border-color: var(--smax-grey-400, #b8becc);
+  background: var(--color-surface-secondary, #fafbfc);
+  border-color: var(--color-text-disabled, #b8becc);
   transform: translateY(-1px);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
@@ -97,7 +97,7 @@ const boxTooltip = computed(() => {
 .reaction-total {
   font-size: 12px;
   font-weight: 600;
-  color: var(--smax-grey-900, #1f2937);
+  color: var(--color-text, #1f2937);
   margin-left: 3px;
   font-variant-numeric: tabular-nums;
 }

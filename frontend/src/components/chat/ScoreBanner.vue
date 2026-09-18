@@ -213,7 +213,7 @@ const engagementTrendClass = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 0;
-  background: white;
+  background: var(--color-surface);
   position: relative;
 }
 
@@ -222,7 +222,7 @@ const engagementTrendClass = computed(() => {
   display: grid;
   grid-template-columns: 1fr 1.15fr 1fr;
   gap: 1px;
-  background: #E4E5E9;
+  background: var(--color-border);
   position: relative;
 }
 
@@ -258,13 +258,13 @@ const engagementTrendClass = computed(() => {
   padding: 14px 10px 18px;
 }
 
-/* Gradient fade từ màu → trắng đi xuống */
+/* Gradient fade from status tint into the active surface. */
 .sb-card.lead {
   background: linear-gradient(
     180deg,
     rgba(245, 158, 11, 0.22) 0%,
     rgba(245, 158, 11, 0.10) 50%,
-    rgba(255, 255, 255, 1) 100%
+    var(--color-surface) 100%
   );
 }
 .sb-card.priority {
@@ -272,7 +272,7 @@ const engagementTrendClass = computed(() => {
     180deg,
     rgba(239, 68, 68, 0.22) 0%,
     rgba(239, 68, 68, 0.10) 50%,
-    rgba(255, 255, 255, 1) 100%
+    var(--color-surface) 100%
   );
 }
 .sb-card.eng {
@@ -280,7 +280,7 @@ const engagementTrendClass = computed(() => {
     180deg,
     rgba(59, 130, 246, 0.22) 0%,
     rgba(59, 130, 246, 0.10) 50%,
-    rgba(255, 255, 255, 1) 100%
+    var(--color-surface) 100%
   );
 }
 
@@ -310,14 +310,14 @@ const engagementTrendClass = computed(() => {
 .sb-lbl {
   font-size: 10px;
   font-weight: 700;
-  color: #6B7785;
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   line-height: 1.3;
 }
 .sb-card.priority .sb-lbl {
   font-size: 10.5px;
-  color: #1F2D3D;
+  color: var(--color-text);
 }
 
 .sb-trend {
@@ -357,7 +357,7 @@ const engagementTrendClass = computed(() => {
   align-items: center;
   gap: 12px;
   padding: 12px 16px 14px;
-  background: white;
+  background: var(--color-surface);
 }
 
 .sb-name-block {

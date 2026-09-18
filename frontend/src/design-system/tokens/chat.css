@@ -1,6 +1,13 @@
 /* Chat domain tokens. Keep message-specific meanings out of global semantics. */
-:root {
+:root,
+[data-theme='light'] {
   --chat-bubble-self-bg: #d7ecf7;
+  --chat-group-bg: #ffeae3;
   --chat-female: #e91e63;
   --chat-male: #1e88e5;
+}
+
+[data-theme='dark'] {
+  --chat-bubble-self-bg: #173b52;
+  --chat-group-bg: #3d2a2a;
 }

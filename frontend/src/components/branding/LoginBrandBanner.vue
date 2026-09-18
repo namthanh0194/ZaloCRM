@@ -53,7 +53,7 @@ watch(
   align-items: center;
   padding: 40px 32px;
   background: linear-gradient(160deg, var(--auth-brand-start) 0%, var(--auth-brand-end) 100%);
-  color: var(--color-text-inverse);
+  color: var(--auth-on-brand);
   overflow: hidden;
   text-align: center;
 }
@@ -91,13 +91,13 @@ watch(
 }
 .brand-slogan {
   font-size: 17px; font-weight: 600; letter-spacing: 1px;
-  color: rgba(255, 255, 255, 0.92);
+  color: color-mix(in srgb, var(--auth-on-brand) 92%, transparent);
   margin: 0;
 }
 .brand-foot {
   position: relative; z-index: 1;
   margin-top: auto; padding-top: 28px;
-  font-size: 11px; color: rgba(255, 255, 255, 0.45);
+  font-size: 11px; color: color-mix(in srgb, var(--auth-on-brand) 45%, transparent);
 }
 
 /* ≤900px: banner gọn lại (login xếp dọc) */

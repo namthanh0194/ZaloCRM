@@ -361,12 +361,16 @@
 .skel-card { height: 110px; background: linear-gradient(90deg, #f0f1f3 0%, #e0e2e6 50%, #f0f1f3 100%); background-size: 200% 100%; border-radius: 10px; animation: skel 1.4s ease-in-out infinite; }
 @keyframes skel { 0%, 100% { background-position: 0% 0%; } 50% { background-position: -200% 0%; } }
 .empty-state {
-  background: #f8fafc; border: 2px dashed #dddddd; border-radius: 12px;
-  padding: 64px 24px; text-align: center;
+  background: var(--color-surface, #f8fafc);
+  border: 2px dashed var(--color-border, #dddddd);
+  border-radius: 12px;
+  padding: 64px 24px;
+  text-align: center;
+  color: var(--color-text);
 }
 .empty-icon { font-size: 48px; margin-bottom: 16px; }
-.empty-state h3 { font-size: 20px; font-weight: 500; margin: 0 0 8px; color: #181d26; }
-.empty-state p { font-size: 13px; color: #41454d; margin: 0 0 24px; }
+.empty-state h3 { font-size: 20px; font-weight: 500; margin: 0 0 8px; color: var(--color-text, #181d26); }
+.empty-state p { font-size: 13px; color: var(--color-text-secondary, #41454d); margin: 0 0 24px; }
 
 /* ── Buttons ───────────────────────────────── */
 .btn-primary {

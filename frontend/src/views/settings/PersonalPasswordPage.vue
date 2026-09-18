@@ -249,9 +249,9 @@ async function onSubmit() {
   border-color: var(--color-primary, #1786be);
   color: var(--color-on-primary);
 }
-.btn-primary:hover:not(:disabled) { background: #4E5AB8; }
+.btn-primary:hover:not(:disabled) { background: var(--color-primary-hover); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-ghost:hover { background: #F4F4F7; }
+.btn-ghost:hover { background: var(--color-surface-hover); }
 
 .note {
   margin-top: 16px;

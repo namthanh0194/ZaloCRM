@@ -13,7 +13,7 @@
             autocomplete="off"
             :value="search"
             :class="{ 'cl-search--flash': searchFlash, 'has-text': !!search }"
-            placeholder="Tìm theo tên, SĐT, nội dung tin nhắn…"
+            placeholder="Tìm tên, SĐT, nhóm hoặc nội dung tin nhắn…"
             @input="onSearchInput"
             @keydown.esc="clearSearch"
             @keydown.enter.prevent="onSearchEnter"
@@ -242,7 +242,13 @@
       </TransitionGroup>
 
       <div v-if="!loading && conversations.length === 0" class="empty-state">
-        {{ activeTabKey === 'deleted' ? 'Không có hội thoại nào đã xóa' : 'Chưa có hội thoại nào' }}
+        {{
+          search.trim()
+            ? 'Không tìm thấy hội thoại phù hợp'
+            : activeTabKey === 'deleted'
+              ? 'Không có hội thoại nào đã xóa'
+              : 'Chưa có hội thoại nào'
+        }}
       </div>
     </div>
 
@@ -1278,8 +1284,13 @@ function onPatternLeave() {
   border-radius: 9px;
   font-size: 13px;
   background: var(--color-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='17' height='17' viewBox='0 0 24 24' fill='none' stroke='%235a6478' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E") no-repeat 11px center;
+  color: var(--color-text);
   outline: none;
   font-family: inherit;
+}
+.cl-search::placeholder {
+  color: var(--color-text-disabled);
+  opacity: 1;
 }
 .cl-search:focus { border-color: var(--color-primary); }
 
@@ -1459,7 +1470,7 @@ function onPatternLeave() {
   font-weight: 700;
   padding: 1px 5px;
   border-radius: 9px;
-  border: 1.5px solid #fff;
+  border: 1.5px solid var(--color-surface);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   white-space: nowrap;
   cursor: help;

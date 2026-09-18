@@ -476,18 +476,19 @@ onMounted(async () => {
 .mtp-inp {
   flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 5px;
   border: 1px solid var(--color-border); border-radius: 8px; padding: 5px 9px; color: var(--color-text-disabled);
+  background: var(--color-surface);
 }
 .mtp-inp input { border: none; outline: none; font: inherit; font-size: 12px; flex: 1; min-width: 0; color: var(--color-text); background: transparent; }
 /* Nút Sắp xếp: gọn, không xuống dòng, nhãn ngắn (Gửi nhiều/Gần nhất/Mới upload) */
 .mtp-sortbtn {
-  flex-shrink: 0; border: 1px solid var(--color-border); background: #fff; border-radius: 8px;
+  flex-shrink: 0; border: 1px solid var(--color-border); background: var(--color-surface); border-radius: 8px;
   padding: 6px 8px; font-size: 11px; font-weight: 600; cursor: pointer; color: var(--color-text-secondary);
   white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; font-family: inherit;
 }
 .mtp-sortbtn:hover { border-color: var(--color-primary); color: var(--color-primary); }
 /* Nút Lọc: chỉ icon (vuông), tiết kiệm chỗ */
 .mtp-filtbtn {
-  flex-shrink: 0; width: 30px; height: 29px; border: 1px solid var(--color-border); background: #fff;
+  flex-shrink: 0; width: 30px; height: 29px; border: 1px solid var(--color-border); background: var(--color-surface);
   border-radius: 8px; cursor: pointer; color: var(--color-text-secondary); display: inline-flex;
   align-items: center; justify-content: center; font-family: inherit;
 }
@@ -504,13 +505,13 @@ onMounted(async () => {
 .mtp-rdiv { flex-shrink: 0; width: 1px; height: 16px; background: var(--color-border); margin: 0 2px; }
 .mtp-seg { flex-shrink: 0; display: inline-flex; border: 1px solid var(--color-border); border-radius: 9999px; overflow: hidden; }
 .mtp-seg button {
-  border: none; background: #fff; font-family: inherit; font-size: 11px; padding: 4px 11px;
+  border: none; background: var(--color-surface); font-family: inherit; font-size: 11px; padding: 4px 11px;
   cursor: pointer; color: var(--color-text-secondary); border-right: 1px solid var(--color-border); white-space: nowrap;
 }
 .mtp-seg button:last-child { border-right: none; }
 .mtp-seg button.on { background: var(--color-primary-subtle); color: var(--color-primary); font-weight: 700; }
 .mtp-chip {
-  flex-shrink: 0; border: 1px solid var(--color-border); background: #fff; border-radius: 9999px;
+  flex-shrink: 0; border: 1px solid var(--color-border); background: var(--color-surface); border-radius: 9999px;
   padding: 3px 10px; font-size: 11px; font-weight: 600; color: var(--color-text-secondary); cursor: pointer;
   white-space: nowrap; font-family: inherit;
 }
@@ -522,7 +523,7 @@ onMounted(async () => {
 /* Lọc sâu (Thời gian + Cỡ) */
 .mtp-filter { padding: 0 12px 8px; flex-shrink: 0; display: flex; flex-direction: column; gap: 7px; }
 .mtp-frow { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-.mtp-sel { border: 1px solid var(--color-border); border-radius: 6px; padding: 4px 8px; font-size: 11.5px; color: var(--color-text); background: #fff; outline: none; font-family: inherit; }
+.mtp-sel { border: 1px solid var(--color-border); border-radius: 6px; padding: 4px 8px; font-size: 11.5px; color: var(--color-text); background: var(--color-surface); outline: none; font-family: inherit; }
 
 /* album bar */
 .mtp-album { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--color-text);
@@ -541,7 +542,7 @@ onMounted(async () => {
 .mtp-body { flex: 1; overflow-y: auto; padding: 2px 12px 12px; }
 .mtp-empty { padding: 24px 12px; text-align: center; font-size: 12.5px; color: var(--color-text-disabled); line-height: 1.5; }
 .mtp-pager { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px 0 2px; }
-.mtp-pg { border: 1px solid var(--color-border, #e3e6ea); background: #fff; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; color: var(--color-text, #141a24); }
+.mtp-pg { border: 1px solid var(--color-border); background: var(--color-surface); border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; color: var(--color-text, #141a24); }
 .mtp-pg:disabled { opacity: .4; cursor: default; }
 .mtp-pgnum { font-size: 11.5px; color: var(--color-text-disabled, #8b93a7); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
@@ -549,7 +550,7 @@ onMounted(async () => {
 .mtp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
 .mtp-cell {
   position: relative; aspect-ratio: 1; border-radius: 9px; overflow: hidden; cursor: pointer;
-  border: 1.5px solid transparent; background: #e4e9f0; padding: 0;
+  border: 1.5px solid transparent; background: var(--color-surface-secondary); padding: 0;
 }
 .mtp-cell:hover { border-color: var(--color-primary); }
 .mtp-cell:disabled { opacity: .6; }
@@ -574,7 +575,7 @@ onMounted(async () => {
   background: var(--color-primary); color: #fff; font-size: 11px; font-weight: 800; display: flex;
   align-items: center; justify-content: center; font-family: var(--mono);
 }
-.mtp-sending { position: absolute; inset: 0; background: rgba(255,255,255,.8); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--color-text); }
+.mtp-sending { position: absolute; inset: 0; background: var(--color-overlay); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--color-text); }
 
 /* list tệp */
 .mtp-list { display: flex; flex-direction: column; }

@@ -18,6 +18,14 @@ export const ACTIONS = [
 ] as const;
 export type Action = (typeof ACTIONS)[number];
 
+export const ACTION_LABELS: Record<Action, string> = {
+  access: 'Truy cập',
+  create: 'Thêm mới',
+  edit: 'Chỉnh sửa',
+  delete: 'Xóa',
+  view_all: 'Xem tất cả',
+};
+
 // 18 resources, GOM THEO NHÓM MÀN HÌNH (2026-06-20) để ma trận phân quyền đọc theo
 // menu — admin gán quyền dễ hơn. Thứ tự ở đây = thứ tự cột dọc trong UI ma trận.
 export const RESOURCES = [
@@ -46,6 +54,27 @@ export const RESOURCES = [
   'engagement_score',   // Engagement + Score  → /reports
 ] as const;
 export type Resource = (typeof RESOURCES)[number];
+
+export const RESOURCE_META: Record<Resource, { label: string; icon: string }> = {
+  department: { label: 'Phòng ban', icon: 'mdi-office-building-outline' },
+  user: { label: 'Người dùng', icon: 'mdi-account-outline' },
+  permission_group: { label: 'Nhóm quyền', icon: 'mdi-shield-account-outline' },
+  settings: { label: 'Cài đặt', icon: 'mdi-cog-outline' },
+  audit_log: { label: 'Nhật ký hành động', icon: 'mdi-history' },
+  contact: { label: 'Khách hàng', icon: 'mdi-account-group-outline' },
+  friend: { label: 'Bạn bè Zalo', icon: 'mdi-account-multiple-outline' },
+  conversation: { label: 'Hội thoại', icon: 'mdi-message-text-outline' },
+  customer_list: { label: 'Tệp khách hàng', icon: 'mdi-format-list-bulleted' },
+  trigger: { label: 'Mục tiêu / Trigger', icon: 'mdi-lightning-bolt-outline' },
+  sequence: { label: 'Sequence', icon: 'mdi-repeat' },
+  broadcast: { label: 'Chiến dịch', icon: 'mdi-bullhorn-outline' },
+  block: { label: 'Message Block', icon: 'mdi-view-grid-outline' },
+  care_session: { label: 'Phiên chăm sóc', icon: 'mdi-account-clock-outline' },
+  zalo_account: { label: 'Nick Zalo', icon: 'mdi-account-circle-outline' },
+  media: { label: 'Kho phương tiện', icon: 'mdi-folder-multiple-image' },
+  webhook: { label: 'Webhook / API key', icon: 'mdi-webhook' },
+  engagement_score: { label: 'Engagement / Score', icon: 'mdi-chart-line' },
+};
 
 // Mỗi resource declare actions hợp lệ (subset của ACTIONS).
 // Vd Engagement không có "create/edit/delete" — chỉ computed.
@@ -142,6 +171,7 @@ export const DEFAULT_PERMISSION_GROUPS = [
   {
     name: 'Admin',
     isSystem: true,
+    displayOrder: 10,
     grants: Object.fromEntries(
       RESOURCES.map((r) => [r, fullCrud(r)])
     ) as GrantsJson,
@@ -149,6 +179,7 @@ export const DEFAULT_PERMISSION_GROUPS = [
   {
     name: 'CEO',
     isSystem: true,
+    displayOrder: 20,
     grants: {
       // CEO xem mọi resource business, không sửa permission/department/user
       department: { access: true },
@@ -172,6 +203,7 @@ export const DEFAULT_PERMISSION_GROUPS = [
   {
     name: 'Trưởng phòng',
     isSystem: true,
+    displayOrder: 30,
     grants: {
       // Manager full CRUD trong scope dept + sub-depts (view_all = false vì scope dept tree, không phải global)
       department: { access: true },
@@ -194,6 +226,7 @@ export const DEFAULT_PERMISSION_GROUPS = [
   {
     name: 'Sale Senior',
     isSystem: true,
+    displayOrder: 40,
     grants: {
       // Sale Senior CRUD KH + Conversation của mình, có Xóa
       conversation: { access: true, edit: true, delete: true },
@@ -213,6 +246,7 @@ export const DEFAULT_PERMISSION_GROUPS = [
   {
     name: 'Sale',
     isSystem: true,
+    displayOrder: 50,
     grants: {
       // Sale CR KH của mình, không Xóa Conversation
       conversation: { access: true, edit: true },
@@ -233,6 +267,7 @@ export const DEFAULT_PERMISSION_GROUPS = [
   {
     name: 'Marketing',
     isSystem: true,
+    displayOrder: 60,
     grants: {
       // Marketing CRUD Broadcast/Sequence/Trigger/Block, view_all Contact (anh chốt A 2026-05-21 13:25)
       contact: { access: true, view_all: true },
@@ -250,6 +285,7 @@ export const DEFAULT_PERMISSION_GROUPS = [
   {
     name: 'Hành chính - Nhân sự',
     isSystem: true,
+    displayOrder: 70,
     grants: {
       // HC-NS view-only User + report, không access Conversation/Contact content
       user: { access: true, create: true, edit: true },

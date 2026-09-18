@@ -161,13 +161,15 @@ const placementClass = computed(() => `npp-placement-${placement.value}`);
 const positionStyle = computed(() => {
   if (!triggerRect.value) return { visibility: 'hidden' as const };
   const r = triggerRect.value;
-  const dropdownWidth = Math.min(Math.max(r.width, 480), 720);
   const vw = window.innerWidth;
-  // Align dropdown left với trigger; clamp 16px khỏi mép phải
+  const maxDropdownWidth = Math.min(480, Math.max(280, vw - 24));
+  const dropdownWidth = Math.min(Math.max(r.width, 280), maxDropdownWidth);
+  // Align dropdown left với trigger; clamp 12px khỏi mép phải/trái
   let leftPx = r.left;
-  if (leftPx + dropdownWidth > vw - 16) {
-    leftPx = Math.max(16, vw - 16 - dropdownWidth);
+  if (leftPx + dropdownWidth > vw - 12) {
+    leftPx = Math.max(12, vw - 12 - dropdownWidth);
   }
+  if (leftPx < 12) leftPx = 12;
   // Vị trí top/bottom dựa placement
   if (placement.value === 'bottom') {
     return {
@@ -204,8 +206,16 @@ function recomputePosition() {
   const spaceBelow = window.innerHeight - r.bottom;
   const spaceAbove = r.top;
   placement.value = (spaceBelow >= dropdownMaxHeight || spaceBelow >= spaceAbove) ? 'bottom' : 'top';
-  // Arrow alignment — căn theo center icon của trigger button
-  arrowLeft.value = Math.max(20, Math.min(r.width - 30, 60));
+  // Arrow alignment — căn theo center trigger button
+  const triggerCenter = r.left + r.width / 2;
+  const maxW = Math.min(480, Math.max(280, window.innerWidth - 24));
+  const effW = Math.min(Math.max(r.width, 280), maxW);
+  let effLeft = r.left;
+  if (effLeft + effW > window.innerWidth - 12) {
+    effLeft = Math.max(12, window.innerWidth - 12 - effW);
+  }
+  if (effLeft < 12) effLeft = 12;
+  arrowLeft.value = Math.max(16, Math.min(effW - 20, triggerCenter - effLeft));
 }
 
 watch(() => props.modelValue, async (open) => {

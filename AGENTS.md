@@ -54,6 +54,30 @@
 - Không dùng `docker compose down -v`, `prisma migrate reset` hoặc lệnh destructive khác nếu chưa được người dùng yêu cầu rõ ràng.
 - Production dùng `docker-compose.yml`; không chạy nhầm cấu hình production để thao tác database DEV hoặc ngược lại.
 
+## Rule phân quyền và nhóm quyền RBAC
+
+- **Single source of truth cho ma trận quyền:**
+  - Resource, Action, danh mục hợp lệ và các nhóm quyền hệ thống mặc định phải xuất phát từ `backend/src/modules/rbac/permission-types.ts` (chứa `ACTIONS`, `RESOURCES`, `RESOURCE_ACTIONS`, `DEFAULT_PERMISSION_GROUPS`).
+  - Tuyệt đối không tự bịa thêm action, resource hoặc cấu trúc grant ngoài danh mục chuẩn này.
+- **Quy tắc khi bổ sung hoặc sửa đổi Resource / Action:**
+  - Khi thêm một resource hoặc action mới, bắt buộc phải cập nhật đồng bộ 4 điểm:
+    1. Cấu hình backend: khai báo vào `RESOURCES` hoặc `ACTIONS` và định nghĩa action hợp lệ trong `RESOURCE_ACTIONS`.
+    2. Cập nhật nhóm quyền mặc định: phân bổ grant phù hợp trong `DEFAULT_PERMISSION_GROUPS` để khi seed/tạo tổ chức mới quyền không bị thiếu hoặc rỗng.
+    3. API metadata: đảm bảo endpoint `GET /api/v1/permission-groups/meta` trả về đủ resource/action mới.
+    4. Giao diện frontend: cập nhật nhãn tiếng Việt (`RESOURCE_LABELS`) và icon tương ứng tại cả `frontend/src/views/rbac/PermissionGroupsView.vue` và `frontend/src/components/rbac/PermissionGroupEditPanel.vue`. Tránh để hiển thị key thô (ví dụ: `zalo_account`) trên bảng ma trận quyền.
+- **Thứ tự hiển thị và tính toàn vẹn của nhóm quyền:**
+  - Nhóm quyền trong bảng và dropdown phải sắp xếp theo `displayOrder` rõ ràng (hoặc thứ tự định nghĩa trong nhóm hệ thống), không dựa vào thứ tự ngẫu nhiên của database hay sắp xếp theo chữ cái thuần túy làm xáo trộn cấp bậc quản trị.
+  - Các nhóm quyền hệ thống mặc định (`Admin`, `CEO`, `Trưởng phòng`, `Sale Senior`, `Sale`, `Marketing`, `Hành chính - Nhân sự`) có cờ `isSystem = true`. Không tự ý đổi tên các nhóm hệ thống lõi vì migration và luồng chuyển đổi người dùng cũ (`seed-default-groups.ts`) đang phụ thuộc trực tiếp vào tên nhóm để gán quyền.
+- **Nguyên tắc bảo vệ API và phân định thẩm quyền:**
+  - Mọi route backend thao tác dữ liệu nghiệp vụ phải được bảo vệ qua `requireGrant(resource, action)` hoặc `requireAnyGrant(...)`.
+  - Ẩn nút, ẩn menu hoặc vô hiệu hóa ô tick trên frontend chỉ là hỗ trợ trải nghiệm (UI helper), KHÔNG được coi là biện pháp bảo mật; backend luôn là chốt chặn cuối cùng kiểm tra quyền thực thi.
+  - Phân quyền theo thao tác (Action: `access`, `create`, `edit`, `delete`, `view_all`) chỉ quyết định người dùng được làm gì. Phạm vi dữ liệu (Data Scope) người dùng được nhìn thấy/chỉnh sửa (toàn tổ chức, theo cây phòng ban con, hay chỉ dữ liệu của chính mình) phải được kết hợp chặt chẽ với logic truy vấn SQL/Prisma và kiểm tra `orgId` / `departmentId` / phụ trách thực tế.
+- **Ranh giới Tenant và gán quyền:**
+  - Khi gán nhóm quyền hoặc phòng ban cho user, bắt buộc phải kiểm tra `permissionGroupId` hoặc `departmentId` có thuộc cùng `orgId` với user hay không; tuyệt đối không cho phép gán ID của tổ chức khác.
+- **Làm sạch và kiểm tra dữ liệu quyền:**
+  - Dữ liệu quyền khi lưu vào DB phải luôn đi qua hàm kiểm tra/chuẩn hóa (`sanitizeGrants`) để loại bỏ các action không hợp lệ với từng resource, tránh tích tụ rác dữ liệu trong cột JSON `grants`.
+  - Mặc định nếu người dùng chưa có nhóm quyền hoặc nhóm quyền thiếu khai báo cho một resource/action thì phải từ chối truy cập (Deny by default), ngoại trừ tài khoản có quyền bypass hợp lệ được hệ thống quy định rõ (như `Owner`).
+
 ## Rule backend Fastify và Prisma
 
 - Backend dùng Node.js ESM và TypeScript; giữ đúng convention import/module hiện có.

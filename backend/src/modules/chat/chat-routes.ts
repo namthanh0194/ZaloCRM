@@ -543,15 +543,32 @@ export async function chatRoutes(app: FastifyInstance) {
       where.zaloAccountId = 'EMPTY_FOLDER_NO_MATCH';
     }
 
-    // Contact-level filter — gộp vào where.contact nested
-    const contactWhere: Record<string, unknown> = {};
-    if (search) {
-      contactWhere.OR = [
-        { fullName: { contains: search, mode: 'insensitive' } },
-        { crmName: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search } },
+    const searchTerm = search.trim();
+    if (searchTerm) {
+      where.OR = [
+        {
+          contact: {
+            OR: [
+              { fullName: { contains: searchTerm, mode: 'insensitive' } },
+              { crmName: { contains: searchTerm, mode: 'insensitive' } },
+              { phone: { contains: searchTerm } },
+            ],
+          },
+        },
+        { groupName: { contains: searchTerm, mode: 'insensitive' } },
+        {
+          messages: {
+            some: {
+              content: { contains: searchTerm, mode: 'insensitive' },
+              isDeleted: false,
+            },
+          },
+        },
       ];
     }
+
+    // Contact-level filter — gộp vào where.contact nested
+    const contactWhere: Record<string, unknown> = {};
     if (statusId) contactWhere.statusId = statusId;
     if (assignedUserId) contactWhere.assignedUserId = assignedUserId;
     if (hasZalo === 'true') contactWhere.hasZalo = true;

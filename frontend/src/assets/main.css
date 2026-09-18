@@ -7,7 +7,7 @@
 /* ════════════════════════════════════════════════════════════
    Global app styles — Smax design language (mockup chat-smax-v3).
    Theme-specific tokens live in tokens.css.
-   Legacy navy/cyan glass effects retained only behind .v-theme--legacy-dark.
+   Vuetify and custom components share the canonical light/dark semantic tokens.
    ════════════════════════════════════════════════════════════ */
 
 html, body {
@@ -25,52 +25,53 @@ html, body {
 
 #app { height: 100%; }
 
-/* ════════ Smax light theme — defaults for v-* components ════════ */
-.v-theme--smax-light .v-card {
+/* ════════ Shared Vuetify component defaults ════════ */
+:is(.v-theme--hsLight, .v-theme--repuDark) .v-card {
   background: var(--color-surface) !important;
   border: 1px solid var(--color-border) !important;
   backdrop-filter: none;
 }
 
-.v-theme--smax-light ::-webkit-scrollbar { width: 8px; height: 8px; }
-.v-theme--smax-light ::-webkit-scrollbar-track { background: transparent; }
-.v-theme--smax-light ::-webkit-scrollbar-thumb {
+:is(.v-theme--hsLight, .v-theme--repuDark) ::-webkit-scrollbar { width: 8px; height: 8px; }
+:is(.v-theme--hsLight, .v-theme--repuDark) ::-webkit-scrollbar-track { background: transparent; }
+:is(.v-theme--hsLight, .v-theme--repuDark) ::-webkit-scrollbar-thumb {
   background: var(--color-border-strong);
   border-radius: 4px;
 }
-.v-theme--smax-light ::-webkit-scrollbar-thumb:hover { background: var(--color-text-secondary); }
+.v-theme--hsLight ::-webkit-scrollbar-thumb:hover { background: var(--color-text-secondary); }
+.v-theme--repuDark ::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
 
-.v-theme--smax-light .v-list-item:hover {
+:is(.v-theme--hsLight, .v-theme--repuDark) .v-list-item:hover {
   background: var(--color-surface-secondary) !important;
 }
-.v-theme--smax-light .v-list-item--active {
+:is(.v-theme--hsLight, .v-theme--repuDark) .v-list-item--active {
   background: var(--color-primary-subtle) !important;
   color: var(--color-primary);
 }
 
 /* Form fields — light, square corners (mockup uses 7-9px radius) */
-.v-theme--smax-light .v-field { border-radius: 7px !important; }
-.v-theme--smax-light .v-field--focused {
+:is(.v-theme--hsLight, .v-theme--repuDark) .v-field { border-radius: 7px !important; }
+:is(.v-theme--hsLight, .v-theme--repuDark) .v-field--focused {
   border-color: var(--color-primary) !important;
   box-shadow: 0 0 0 3px rgba(33,150,243,0.10);
 }
 
 /* Buttons — flat, no animation */
-.v-theme--smax-light .v-btn--variant-flat {
+:is(.v-theme--hsLight, .v-theme--repuDark) .v-btn--variant-flat {
   border-radius: 7px !important;
   text-transform: none;
   letter-spacing: normal;
 }
 
 /* Chips — pill */
-.v-theme--smax-light .v-chip {
+:is(.v-theme--hsLight, .v-theme--repuDark) .v-chip {
   border-radius: 12px !important;
   font-weight: 500;
 }
 
 /* Data table — flat surface */
-.v-theme--smax-light .v-data-table { background: transparent !important; }
-.v-theme--smax-light .v-data-table .v-table__wrapper {
+:is(.v-theme--hsLight, .v-theme--repuDark) .v-data-table { background: transparent !important; }
+:is(.v-theme--hsLight, .v-theme--repuDark) .v-data-table .v-table__wrapper {
   background: var(--color-surface);
   border-radius: 7px;
   border: 1px solid var(--color-border);
@@ -86,56 +87,241 @@ html, body {
 }
 .message-bubble { animation: fade-slide-up 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 
-/* ════════ Legacy dark theme (kept for fallback) ════════ */
-.v-theme--legacy-dark {
-  --navy-deep: #0A192F;
-  --navy-light: #112240;
-  --cyan-electric: #00F2FF;
-  --card-glass: rgba(17, 34, 64, 0.7);
-  --liquid-ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --border-glow: rgba(0, 242, 255, 0.1);
-}
-
-.v-theme--legacy-dark.liquid-bg {
-  background: linear-gradient(-45deg, #0A192F, #112240, #004d7a, #008fb3) !important;
-  background-size: 400% 400% !important;
-  animation: flow-bg 15s ease infinite;
-}
-@keyframes flow-bg {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
+/* ════════ Repu dark theme ════════ */
 @keyframes liquid-morph {
   0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
   50% { border-radius: 30% 60% 70% 30% / 50% 60% 30% 50%; }
 }
-.v-theme--legacy-dark .ai-core-orb {
-  animation: liquid-morph 8s infinite var(--liquid-ease);
-  box-shadow: 0 0 30px rgba(0, 242, 255, 0.2);
+.v-theme--repuDark .ai-core-orb {
+  animation: liquid-morph 8s infinite ease-in-out;
+  box-shadow: 0 0 30px rgb(91 184 229 / 20%);
 }
 
-.v-theme--legacy-dark .v-card {
-  background: var(--card-glass) !important;
-  border: 1px solid var(--border-glow) !important;
-  backdrop-filter: blur(12px);
+.v-theme--repuDark .v-card {
+  box-shadow: var(--shadow-sm);
 }
-.v-theme--legacy-dark ::-webkit-scrollbar { width: 4px; }
-.v-theme--legacy-dark ::-webkit-scrollbar-thumb {
-  background: rgba(0, 242, 255, 0.2); border-radius: 10px;
+
+/* Dark compatibility bridge for legacy screens still carrying local neutral
+   literals. Feature/status colors remain untouched; only neutral surfaces,
+   text, borders and form controls are normalized here. */
+[data-theme='dark'] :is(
+  .sl-sidebar,
+  .sl-content,
+  .sl-breadcrumb,
+  .settings-card,
+  .settings-section,
+  .at-card,
+  .at-table-wrap,
+  .pg-sidebar,
+  .pg-main,
+  .pg-group-item,
+  .pg-matrix-head,
+  .pg-matrix-wrap,
+  .create-dialog,
+  .t2-card,
+  .t2-modal,
+  .acqd-card,
+  .cpd-card,
+  .cdp-root,
+  .contact-detail-dialog,
+  .toast,
+  .sn-card,
+  .ai-provider-card
+) {
+  background: var(--color-surface) !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-border) !important;
 }
-.v-theme--legacy-dark ::-webkit-scrollbar-thumb:hover { background: rgba(0, 242, 255, 0.4); }
-.v-theme--legacy-dark .v-list-item:hover { background: rgba(0, 242, 255, 0.05) !important; }
-.v-theme--legacy-dark .v-list-item--active {
-  background: rgba(0, 242, 255, 0.08) !important;
-  border-left: 3px solid var(--cyan-electric);
+
+[data-theme='dark'] :is(
+  .sl-header,
+  .sl-search,
+  .sl-group-header:hover,
+  .sl-item:hover,
+  .at-table thead th,
+  .at-table tbody tr:hover,
+  .pg-sidebar-head,
+  .pg-group-item:hover,
+  .pg-matrix thead th,
+  .pg-matrix tbody tr:hover,
+  .pg-matrix tbody tr:hover .cell-resource,
+  .t2-table th,
+  .t2-table tr:hover td,
+  .acqd-head,
+  .acqd-footer-hint,
+  .cpd-head,
+  .cpd-tab:hover,
+  .cdp-section-head,
+  .sn-rrow:hover td,
+  .ai-chat-header
+) {
+  background: var(--color-surface-secondary) !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-border) !important;
 }
-.v-theme--legacy-dark .v-field { border-radius: 16px !important; }
-.v-theme--legacy-dark .v-field--focused {
-  border-color: var(--cyan-electric) !important;
-  box-shadow: 0 0 12px rgba(0, 242, 255, 0.15);
+
+[data-theme='dark'] :is(
+  input:not([type='checkbox']):not([type='radio']),
+  textarea,
+  select,
+  .sl-search input,
+  .create-label input,
+  .create-label select,
+  .t2-input,
+  .t2-select,
+  .acqd-input,
+  .cpd-in
+) {
+  background-color: var(--color-surface) !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-border-strong) !important;
 }
-.v-theme--legacy-dark .v-btn--variant-flat:hover {
-  box-shadow: 0 0 16px rgba(0, 242, 255, 0.2);
-  transform: translateY(-1px);
+
+[data-theme='dark'] :is(
+  .btn-cancel,
+  .pg-add-btn,
+  .th-bulk-btn,
+  .t2-btn-secondary,
+  .t2-btn-sm,
+  .acqd-btn--secondary,
+  .cdp-btn-outline,
+  .cpd-foot .btn
+) {
+  background: var(--color-surface) !important;
+  color: var(--color-text-secondary) !important;
+  border-color: var(--color-border-strong) !important;
+}
+
+[data-theme='dark'] :is(
+  .sl-title,
+  .sl-item-label,
+  .page-title,
+  .at-title,
+  .pg-name-big,
+  .create-head h2,
+  .t2-title,
+  .acqd-title,
+  .cpd-title,
+  .cdp-name
+) {
+  color: var(--color-text) !important;
+}
+
+[data-theme='dark'] :is(
+  .sl-group-label,
+  .sl-empty,
+  .page-subtitle,
+  .pg-group-meta,
+  .create-label,
+  .acqd-label,
+  .cpd-subtitle,
+  .cdp-meta
+) {
+  color: var(--color-text-muted) !important;
+}
+
+
+/* Extended dark compatibility for remaining legacy cards, tables and dialogs.
+   Status/brand colors are preserved; only neutral surfaces and text are mapped. */
+[data-theme='dark'] :is(
+  .message-thread,
+  .empty-state,
+  .event-row,
+  .check-row,
+  .sale-row,
+  .section-header,
+  .profile-card,
+  .password-form,
+  .ctx-menu,
+  .tag-overflow-popup,
+  .delete-dialog,
+  .pg-matrix-wrap,
+  .pg-matrix .cell-resource,
+  .t2-table td,
+  .t2-modal,
+  .apt-card,
+  .apt-detail,
+  .media-card,
+  .friend-table,
+  .account-card,
+  .stats-card
+) {
+  background: var(--color-surface) !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-border) !important;
+}
+
+[data-theme='dark'] :is(
+  .cs-roadmap,
+  .pg-save-bar,
+  .t2-table tr.archived td,
+  .t2-slug,
+  .t2-modal-scope,
+  .apt-toolbar,
+  .apt-empty
+) {
+  background: var(--color-surface-secondary) !important;
+  color: var(--color-text-secondary) !important;
+  border-color: var(--color-border) !important;
+}
+
+[data-theme='dark'] :is(
+  .form-row input,
+  .t2-modal input,
+  .t2-modal select
+) {
+  background: var(--color-surface) !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-border-strong) !important;
+}
+
+[data-theme='dark'] :is(
+  .btn-ghost,
+  .ctx-item,
+  .ci-restore-btn,
+  .t2-modal-actions button:not(.t2-btn-primary)
+) {
+  background: var(--color-surface) !important;
+  color: var(--color-text-secondary) !important;
+  border-color: var(--color-border-strong) !important;
+}
+
+[data-theme='dark'] :is(
+  .cs-title,
+  .pc-value,
+  .ctx-item,
+  .pg-matrix .cell-resource,
+  .pg-matrix .th-action-label,
+  .t2-table td
+) {
+  color: var(--color-text) !important;
+}
+
+[data-theme='dark'] :is(
+  .cs-desc,
+  .cs-roadmap-label,
+  .page-desc,
+  .ctx-item__icon,
+  .pg-save-hint,
+  .t2-empty,
+  .t2-loading
+) {
+  color: var(--color-text-muted) !important;
+}
+
+[data-theme='dark'] :is(
+  .pg-matrix tbody tr.row-full,
+  .pg-matrix tbody tr.row-full .cell-resource,
+  .pg-matrix tbody tr.row-full:hover,
+  .pg-matrix tbody tr.row-full:hover .cell-resource
+) {
+  background: var(--color-success-subtle) !important;
+}
+
+
+/* Chat empty state reset */
+.message-thread .empty-state {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }

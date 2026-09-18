@@ -5,6 +5,23 @@ Các thay đổi đáng chú ý của ZCRM. Theo [Semantic Versioning](https://s
 > Các tag `v1.x`–`v3.3.x` là **lịch sử upstream** (locphamnguyen/ZaloCRM) — xem đầy đủ ở cuối file.
 > `v3.4.x` là dòng release hiện tại.
 
+## [3.6.3] - 2026-09-18
+### Added
+- **Tìm kiếm hội thoại đa chiều:** Backend hỗ trợ tìm kiếm đồng thời theo tên liên hệ / tên CRM / SĐT (`contact`), tên nhóm (`groupName`), và nội dung tin nhắn (`messages.content`).
+- **Test tự động backend:** Bổ sung `backend/tests/chat-conversation-search.test.ts` bảo vệ logic tìm kiếm hội thoại.
+- **Quy tắc phân quyền RBAC:** Cập nhật hướng dẫn và nguyên tắc quản lý single source of truth cho ma trận phân quyền trong `AGENTS.md`.
+
+### Changed
+- **Bộ nhận diện thương hiệu Repu Digital:** Cập nhật favicon `zalocrm.ico` và logo trắng `hs-monogram.png`.
+- **UI/UX Chat & Tìm kiếm:** Cập nhật placeholder ô tìm kiếm thành `Tìm tên, SĐT, nhóm hoặc nội dung tin nhắn…` và thông báo `Không tìm thấy hội thoại phù hợp` khi danh sách rỗng.
+- **Hệ thống theme Dark / Light Mode:** Chuẩn hóa toàn bộ token màu nền, viền và chữ cho danh sách hội thoại, thanh lọc, context menu và chi tiết khách hàng.
+- **Tối ưu Mobile Layout:** Đồng bộ tài khoản Zalo trên mobile view và tối ưu kích thước popup chọn nick (`NickPickerPopup.vue`).
+
+### Fixed
+- Sửa lỗi ô tìm kiếm trước đây chỉ lọc trên `contactWhere`, không tìm thấy hội thoại theo tên nhóm hoặc nội dung tin nhắn.
+- Sửa lỗi thiếu import API `getBranding` tại `MobileLayout.vue`.
+- Sửa lỗi hiển thị màu sắc và font chữ trong chế độ Dark mode.
+
 ## [3.6.2] - 2026-09-17
 ### Changed — Giao diện (UI)
 - **Cập nhật màu nền Header:** Đổi tông màu thanh Header ứng dụng từ gradient cũ sang màu `#182537` đồng bộ trên cả Desktop (`DefaultLayout.vue`) và Mobile (`MobileLayout.vue`), bổ sung viền dưới tinh tế tách bạch với thân trang.

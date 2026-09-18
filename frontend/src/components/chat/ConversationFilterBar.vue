@@ -132,19 +132,18 @@ function toggleSort() {
 
 <style scoped>
 .cfb {
-  background: white;
-  border-bottom: 1px solid #F3F4F6;
+  background: transparent;
   flex-shrink: 0;
 }
 
 /* ② Quick pills — 4 pills chia ĐỀU, vừa khít khung cột 2, KHÔNG scroll ngang */
 .cfb-pills-wrap {
-  border-bottom: 1px solid #F3F4F6;
+  border-bottom: none;
 }
 .cfb-pills {
   display: flex;
   gap: 4px;
-  padding: 7px 10px;
+  padding: 2px 0 6px;
   align-items: center;
 }
 
@@ -158,25 +157,25 @@ function toggleSort() {
   align-items: center;
   justify-content: center;
   gap: 1px;
-  padding: 5px 4px 4px;
-  border-radius: 10px;
+  padding: 5px 3px 4px;
+  border-radius: 8px;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
-  border: 1px solid #E5E7EB;
-  background: white;
-  color: #4B5563;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
   font-family: inherit;
   line-height: 1.2;
 }
 .pill .pill-label {
-  font-size: 10.5px;
+  font-size: 11px;
   white-space: nowrap;
 }
 .pill:hover {
-  background: #FAFBFC;
-  border-color: #D1D5DB;
-  color: #111827;
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
 }
 .pill .pill-label {
   font-weight: 500;
@@ -232,45 +231,47 @@ function toggleSort() {
 .cfb-tabs.main-tab-style {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  padding: 5px 4px;
-  margin: 8px 10px 0;
-  background: #F3F4F6;
-  border-radius: 10px;
-  gap: 2px;
+  padding: 0;
+  margin: 6px 0 4px;
+  background: transparent;
+  gap: 4px;
   border-bottom: none;
 }
 .cfb-tabs.main-tab-style .cfb-tab {
-  padding: 6px 1px;
+  padding: 6px 2px;
+  height: 28px;
   text-align: center;
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: -0.3px;
-  color: #6B7280;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-muted);
   cursor: pointer;
-  border: none;
-  background: transparent;
-  border-radius: 7px;
-  transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 8px;
+  transition: all 0.18s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
   overflow: hidden;
   font-family: inherit;
+  box-sizing: border-box;
 }
 .cfb-tabs.main-tab-style .cfb-tab:hover {
-  background: rgba(255, 255, 255, 0.6);
-  color: #4338CA;
+  border-color: #94A3B8;
+  color: #1786be;
 }
 .cfb-tabs.main-tab-style .cfb-tab.active {
-  background: white;
-  color: #6366F1;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(99, 102, 241, 0.1);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-weight: 700;
+  border-color: #1786be;
+  box-shadow: 0 1px 2px rgba(23, 134, 190, 0.1);
 }
 /* 2026-06-11 — tab Ưu tiên có tin chưa đọc: in ĐẬM hơn + đậm màu + chấm báo nhỏ.
    Không hiện con số (theo yêu cầu). Đọc hết → class này biến mất → trở lại thường. */
 .cfb-tabs.main-tab-style .cfb-tab.has-unread:not(.active) {
-  color: #111827;
+  color: var(--color-text);
   font-weight: 800;
 }
 .cfb-tabs.main-tab-style .cfb-tab.has-unread .tab-label::after {
@@ -303,14 +304,14 @@ function toggleSort() {
   justify-content: space-between;
   align-items: center;
   padding: 4px 14px;
-  background: #FAFBFC;
+  background: var(--color-surface-secondary);
   font-size: 10.5px;
-  color: #9CA3AF;
-  border-bottom: 1px solid #F3F4F6;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border);
   min-height: 22px;
 }
-.mini-count strong { color: #4B5563; font-weight: 600; }
-.mini-count .dot { margin: 0 4px; color: #D1D5DB; }
+.mini-count strong { color: var(--color-text-secondary); font-weight: 600; }
+.mini-count .dot { margin: 0 4px; color: var(--color-border-strong); }
 .mini-count .accent { color: #EF4444; font-weight: 600; }
 .mini-sort {
   display: inline-flex;
@@ -321,12 +322,12 @@ function toggleSort() {
   border-radius: 4px;
   background: transparent;
   border: none;
-  color: #6B7280;
+  color: var(--color-text-muted);
   font-weight: 500;
   font-size: 10.5px;
   font-family: inherit;
   transition: color 0.15s, background 0.15s;
 }
-.mini-sort:hover { color: #4338CA; background: white; }
+.mini-sort:hover { color: var(--color-primary); background: var(--color-surface-hover); }
 .mini-sort .ic { width: 10px; height: 10px; opacity: 0.7; }
 </style>

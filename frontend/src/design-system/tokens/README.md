@@ -12,5 +12,9 @@ scales. New UI should use these values instead of page-local visual constants.
 `--rk-*`, and HS variables remain supported until their owning migration phase.
 Do not add new consumers of those legacy namespaces.
 
-Current theme: `light`. The `[data-theme='dark']` semantic mapping reserves a
-future dark-mode contract; no current page should add theme-specific overrides.
+The application supports `light` and `dark`. `useAppTheme` synchronizes the
+semantic `[data-theme]` contract, native `color-scheme`, persisted preference,
+and Vuetify themes (`hsLight` / `repuDark`).
+
+New pages and components must consume semantic or domain tokens so both modes
+work without page-local theme overrides.

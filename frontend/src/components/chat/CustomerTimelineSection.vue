@@ -564,7 +564,7 @@ defineExpose({ rootCount: rootNoteCount });
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 2px;
-  background: var(--color-bg, #f1f4f9);
+  background: var(--color-surface-secondary, #f1f4f9);
   border-radius: 8px;
   padding: 3px;
 }
@@ -582,9 +582,9 @@ defineExpose({ rootCount: rootNoteCount });
 }
 .tl-seg-tab:hover { color: var(--color-text); }
 .tl-seg-tab.on {
-  background: #fff;
+  background: var(--color-surface, #fff);
   color: var(--color-primary, #1786be);
-  box-shadow: 0 1px 2px rgba(20,26,36,.05);
+  box-shadow: var(--shadow-sm);
 }
 /* Settings cog — button vuông 38px tách riêng — hs-chat .cx-tl-cog */
 .tl-cog {
@@ -592,7 +592,7 @@ defineExpose({ rootCount: rootNoteCount });
   width: 38px;
   height: 38px;
   border: 1px solid var(--color-border, #e7eaf0);
-  background: #fff;
+  background: var(--color-surface, #fff);
   border-radius: 8px;
   cursor: pointer;
   color: var(--color-text-secondary);
@@ -604,7 +604,7 @@ defineExpose({ rootCount: rootNoteCount });
 .tl-cog:hover { background: var(--color-primary-subtle); color: var(--color-primary); border-color: var(--color-primary-subtle); }
 
 .settings-dropdown {
-  background: #fff;
+  background: var(--color-surface, #fff);
   border-radius: 10px;
   padding: 8px 4px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.15);
@@ -659,7 +659,7 @@ defineExpose({ rootCount: rootNoteCount });
   border: 1.5px solid var(--color-border);
   border-radius: 8px;
   padding: 5px 5px 5px 8px;
-  background: #fff;
+  background: var(--color-surface, #fff);
   transition: border-color 0.15s;
 }
 .note-composer:focus-within {

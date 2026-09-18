@@ -15,6 +15,7 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import MobileLayout from '@/layouts/MobileLayout.vue';
 import ConfirmHost from '@/components/ui/ConfirmHost.vue';
+import { useAppTheme } from '@/composables/app-theme';
 import { useMobile } from '@/composables/use-mobile';
 import { useAuthStore } from '@/stores/auth';
 import { usePrivacyStore } from '@/stores/privacy';
@@ -23,6 +24,9 @@ const route = useRoute();
 const { isMobile } = useMobile();
 const auth = useAuthStore();
 const privacy = usePrivacyStore();
+const { initializeTheme } = useAppTheme();
+
+initializeTheme();
 
 const layout = computed(() => {
   const name = (route.meta?.layout as string) || 'default';

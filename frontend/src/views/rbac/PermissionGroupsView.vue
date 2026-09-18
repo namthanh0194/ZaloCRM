@@ -148,7 +148,7 @@
               <tbody>
                 <tr v-for="r in resources" :key="r" :class="{ 'row-full': rowFull(r), 'row-empty': rowEmpty(r) }">
                   <td class="cell-resource">
-                    <span class="resource-icon">{{ resourceIcon(r) }}</span>
+                    <v-icon class="resource-icon" :icon="resourceIcon(r)" size="16" />
                     <span class="resource-label">{{ resourceLabel(r) }}</span>
                     <span class="resource-count">{{ rowCount(r) }}/{{ (resourceActions[r] ?? []).length }}</span>
                   </td>
@@ -239,6 +239,11 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRbacStore, type PermissionGroupNode, type RbacUser } from '@/stores/rbac';
 import { api } from '@/api/index';
+import {
+  getPermissionActionLabel,
+  getPermissionResourceIcon,
+  getPermissionResourceLabel,
+} from '@/components/rbac/permission-matrix-meta';
 
 const store = useRbacStore();
 const allUsers = ref<RbacUser[]>([]);
@@ -328,35 +333,15 @@ watch(
 );
 
 // ─── Labels ───
-const ACTION_LABELS: Record<string, string> = {
-  access: 'Truy cập',
-  create: 'Thêm mới',
-  edit: 'Chỉnh sửa',
-  delete: 'Xóa',
-  view_all: 'Xem tất cả',
-};
-function actionLabel(a: string) { return ACTION_LABELS[a] ?? a; }
-
-const RESOURCE_LABELS: Record<string, { icon: string; label: string }> = {
-  department: { icon: '🏢', label: 'Phòng ban' },
-  user: { icon: '👤', label: 'Người dùng' },
-  permission_group: { icon: '🛡', label: 'Nhóm quyền' },
-  conversation: { icon: '💬', label: 'Hội thoại' },
-  contact: { icon: '👥', label: 'Khách hàng' },
-  friend: { icon: '🫂', label: 'Friends Zalo' },
-  customer_list: { icon: '📋', label: 'Tệp khách hàng' },
-  broadcast: { icon: '📢', label: 'Chiến dịch' },
-  sequence: { icon: '🔁', label: 'Sequence' },
-  trigger: { icon: '⚡', label: 'Trigger' },
-  block: { icon: '🧱', label: 'Message Block' },
-  zalo_account: { icon: '🟢', label: 'Nick Zalo' },
-  webhook: { icon: '🔌', label: 'Webhook' },
-  engagement_score: { icon: '📊', label: 'Engagement / Score' },
-  audit_log: { icon: '📜', label: 'Audit Log' },
-  settings: { icon: '⚙', label: 'Cài đặt' },
-};
-function resourceLabel(r: string) { return RESOURCE_LABELS[r]?.label ?? r; }
-function resourceIcon(r: string) { return RESOURCE_LABELS[r]?.icon ?? '•'; }
+function actionLabel(action: string) {
+  return getPermissionActionLabel(store.matrixMeta, action);
+}
+function resourceLabel(resource: string) {
+  return getPermissionResourceLabel(store.matrixMeta, resource);
+}
+function resourceIcon(resource: string) {
+  return getPermissionResourceIcon(store.matrixMeta, resource);
+}
 
 // ─── Grants helpers ───
 function grantsActive(g: PermissionGroupNode): number {

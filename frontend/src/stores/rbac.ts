@@ -12,6 +12,7 @@
  */
 import { defineStore } from 'pinia';
 import { api } from '@/api/index';
+import type { PermissionMatrixMeta } from '@/components/rbac/permission-matrix-meta';
 
 export interface DepartmentNode {
   id: string;
@@ -112,7 +113,7 @@ export const useRbacStore = defineStore('rbac', {
     departments: [] as DepartmentNode[],
     permissionGroups: [] as PermissionGroupNode[],
     users: [] as RbacUser[],
-    matrixMeta: null as null | { resources: string[]; actions: string[]; resourceActions: Record<string, string[]> },
+    matrixMeta: null as PermissionMatrixMeta | null,
     loading: false,
   }),
   actions: {

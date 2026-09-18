@@ -105,6 +105,16 @@
 
       <NotificationBell class="icon-btn-wrap" />
 
+      <button
+        class="icon-btn"
+        type="button"
+        :title="isDark ? 'Chuyển sang chế độ sáng' : 'Chuyển sang chế độ tối'"
+        :aria-label="isDark ? 'Chuyển sang chế độ sáng' : 'Chuyển sang chế độ tối'"
+        @click="toggleTheme"
+      >
+        <v-icon size="18">{{ isDark ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
+      </button>
+
       <v-menu v-model="userMenu" :close-on-content-click="true">
         <template #activator="{ props: act }">
           <button class="user-avatar" v-bind="act" :title="authStore.user?.fullName || 'Tài khoản'">
@@ -114,7 +124,7 @@
         <v-list density="compact" min-width="200">
           <v-list-item :title="authStore.user?.fullName || ''" :subtitle="authStore.user?.email || ''" />
           <v-divider />
-          <!-- 2026-06-13 (anh chốt): Hồ sơ trỏ về trang gom "Tài khoản của tôi". Bỏ nút Theme tối. -->
+          <!-- Hồ sơ trỏ về trang gom "Tài khoản của tôi". Theme được đổi từ nút trên header. -->
           <v-list-item to="/settings/personal/profile" title="Hồ sơ" prepend-icon="mdi-account-circle-outline" />
           <v-divider />
           <v-list-item @click="logout" title="Đăng xuất" prepend-icon="mdi-logout" />
@@ -152,7 +162,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { api } from '@/api';
-import { useTheme } from 'vuetify';
 import { useRoute, RouterLink } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { isExtension } from '@ee/edition';
@@ -163,6 +172,7 @@ import ToastContainer from '@/components/ui/ToastContainer.vue';
 import Avatar from '@/components/ui/Avatar.vue';
 import { fetchPublicBranding } from '@/api/public-branding';
 import { useChatNotification } from '@/composables/use-chat-notification';
+import { useAppTheme } from '@/composables/app-theme';
 import { createAppSocket } from '@/api/socket';
 import type { Socket } from 'socket.io-client';
 // Open-core: extension top-nav shortcuts (empty in Community edition via @ee stub).
@@ -195,10 +205,10 @@ function debouncedRefreshChatUnread() {
   }, 200);
 }
 
-const theme = useTheme();
 const route = useRoute();
 const authStore = useAuthStore();
 const router = useRouter();
+const { isDark, toggleTheme } = useAppTheme();
 
 // 2026-06-09 (anh báo menu bar kẹt, phải F5) — điều khiển dropdown nav bằng v-model
 // + ép đóng HẾT sau mỗi điều hướng (kể cả khi điều hướng bị huỷ/chặn quyền). Dropdown
@@ -317,11 +327,6 @@ onMounted(() => {
     });
   }
 
-  // 2026-06-13 (anh chốt): app LUÔN theme sáng 'hsLight', bỏ chọn theme tối. Ép cứng +
-  // dọn giá trị 'legacy-dark'/'smax-light' cũ trong localStorage để user nào đang kẹt
-  // dark cũng về sáng.
-  theme.global.name.value = 'hsLight';
-  localStorage.setItem('theme', 'hsLight');
   void checkInternalContactSetup();
 
   fetchPublicBranding()
@@ -416,7 +421,6 @@ const isReportsActive = computed(
 // Sau này multi-tenant → revert back template + uncomment block dưới.
 
 // Avatar top nav 2026-06-13 — dùng <Avatar/> (ảnh thật + fallback chữ cái), bỏ initials thủ công.
-// 2026-06-13 (anh chốt): bỏ chọn theme tối — app luôn theme sáng 'hsLight' (mặc định ở vuetify.ts).
 
 function logout() {
   authStore.logout();
@@ -454,7 +458,7 @@ function logout() {
 
 /* HS Holding shell — teal-navy gradient nav (redesign 2026-06-05, đảo lock Variant A sáng) */
 .smax-topnav {
-  background: #182537;
+  background: var(--color-shell-bg);
   color: rgba(255, 255, 255, 0.85);
   height: 48px;
   display: flex; align-items: center;
@@ -471,13 +475,10 @@ function logout() {
   margin-right: 14px; flex: none; text-decoration: none;
 }
 .hs-bbox {
-  width: 34px; height: 34px; border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, #1786be 0%, #0b5880 100%);
-  box-shadow: inset 0 1px 1px rgba(255,255,255,.18), 0 1px 2px rgba(0,0,0,.25);
   flex: none;
 }
-.hs-bbox img { width: 24px; height: auto; display: block; filter: drop-shadow(0 1px 1px rgba(0,0,0,.3)); }
+.hs-bbox img { width: 32px; height: 32px; object-fit: contain; display: block; }
 .hs-bwm { display: flex; flex-direction: column; line-height: 1.08; white-space: nowrap; }
 .hs-b1 { font-size: 13.5px; font-weight: 800; color: #fff; letter-spacing: .01em; }
 .hs-b2 { font-size: 9.5px; font-weight: 700; letter-spacing: .26em; color: var(--nav-accent, #5bb8e5); text-transform: uppercase; }
@@ -632,8 +633,7 @@ function logout() {
 }
 .smax-main :deep(.v-main__wrap) { min-height: calc(100vh - var(--layout-topnav-height)); }
 
-/* Vuetify menus rendered from v-menu inherit theme automatically.
-   Force light surface in case parent has legacy-dark applied. */
+/* Vuetify menus rendered from v-menu inherit the active semantic theme. */
 :deep(.v-overlay__content > .v-list) {
   background: var(--color-surface);
   color: var(--color-text);

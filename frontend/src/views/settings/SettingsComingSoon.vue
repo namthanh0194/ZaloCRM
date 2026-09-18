@@ -196,9 +196,9 @@ const bullets = computed(() => meta.value.bullets);
 .coming-soon {
   max-width: 560px;
   margin: 40px auto;
-  background: white;
+  background: var(--color-surface);
   border-radius: 12px;
-  border: 1px solid #E4E5E9;
+  border: 1px solid var(--color-border);
   padding: 40px 32px;
   text-align: center;
   font-family: inherit;
@@ -211,12 +211,12 @@ const bullets = computed(() => meta.value.bullets);
 .cs-title {
   font-size: 22px;
   font-weight: 700;
-  color: #1F2D3D;
+  color: var(--color-text);
   margin: 0 0 8px;
 }
 .cs-desc {
   font-size: 13.5px;
-  color: #6B7785;
+  color: var(--color-text-secondary);
   margin: 0 0 16px;
   line-height: 1.55;
 }

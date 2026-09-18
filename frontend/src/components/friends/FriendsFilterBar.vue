@@ -121,7 +121,7 @@ function onCarePick(v: string) {
 .kind-tab.active { color: #fff; border-color: transparent; }
 .kind-tab.active .dot { display: none; }
 .kind-tab.active .num { background: rgba(255,255,255,.22); color: #fff; }
-.kind-tab.active[data-k="all"]               { background: var(--color-text); }
+.kind-tab.active[data-k="all"]               { background: var(--color-primary); }
 .kind-tab.active[data-k="none"]              { background: var(--chip-purple, #8b5cf6); }
 .kind-tab.active[data-k="friend"]            { background: var(--color-success); }
 .kind-tab.active[data-k="pending_friend"]    { background: var(--color-warning); }

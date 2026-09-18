@@ -3,7 +3,7 @@
 /**
  * seed-default-groups.ts — Seed 7 default permission groups (system, is_system=true)
  *
- * Idempotent: chạy nhiều lần OK, chỉ tạo nếu group chưa tồn tại trong org.
+ * Idempotent: chạy nhiều lần OK, tạo group còn thiếu và đồng bộ displayOrder group hệ thống.
  * Gọi từ migration script D13 hoặc admin endpoint.
  */
 import { randomUUID } from 'node:crypto';
@@ -26,8 +26,13 @@ export async function seedDefaultPermissionGroups(orgId: string): Promise<SeedRe
       select: { id: true, name: true, isSystem: true },
     });
     if (existing) {
+      const updated = await prisma.permissionGroup.update({
+        where: { id: existing.id },
+        data: { displayOrder: tmpl.displayOrder },
+        select: { id: true, name: true, isSystem: true },
+      });
       result.existing++;
-      result.groups.push(existing);
+      result.groups.push(updated);
       continue;
     }
 
@@ -37,6 +42,7 @@ export async function seedDefaultPermissionGroups(orgId: string): Promise<SeedRe
         orgId,
         name: tmpl.name,
         isSystem: tmpl.isSystem,
+        displayOrder: tmpl.displayOrder,
         grants: tmpl.grants as object,
       },
       select: { id: true, name: true, isSystem: true },

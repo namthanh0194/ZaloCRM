@@ -222,10 +222,10 @@ function onAction(name: 'move-main' | 'move-other' | 'toggle-follow' | 'manage-a
 .ctx-menu {
   position: fixed;
   z-index: 101;
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: 10px;
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.08);
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   min-width: 200px;
   padding: 6px 0;
   animation: ctx-pop 0.12s ease-out;
@@ -251,7 +251,7 @@ function onAction(name: 'move-main' | 'move-other' | 'toggle-follow' | 'manage-a
   min-height: 38px;
   font-size: 13.5px;
   line-height: 1.2;
-  color: #374151;
+  color: var(--color-text);
   background: transparent;
   border: 0;
   cursor: pointer;
@@ -260,8 +260,8 @@ function onAction(name: 'move-main' | 'move-other' | 'toggle-follow' | 'manage-a
   user-select: none;
   transition: background-color 0.08s ease;
 }
-.ctx-item:hover { background: #f3f4f6; }
-.ctx-item:active { background: #e5e7eb; }
+.ctx-item:hover { background: var(--color-surface-hover); }
+.ctx-item:active { background: var(--color-surface-active); }
 .ctx-item:focus-visible { outline: 2px solid #2962ff; outline-offset: -2px; }
 .ctx-item:disabled { opacity: 0.6; cursor: default; }
 
@@ -269,7 +269,7 @@ function onAction(name: 'move-main' | 'move-other' | 'toggle-follow' | 'manage-a
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 .ctx-item__label { flex: 1; }
 

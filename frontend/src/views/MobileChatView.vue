@@ -9,6 +9,7 @@
         :conversations="conversations"
         :selected-id="selectedConvId"
         :loading="loadingConvs"
+        :accounts="accountList"
         v-model:search="searchQuery"
         @select="selectConversation"
         @filter-account="onFilterAccount"
@@ -50,6 +51,8 @@ import { onMounted, onUnmounted, watch, computed } from 'vue';
 import ConversationList from '@/components/chat/ConversationList.vue';
 import MessageThread from '@/components/chat/MessageThread.vue';
 import { useChat } from '@/composables/use-chat';
+import { useZaloAccounts } from '@/composables/use-zalo-accounts';
+import { useAuthStore } from '@/stores/auth';
 import { useOfflineQueue } from '@/composables/use-offline-queue';
 import { PageShell } from '@/design-system';
 
@@ -61,6 +64,21 @@ const {
 } = useChat();
 
 const { pendingMessages, enqueue, flush } = useOfflineQueue();
+const authStore = useAuthStore();
+const { accounts: zaloAccounts, fetchAccounts: fetchZaloAccounts } = useZaloAccounts();
+
+const accountList = computed(() =>
+  (zaloAccounts.value || []).map(a => ({
+    id: a.id,
+    displayName: a.displayName,
+    avatarUrl: a.avatarUrl ?? null,
+    ownerUserId: a.ownerUserId,
+    privacyMode: (a as any).privacyMode ?? 'sub',
+    isOwnedByMe: (a as any).isOwnedByMe ?? (a.ownerUserId === authStore.user?.id),
+    owner: (a as any).owner ?? null,
+    zaloUid: (a as any).zaloUid ?? null,
+  }))
+);
 
 function onFilterAccount(id: string | null) {
   accountFilter.value = id;
@@ -112,6 +130,7 @@ function onOnline() {
 }
 
 onMounted(() => {
+  void fetchZaloAccounts();
   fetchConversations();
   initSocket();
   window.addEventListener('online', onOnline);

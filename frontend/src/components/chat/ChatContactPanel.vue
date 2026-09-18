@@ -1387,8 +1387,8 @@ async function onRegenerateHandoff() {
 }
 /* Tab badge cho score (khác badge số tin chưa đọc) */
 .tab-badge-score {
-  background: #fef3c7 !important;
-  color: #b45309 !important;
+  background: var(--color-warning-subtle, #fef3c7) !important;
+  color: var(--color-warning, #b45309) !important;
   font-weight: 700 !important;
   min-width: 24px;
 }
@@ -1903,7 +1903,7 @@ async function onRegenerateHandoff() {
   gap: 10px;
 }
 .crm-widget {
-  background: #fff;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 10px;
   padding: 10px 12px;
@@ -1969,7 +1969,7 @@ async function onRegenerateHandoff() {
 .getfly-pill.ok { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
 .getfly-pill.off { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
 .crm-btn-ghost {
-  background: #fff;
+  background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: 7px;
   padding: 4px 10px;
@@ -1982,8 +1982,8 @@ async function onRegenerateHandoff() {
 
 /* ── Widget 2: AI suggest ── */
 .crm-suggest-box {
-  background: linear-gradient(180deg, #faf5ff, #f5f3ff);
-  border: 1px solid #ddd6fe;
+  background: var(--color-surface-secondary);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 8px 10px;
   display: flex;
@@ -1993,7 +1993,7 @@ async function onRegenerateHandoff() {
 .crm-suggest-text {
   font-size: 12px;
   line-height: 1.45;
-  color: #312e81;
+  color: var(--color-text);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -2048,9 +2048,9 @@ async function onRegenerateHandoff() {
 .heat-trend.down { color: #b91c1c; }
 .heat-stuck {
   font-size: 11px;
-  background: #fef3c7;
-  border: 1px solid #fde68a;
-  color: #92400e;
+  background: var(--color-warning-subtle);
+  border: 1px solid var(--color-warning);
+  color: var(--color-warning);
   border-radius: 6px;
   padding: 3px 7px;
 }
@@ -2074,8 +2074,7 @@ async function onRegenerateHandoff() {
   align-items: flex-start;
   font-size: 11.5px;
   color: var(--color-text-secondary);
-  background: var(--color-bg);
-  border-radius: 7px;
+  background: var(--color-surface-secondary);
   padding: 7px 9px;
   line-height: 1.45;
 }
@@ -2107,7 +2106,7 @@ async function onRegenerateHandoff() {
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  background: #fafbfc;
+  background: var(--color-surface-secondary);
   border: 1px solid var(--color-border);
   border-radius: 6px;
 }
@@ -2135,22 +2134,22 @@ async function onRegenerateHandoff() {
   flex-wrap: wrap;
 }
 .cc-role-primary {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
   font-size: 9px;
   font-weight: 700;
   padding: 1px 6px;
   border-radius: 8px;
-  border: 1px solid #fcd34d;
+  border: 1px solid var(--color-warning);
 }
 .cc-role-collab {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
   font-size: 9px;
   font-weight: 600;
   padding: 1px 6px;
   border-radius: 8px;
-  border: 1px solid #93c5fd;
+  border: 1px solid var(--color-primary);
 }
 .cc-meta {
   font-size: 10px;
@@ -2164,7 +2163,7 @@ async function onRegenerateHandoff() {
   display: flex;
   flex-direction: column;
   gap: 7px;
-  background: #fafafa;
+  background: var(--color-surface-secondary);
 }
 .team-card-head {
   display: flex; align-items: center; gap: 8px;
@@ -2213,8 +2212,8 @@ async function onRegenerateHandoff() {
 
 /* ── Widget 7: Push Getfly ── */
 .crm-btn-push {
-  background: #f8fafc;
-  border: 1px dashed #94a3b8;
+  background: var(--color-surface-secondary);
+  border: 1px dashed var(--color-border-strong);
   border-radius: 8px;
   padding: 10px;
   font-size: 12px;
@@ -2232,8 +2231,8 @@ async function onRegenerateHandoff() {
 /* ═════════ 2026-06-01: Bottom 4-tab strip + placeholder panels ═════════ */
 .bottom-tabs {
   display: flex;
-  border-top: 1px solid #dddddd;
-  background: white;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
   flex-shrink: 0;
   margin-top: auto;
 }
@@ -2247,16 +2246,15 @@ async function onRegenerateHandoff() {
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  color: #6b7280;
-  transition: all 0.15s;
+  color: var(--color-text-muted);
   border-top: 3px solid transparent;
   margin-top: -1px;
   font-family: inherit;
 }
-.bottom-tab:hover { background: #fafbfc; }
+.bottom-tab:hover { background: var(--color-surface-hover); }
 .bottom-tab.active {
-  color: #0068FF;
-  border-top-color: #0068FF;
+  color: var(--color-primary);
+  border-top-color: var(--color-primary);
 }
 .bottom-tab svg {
   width: 20px;
@@ -2321,23 +2319,23 @@ async function onRegenerateHandoff() {
   min-height: 0;
   overflow: hidden;
 }
-.ai-chat-header { padding: 12px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
-.ai-brand-badge { font-weight: 700; font-size: 14px; color: #1e3a8a; margin-bottom: 4px; }
-.ai-chat-desc { font-size: 12px; color: #64748b; }
+.ai-chat-header { padding: 12px; border-bottom: 1px solid var(--color-border); background: var(--color-surface-secondary); }
+.ai-brand-badge { font-weight: 700; font-size: 14px; color: var(--color-primary); margin-bottom: 4px; }
+.ai-chat-desc { font-size: 12px; color: var(--color-text-muted); }
 .ai-messages-box { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
-.ai-chat-empty { text-align: center; padding: 24px 12px; color: #64748b; }
+.ai-chat-empty { text-align: center; padding: 24px 12px; color: var(--color-text-muted); }
 .ai-chat-empty .empty-sparkle { font-size: 28px; margin-bottom: 8px; }
 .ai-bubble-row { display: flex; }
 .ai-bubble-row.user { justify-content: flex-end; }
 .ai-bubble-row.assistant { justify-content: flex-start; }
 .ai-bubble { max-width: 88%; padding: 8px 12px; border-radius: 10px; font-size: 13px; line-height: 1.5; }
 .ai-bubble-row.user .ai-bubble { background: #2563eb; color: #fff; }
-.ai-bubble-row.assistant .ai-bubble { background: #f1f5f9; color: #1e293b; border: 1px solid #e2e8f0; }
+.ai-bubble-row.assistant .ai-bubble { background: var(--color-surface-secondary); color: var(--color-text); border: 1px solid var(--color-border); }
 .ai-bubble-actions { margin-top: 6px; display: flex; justify-content: flex-end; }
 .ai-copy-btn { background: none; border: none; color: #2563eb; cursor: pointer; font-size: 11px; font-weight: 600; padding: 2px 4px; }
-.ai-typing { font-size: 12px; color: #64748b; font-style: italic; }
-.ai-input-box { padding: 10px; border-top: 1px solid #e2e8f0; display: flex; gap: 8px; background: #fff; }
-.ai-input-box textarea { flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; font-size: 13px; font-family: inherit; resize: none; }
+.ai-typing { font-size: 12px; color: var(--color-text-muted); font-style: italic; }
+.ai-input-box { padding: 10px; border-top: 1px solid var(--color-border); display: flex; gap: 8px; background: var(--color-surface); }
+.ai-input-box textarea { flex: 1; border: 1px solid var(--color-border-strong); border-radius: 6px; padding: 6px 8px; font-size: 13px; font-family: inherit; resize: none; background: var(--color-surface); color: var(--color-text); }
 .ai-send-btn { padding: 0 14px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
 .ai-send-btn:disabled { background: #94a3b8; cursor: not-allowed; }
 .mtp-coming {

@@ -11,7 +11,7 @@ migration. This document records source truth; it does not change behavior.
 | UI framework | Vuetify 4 with `@mdi/font`; Lucide is also used by feature UI |
 | State | Pinia |
 | Routing | Vue Router |
-| Theme | `frontend/src/plugins/vuetify.ts`; `hsLight` is forced as the current theme |
+| Theme | `frontend/src/plugins/vuetify.ts`; `useAppTheme` switches `hsLight` / `repuDark` and semantic CSS tokens |
 | Entry styles | `frontend/src/main.ts` imports design tokens plus legacy/global styles |
 | Shared UI | `frontend/src/components/ui/` contains Avatar, CareStatusBadge, ConfirmHost, TagChipList, ToastContainer |
 | Views | `frontend/src/views/` plus feature subdirectories |

@@ -136,5 +136,5 @@ const roleClass = computed(() => `role-${authStore.user?.role || 'member'}`);
 }
 .btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-primary { background: var(--color-primary, #1786be); border-color: var(--color-primary, #1786be); color: var(--color-on-primary); }
-.btn-primary:hover { background: #4E5AB8; }
+.btn-primary:hover { background: var(--color-primary-hover); }
 </style>

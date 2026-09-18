@@ -3129,7 +3129,12 @@ watch(() => props.editingMessage?.id, async (id) => {
   display: flex; flex: 1;
   align-items: center; justify-content: center;
   flex-direction: column;
-  color: var(--color-text-secondary);
+  background: transparent !important;
+  border: none !important;
+  color: var(--color-text-secondary) !important;
+}
+.empty-state p {
+  color: var(--color-text) !important;
 }
 
 /* ════════ Chat header (3-row layout — Anh chốt 2026-06-03) ════════
